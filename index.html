@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>B‑Movie Ratings Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="branding">
+      <h1 class="logo">🛸 B‑Movie Ratings</h1>
+      <p class="tagline">Celebrate the best of the worst (and the worst of the best).</p>
+    </div>
+    <div class="user-box">
+      <label for="username" class="visually-hidden">Your Name</label>
+      <input id="username" type="text" placeholder="Your name (for ratings)" autocomplete="off" />
+    </div>
+  </header>
+
+  <main class="layout layout-wide">
+    <section class="panel" id="rules-panel">
+      <h2>Official Rules: Double Feature Night</h2>
+      <details open>
+        <summary>Movie Selection</summary>
+        <ul class="rules-list">
+          <li>Each player secretly picks one B‑movie (the cheesier the better).</li>
+          <li>Keep your choice a mystery until it’s time to press play.</li>
+          <li>What counts as a B‑movie?</li>
+          <ul>
+            <li>Low budget</li>
+            <li>Questionable acting</li>
+            <li>Plot holes you could drive a Jeep through</li>
+          </ul>
+        </ul>
+      </details>
+      <details open>
+        <summary>Viewing Protocol</summary>
+        <ul class="rules-list">
+          <li>Both movies must be watched fully — no skipping scenes, no mercy.</li>
+          <li>Talking is encouraged: mock bad dialogue, spot cheap effects, celebrate foam rubber.</li>
+        </ul>
+      </details>
+      <details open>
+        <summary>Scoring Categories (1–10 each)</summary>
+        <ol class="rules-list numbered">
+          <li><strong>Overacting Award</strong> – Best worst performance.</li>
+          <li><strong>Explosive Excellence</strong> – How unnecessarily big were the effects?</li>
+          <li><strong>Plot Confusion</strong> – Story coherence (lower coherence often = higher fun).</li>
+          <li><strong>Creature/Monster Quality</strong> – Foam rubber? CGI? Sock puppet? All valid art.</li>
+          <li><strong>Dialogue Disaster</strong> – Peak awful line delivery / script chaos.</li>
+        </ol>
+        <p class="mini-note">Total Score = Sum of all 5 category scores (max 50 per rater).</p>
+      </details>
+      <details open>
+        <summary>Awards & Winner</summary>
+        <ul class="rules-list">
+          <li>After both films: tally per‑movie totals (sum across raters).</li>
+          <li>Highest total = <em>Night’s Champion of Cheese</em>.</li>
+          <li>Winner earns the right to choose next session’s theme.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section class="panel" id="add-movie-panel">
+      <h2>Add a Movie</h2>
+      <form id="addMovieForm" class="form-grid" autocomplete="off">
+        <div class="field">
+          <label for="movieTitle">Title</label>
+          <input id="movieTitle" name="title" required maxlength="120" placeholder="e.g. Sharknado" />
+        </div>
+        <div class="field">
+          <label for="movieYear">Year</label>
+          <input id="movieYear" name="year" type="number" min="1900" max="2100" placeholder="2013" />
+        </div>
+        <div class="field span-2">
+          <label for="movieNotes">Notes (optional)</label>
+          <textarea id="movieNotes" name="notes" rows="2" placeholder="Cheesy tornado full of sharks..."></textarea>
+        </div>
+        <div class="actions span-2">
+          <button type="submit" class="btn primary">Add Movie</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel" id="movies-section">
+      <div class="panel-header">
+        <h2>Movies</h2>
+        <div class="filters">
+          <select id="sortSelect" title="Sort movies">
+            <option value="added-desc">Recently Added</option>
+            <option value="title-asc">Title A→Z</option>
+            <option value="total-desc">Highest Total Score</option>
+            <option value="ratings-count-desc">Most Raters</option>
+          </select>
+          <input id="searchBox" type="search" placeholder="Search..." />
+        </div>
+      </div>
+      <div id="moviesList" class="cards"></div>
+      <template id="movieCardTemplate">
+        <article class="movie-card" data-id="">
+          <header class="movie-head">
+            <h3 class="movie-title"></h3>
+            <span class="year"></span>
+          </header>
+          <p class="notes"></p>
+          <div class="scores-wrap">
+            <div class="score-row categories"></div>
+            <div class="total-line">
+              <span class="total-badge" title="Total across categories (avg per category shown)">Total: <strong class="total-val">0</strong></span>
+              <span class="rater-count"></span>
+              <button class="btn small primary open-rate" type="button">Rate / Edit</button>
+            </div>
+          </div>
+          <footer class="card-actions">
+            <button class="btn ghost small delete-btn" title="Delete movie">✖</button>
+          </footer>
+        </article>
+      </template>
+    </section>
+  </main>
+
+  <dialog id="rateDialog">
+    <form method="dialog" id="rateForm">
+      <h3 class="dialog-title">Rate: <span id="dialogMovieTitle"></span></h3>
+      <div class="cat-grid">
+        <label>Overacting Award
+          <input type="number" name="overacting" min="1" max="10" required />
+        </label>
+        <label>Explosive Excellence
+          <input type="number" name="explosive" min="1" max="10" required />
+        </label>
+        <label>Plot Confusion
+          <input type="number" name="plot" min="1" max="10" required />
+        </label>
+        <label>Creature / Monster Quality
+          <input type="number" name="creature" min="1" max="10" required />
+        </label>
+        <label>Dialogue Disaster
+          <input type="number" name="dialogue" min="1" max="10" required />
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn ghost" type="reset">Cancel</button>
+        <button value="save" class="btn primary" type="submit">Save Ratings</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer class="app-footer">
+    <p>Local only demo. Ratings stored in your browser. Invite a friend by sending them the files.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
