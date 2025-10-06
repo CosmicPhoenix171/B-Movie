@@ -352,8 +352,8 @@
   }
 
   function sanitizeForFirestore(movie){
-    const { id, title, year=null, notes='', addedAt, ratings={} } = movie;
-    return { id, title, year, notes, addedAt, ratings };
+    const { id, title, year=null, notes='', addedAt, ratings={}, chooser } = movie;
+    return { id, title, year, notes, addedAt, ratings, chooser };
   }
 
   function attachRemoteListener(){
