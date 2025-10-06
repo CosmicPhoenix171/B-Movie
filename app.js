@@ -244,23 +244,68 @@
   }
 
   function updateCardScores(movie, card){
+    const username = dom.username.value.trim();
+    const userHasRated = !!(username && movie.ratings && movie.ratings[username]);
     const aggregates = getAggregates(movie);
-    // per category avg
+    const raterCount = aggregates.raterCount;
+
+    const lockNeeded = raterCount > 0 && !userHasRated; // hide others until user participates
+
+    // Per-category averages (or masked)
     for(const cat of CATEGORIES){
       const badge = card.querySelector(`.cat-badge[data-cat="${cat.key}"]`);
-      const avg = aggregates.categoryAverages[cat.key];
-      badge.textContent = `${shortLabel(cat.label)}: ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
-      badge.dataset.empty = Number.isFinite(avg)?'false':'true';
+      if(!badge) continue;
+      if(lockNeeded){
+        badge.textContent = `${shortLabel(cat.label)}: ?`;
+        badge.dataset.empty = 'true';
+        badge.dataset.locked = 'true';
+      } else {
+        const avg = aggregates.categoryAverages[cat.key];
+        badge.textContent = `${shortLabel(cat.label)}: ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
+        badge.dataset.empty = Number.isFinite(avg)?'false':'true';
+        badge.dataset.locked = 'false';
+      }
     }
-    // bonus categories
+    // Bonus categories (still shown only if user rated OR we could also hide — follow same rule)
     for(const cat of BONUS_CATEGORIES){
       const badge = card.querySelector(`.cat-badge[data-cat="${cat.key}"]`);
-      const avg = aggregates.bonusAverages[cat.key];
-      badge.textContent = `${shortLabel(cat.label)}: ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
-      badge.dataset.empty = Number.isFinite(avg)?'false':'true';
+      if(!badge) continue;
+      if(lockNeeded){
+        badge.textContent = `${shortLabel(cat.label)}: ?`;
+        badge.dataset.empty = 'true';
+        badge.dataset.locked = 'true';
+      } else {
+        const avg = aggregates.bonusAverages[cat.key];
+        badge.textContent = `${shortLabel(cat.label)}: ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
+        badge.dataset.empty = Number.isFinite(avg)?'false':'true';
+        badge.dataset.locked = 'false';
+      }
     }
-    card.querySelector('.total-val').textContent = aggregates.totalAllRaters;
-    card.querySelector('.rater-count').textContent = aggregates.raterCount ? `(${aggregates.raterCount} rater${aggregates.raterCount===1?'':'s'})` : '';
+
+    // Total & rater count (masked if locked)
+    const totalEl = card.querySelector('.total-val');
+    const raterEl = card.querySelector('.rater-count');
+    if(lockNeeded){
+      totalEl.textContent = '?';
+      raterEl.textContent = '(hidden)';
+    } else {
+      totalEl.textContent = aggregates.totalAllRaters;
+      raterEl.textContent = raterCount ? `(${raterCount} rater${raterCount===1?'':'s'})` : '';
+    }
+
+    // Locked message handling
+    const scoresWrap = card.querySelector('.scores-wrap');
+    let lockMsg = scoresWrap.querySelector('.locked-msg');
+    if(lockNeeded){
+      if(!lockMsg){
+        lockMsg = document.createElement('div');
+        lockMsg.className = 'locked-msg';
+        scoresWrap.appendChild(lockMsg);
+      }
+      lockMsg.innerHTML = 'Ratings hidden until <strong>you rate</strong> this movie.';
+    } else if(lockMsg){
+      lockMsg.remove();
+    }
   }
 
   function updateIndividualReviews(movie, card){
@@ -286,12 +331,22 @@
     if(!reviewsList || !reviewsToggle) return;
 
     reviewsList.innerHTML = '';
-    const ratings = movie.ratings || {};
-    const usernames = Object.keys(ratings);
+  const ratings = movie.ratings || {};
+  const usernames = Object.keys(ratings);
+  const username = dom.username.value.trim();
+  const userHasRated = !!(username && ratings[username]);
 
     if(usernames.length === 0){
       reviewsList.innerHTML = '<p class="no-reviews">No reviews yet</p>';
       reviewsToggle.textContent = 'Individual Reviews';
+      details.removeAttribute('open');
+      return;
+    }
+
+    // If current user has not rated yet, hide the list content
+    if(!userHasRated){
+      reviewsToggle.textContent = `Individual Reviews (locked)`;
+      reviewsList.innerHTML = '<p class="no-reviews">Rate this movie to reveal other reviewers.</p>';
       details.removeAttribute('open');
       return;
     }
