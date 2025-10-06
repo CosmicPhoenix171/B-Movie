@@ -138,6 +138,9 @@ body { margin:0; background: radial-gradient(circle at 25% 15%, #1c2230, #0d0f12
 .reviews-list { margin-top:.5rem; display:flex; flex-direction:column; gap:.5rem; }
 .no-reviews { margin:0; font-size:.65rem; color:var(--text-dim); font-style:italic; }
 .user-review { background:rgba(255 255 255 / 2%); border:1px solid var(--border); padding:.5rem .6rem; border-radius:var(--radius-s); }
+.user-review .del-rating-btn { background:linear-gradient(140deg,#552020,#3a1010); color:#f8d7d7; border:1px solid #7a2f2f; margin-left:.4rem; cursor:pointer; padding:.15rem .4rem; line-height:1; font-size:.6rem; border-radius:4px; text-shadow:0 0 2px rgba(0 0 0 / 60%); transition:.2s background,.15s transform; }
+.user-review .del-rating-btn:hover { background:linear-gradient(140deg,#7a2f2f,#4a1515); }
+.user-review .del-rating-btn:active { transform:scale(.9); }
 .reviewer-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:.35rem; }
 .reviewer-name { font-size:.7rem; color:var(--text); font-weight:600; }
 .reviewer-total { font-size:.65rem; color:var(--accent); font-weight:600; }

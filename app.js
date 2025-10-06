@@ -249,6 +249,15 @@
     renderAll();
   }
 
+  function removeUserRating(movieId, uname){
+    const movie = state.movies.find(m => m.id === movieId);
+    if(!movie || !movie.ratings) return;
+    if(!movie.ratings[uname]) return;
+    delete movie.ratings[uname];
+    persist();
+    updateMovieCard(movieId);
+  }
+
   function persist(){
     // Always save local for offline resilience
     localStorage.setItem(LS_KEY, JSON.stringify(state));
@@ -447,7 +456,14 @@
       // Calculate user's total from main categories only
       const userTotal = CATEGORIES.reduce((sum, cat) => sum + (Number(userRating[cat.key]) || 0), 0);
 
-      let reviewHTML = `<div class="reviewer-header">\n        <strong class="reviewer-name">${sanitize(username)}</strong>\n        <span class="reviewer-total">Total: ${userTotal}</span>\n      </div>\n      <div class="reviewer-scores">`;
+      const isOwner = username === dom.username.value.trim();
+      let headerHTML = `<div class="reviewer-header">\n        <strong class="reviewer-name">${sanitize(username)}</strong>\n        <span class="reviewer-total">Total: ${userTotal}</span>`;
+      if(isOwner){
+        headerHTML += ` <button type="button" class="del-rating-btn" data-user="${sanitize(username)}" title="Delete your rating">✖</button>`;
+      }
+      headerHTML += `\n      </div>`;
+
+      let reviewHTML = headerHTML + `\n      <div class="reviewer-scores">`;
 
       // Main categories
       CATEGORIES.forEach(cat => {
@@ -467,6 +483,14 @@
 
       reviewHTML += '</div>';
       reviewDiv.innerHTML = reviewHTML;
+      if(isOwner){
+        const btn = reviewDiv.querySelector('.del-rating-btn');
+        btn?.addEventListener('click', () => {
+          if(confirm('Delete your rating for this movie?')){
+            removeUserRating(movie.id, username);
+          }
+        });
+      }
       reviewsList.appendChild(reviewDiv);
     });
 
@@ -549,5 +573,19 @@
   await initFirebase();
   if(!remote.enabled){
     updateSyncStatus('local','Local Only');
+    debugLocalReason();
+  }
+  function debugLocalReason(){
+    const reasons = [];
+    if(typeof window.FIREBASE_ENABLED === 'undefined') reasons.push('window.FIREBASE_ENABLED undefined (config file not loaded?)');
+    else if(!window.FIREBASE_ENABLED) reasons.push('FIREBASE_ENABLED is false');
+    if(typeof window.FIREBASE_CONFIG === 'undefined') reasons.push('FIREBASE_CONFIG missing');
+    else {
+      if(!window.FIREBASE_CONFIG.projectId) reasons.push('FIREBASE_CONFIG.projectId missing');
+    }
+    if(reasons.length===0) reasons.push('Firebase init likely failed before enabling remote (see earlier console warnings).');
+    console.info('[B-Movie][Sync Debug] Remote disabled reasons:', reasons.join('; '));
+    console.info('[B-Movie][Sync Debug] FIREBASE_ENABLED=', window.FIREBASE_ENABLED, 'FIREBASE_CONFIG=', window.FIREBASE_CONFIG);
+    console.info('[B-Movie][Sync Debug] To enable: ensure firebase-config.js is in same folder & referenced before app.js, set window.FIREBASE_ENABLED=true.');
   }
 })();
