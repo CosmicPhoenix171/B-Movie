@@ -697,9 +697,22 @@
     if(!remote.enabled || !moviesCollection) return;
     // Upsert each movie (simple approach; fine for small scale)
     state.movies.forEach(m => {
+      // Ensure chooser field exists for existing movies
+      if(!m.chooser) {
+        m.chooser = currentUser;
+      }
       remote.setDoc(remote.doc(moviesCollection, m.id), sanitizeForFirestore(m)).catch(e=>console.warn('[Firebase] write fail', e));
     });
   }
+  // Force re-sync all movies to Firebase (call this in console if needed)
+  function forceResyncMovies(){
+    console.log('Force resyncing all movies to Firebase...');
+    persist();
+    updateScoreTracker();
+    console.log('Resync complete!');
+  }
+  window.forceResyncMovies = forceResyncMovies; // Make available in console
+
   function sanitize(str){ return str.replace(/[<>]/g,''); }
   function flashField(el,msg){ el.classList.add('error'); el.setAttribute('title',msg); setTimeout(()=>{ el.classList.remove('error'); el.removeAttribute('title'); },1600); }
   function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
