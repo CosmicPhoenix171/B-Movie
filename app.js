@@ -3,10 +3,14 @@
   const LS_KEY = 'bmovie:data:v2';
   const CATEGORIES = [
     { key:'overacting', label:'Overacting Award' },
-    { key:'explosive', label:'Explosive Excellence' },
+    { key:'explosive', label:'Over the Top Effects' },
     { key:'plot', label:'Plot Confusion' },
-    { key:'creature', label:'Creature Quality' },
+    { key:'creature', label:'Creature/Monster Quality' },
     { key:'dialogue', label:'Dialogue Disaster' }
+  ];
+  
+  const BONUS_CATEGORIES = [
+    { key:'enjoyment', label:'Enjoyment' }
   ];
 
   /** Data shape v2
@@ -85,10 +89,18 @@
     for(const cat of CATEGORIES){
       const val = parseInt(dom.rateForm.elements[cat.key].value,10);
       if(isNaN(val) || val < 1 || val > 10){
-        alert('All categories must be scored 1–10.');
+        alert('All main categories must be scored 1–10.');
         return;
       }
       entry[cat.key] = val;
+    }
+    
+    // Handle bonus categories (optional)
+    for(const cat of BONUS_CATEGORIES){
+      const val = parseInt(dom.rateForm.elements[cat.key].value,10);
+      if(!isNaN(val) && val >= 1 && val <= 10){
+        entry[cat.key] = val;
+      }
     }
 
     movie.ratings[username] = entry;
@@ -107,6 +119,9 @@
     const username = dom.username.value.trim();
     const prior = username ? movie.ratings[username] : null;
     for(const cat of CATEGORIES){
+      dom.rateForm.elements[cat.key].value = prior ? prior[cat.key] : '';
+    }
+    for(const cat of BONUS_CATEGORIES){
       dom.rateForm.elements[cat.key].value = prior ? prior[cat.key] : '';
     }
     if(typeof dom.rateDialog.showModal === 'function'){
@@ -192,6 +207,16 @@
       span.textContent = `${shortLabel(cat.label)}: –`;
       catRow.appendChild(span);
     }
+    
+    // bonus categories (don't count toward total)
+    for(const cat of BONUS_CATEGORIES){
+      const span = document.createElement('span');
+      span.className = 'cat-badge bonus';
+      span.dataset.cat = cat.key;
+      span.title = cat.label + ' (bonus - not counted in total)';
+      span.textContent = `${shortLabel(cat.label)}: –`;
+      catRow.appendChild(span);
+    }
 
     clone.querySelector('.open-rate').addEventListener('click', () => openDialog(movie));
     clone.querySelector('.delete-btn').addEventListener('click', () => {
@@ -223,6 +248,13 @@
       badge.textContent = `${shortLabel(cat.label)}: ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
       badge.dataset.empty = Number.isFinite(avg)?'false':'true';
     }
+    // bonus categories
+    for(const cat of BONUS_CATEGORIES){
+      const badge = card.querySelector(`.cat-badge[data-cat="${cat.key}"]`);
+      const avg = aggregates.bonusAverages[cat.key];
+      badge.textContent = `${shortLabel(cat.label)}: ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
+      badge.dataset.empty = Number.isFinite(avg)?'false':'true';
+    }
     card.querySelector('.total-val').textContent = aggregates.totalAllRaters;
     card.querySelector('.rater-count').textContent = aggregates.raterCount ? `(${aggregates.raterCount} rater${aggregates.raterCount===1?'':'s'})` : '';
   }
@@ -230,15 +262,26 @@
   function getAggregates(movie){
     const userEntries = Object.values(movie.ratings || {});
     const raterCount = userEntries.length;
+    
+    // Regular categories (count toward total)
     const sums = {}; CATEGORIES.forEach(c=> sums[c.key]=0);
     userEntries.forEach(entry => {
       CATEGORIES.forEach(c => { const v = Number(entry[c.key]); if(!isNaN(v)) sums[c.key]+=v; });
     });
     const categoryAverages = {};
     CATEGORIES.forEach(c => { categoryAverages[c.key] = raterCount ? sums[c.key]/raterCount : NaN; });
-    // total per rater (sum of 5 categories) aggregated across raters
+    
+    // Bonus categories (don't count toward total)
+    const bonusSums = {}; BONUS_CATEGORIES.forEach(c=> bonusSums[c.key]=0);
+    userEntries.forEach(entry => {
+      BONUS_CATEGORIES.forEach(c => { const v = Number(entry[c.key]); if(!isNaN(v)) bonusSums[c.key]+=v; });
+    });
+    const bonusAverages = {};
+    BONUS_CATEGORIES.forEach(c => { bonusAverages[c.key] = raterCount ? bonusSums[c.key]/raterCount : NaN; });
+    
+    // total per rater (sum of main categories only) aggregated across raters
     const totalAllRaters = userEntries.reduce((acc,entry)=> acc + CATEGORIES.reduce((s,c)=> s + (Number(entry[c.key])||0),0), 0);
-    return { raterCount, categoryAverages, totalAllRaters };
+    return { raterCount, categoryAverages, bonusAverages, totalAllRaters };
   }
 
   function shortLabel(label){

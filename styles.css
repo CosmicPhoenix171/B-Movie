@@ -105,6 +105,8 @@ body { margin:0; background: radial-gradient(circle at 25% 15%, #1c2230, #0d0f12
 /* Category badges */
 .cat-badge { background:linear-gradient(145deg,#2a313a,#232a32); border:1px solid #323a40; padding:.35rem .5rem; border-radius:var(--radius-s); font-size:.6rem; letter-spacing:.5px; font-weight:600; color:var(--text-dim); display:inline-flex; gap:.3rem; }
 .cat-badge[data-empty="false"] { color:var(--accent); }
+.cat-badge.bonus { background:linear-gradient(145deg,#2a2c3a,#232532); border:1px solid #3a3240; opacity:0.8; }
+.cat-badge.bonus[data-empty="false"] { color:#9d7bff; }
 .scores-wrap { display:flex; flex-direction:column; gap:.5rem; }
 .score-row { display:flex; flex-wrap:wrap; gap:.4rem; }
 .total-line { display:flex; gap:.7rem; flex-wrap:wrap; align-items:center; font-size:.7rem; }
@@ -116,6 +118,8 @@ body { margin:0; background: radial-gradient(circle at 25% 15%, #1c2230, #0d0f12
 .dialog-title { margin:0 0 .9rem; font-size:1rem; font-weight:600; }
 .cat-grid { display:grid; gap:.75rem 1rem; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); margin-bottom:1rem; }
 .cat-grid label { display:flex; flex-direction:column; gap:.3rem; font-size:.65rem; text-transform:uppercase; letter-spacing:.6px; font-weight:600; color:var(--text-dim); }
+.cat-grid label.bonus-category { opacity:0.8; border-top:1px solid var(--border); padding-top:.75rem; margin-top:.25rem; }
+.cat-grid label.bonus-category small { font-size:.5rem; color:#9d7bff; font-weight:400; }
 .cat-grid input { background:var(--panel-alt); border:1px solid var(--border); color:var(--text); padding:.55rem .55rem; border-radius:var(--radius-s); font:inherit; text-align:center; font-weight:600; }
 .cat-grid input:focus { outline:2px solid rgba(var(--accent-glow)/55%); outline-offset:2px; }
 .dialog-actions { display:flex; justify-content:flex-end; gap:.6rem; }
