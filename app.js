@@ -127,6 +127,12 @@
     // Save to localStorage
     localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
     console.log('Theme saved:', currentWinner.nextTheme);
+    
+    // Hide theme editor after saving
+    const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
+    if(themeEditor) {
+      themeEditor.style.display = 'none';
+    }
   });
   
   // Allow Enter key to save theme
@@ -397,15 +403,31 @@
     
     if(currentWinner.nextTheme){
       themeEl.textContent = `Next Theme: ${currentWinner.nextTheme}`;
+      themeEl.title = 'Click to edit theme';
       themeEl.style.display = 'block';
+      
+      // Make theme clickable to edit
+      themeEl.onclick = () => {
+        const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
+        if(themeEditor) {
+          themeEditor.style.display = 'block';
+          dom.editTheme.focus();
+        }
+      };
     } else {
       themeEl.style.display = 'none';
+      themeEl.onclick = null;
     }
     
-    // Show theme editor and populate current theme
+    // Show theme editor only if no theme is set yet
     if(dom.editTheme && themeEditor){
       dom.editTheme.value = currentWinner.nextTheme || '';
-      themeEditor.style.display = 'block';
+      // Only show editor if no theme is currently set
+      if(!currentWinner.nextTheme) {
+        themeEditor.style.display = 'block';
+      } else {
+        themeEditor.style.display = 'none';
+      }
       console.log('Theme editor populated with:', currentWinner.nextTheme);
     }
     

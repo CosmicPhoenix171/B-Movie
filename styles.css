@@ -298,7 +298,21 @@ body.theme-bmovie .panel:after { content:""; position:absolute; inset:0; backgro
 .winner-info { flex:1; }
 .winner-title { font-size:1.1rem; font-weight:600; color:#8be79f; margin-bottom:.25rem; }
 .winner-subtitle { font-size:.8rem; color:var(--text-dim); margin-bottom:.4rem; }
-.winner-theme { font-size:.75rem; color:#ffce4f; font-weight:500; background:rgba(255 206 79 / 10%); padding:.3rem .5rem; border-radius:var(--radius-s); border:1px solid rgba(255 206 79 / 20%); }
+.winner-theme { 
+  font-size:.75rem; 
+  color:#ffce4f; 
+  font-weight:500; 
+  background:rgba(255 206 79 / 10%); 
+  padding:.3rem .5rem; 
+  border-radius:var(--radius-s); 
+  border:1px solid rgba(255 206 79 / 20%); 
+  cursor:pointer;
+  transition:.2s background;
+}
+.winner-theme:hover { 
+  background:rgba(255 206 79 / 15%); 
+  border-color:rgba(255 206 79 / 30%); 
+}
 
 /* Winner theme editor */
 .winner-theme-editor { 
