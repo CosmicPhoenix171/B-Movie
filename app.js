@@ -264,37 +264,55 @@
   }
 
   function updateIndividualReviews(movie, card){
-    const reviewsList = card.querySelector('.reviews-list');
-    const reviewsToggle = card.querySelector('.reviews-toggle');
-    
-    if(!reviewsList) return;
-    
+    // Ensure the details section exists (older rendered cards before template change won't have it)
+    let details = card.querySelector('.individual-reviews');
+    if(!details){
+      details = document.createElement('details');
+      details.className = 'individual-reviews';
+      const summary = document.createElement('summary');
+      summary.className = 'reviews-toggle';
+      summary.textContent = 'Individual Reviews';
+      const list = document.createElement('div');
+      list.className = 'reviews-list';
+      details.appendChild(summary);
+      details.appendChild(list);
+      // Insert before footer if possible
+      const footer = card.querySelector('.card-actions');
+      card.insertBefore(details, footer || null);
+    }
+
+    const reviewsList = details.querySelector('.reviews-list');
+    const reviewsToggle = details.querySelector('.reviews-toggle');
+    if(!reviewsList || !reviewsToggle) return;
+
     reviewsList.innerHTML = '';
     const ratings = movie.ratings || {};
     const usernames = Object.keys(ratings);
-    
+
     if(usernames.length === 0){
       reviewsList.innerHTML = '<p class="no-reviews">No reviews yet</p>';
       reviewsToggle.textContent = 'Individual Reviews';
+      details.removeAttribute('open');
       return;
     }
-    
+
     reviewsToggle.textContent = `Individual Reviews (${usernames.length})`;
-    
+
+    // Auto-open if there are ratings (but only first time / if not manually toggled)
+    if(!details.hasAttribute('data-user-toggled')){
+      details.setAttribute('open','');
+    }
+
     usernames.forEach(username => {
       const userRating = ratings[username];
       const reviewDiv = document.createElement('div');
       reviewDiv.className = 'user-review';
-      
+
       // Calculate user's total from main categories only
       const userTotal = CATEGORIES.reduce((sum, cat) => sum + (Number(userRating[cat.key]) || 0), 0);
-      
-      let reviewHTML = `<div class="reviewer-header">
-        <strong class="reviewer-name">${sanitize(username)}</strong>
-        <span class="reviewer-total">Total: ${userTotal}</span>
-      </div>
-      <div class="reviewer-scores">`;
-      
+
+      let reviewHTML = `<div class="reviewer-header">\n        <strong class="reviewer-name">${sanitize(username)}</strong>\n        <span class="reviewer-total">Total: ${userTotal}</span>\n      </div>\n      <div class="reviewer-scores">`;
+
       // Main categories
       CATEGORIES.forEach(cat => {
         const score = userRating[cat.key];
@@ -302,7 +320,7 @@
           reviewHTML += `<span class="score-item">${shortLabel(cat.label)}: ${score}</span>`;
         }
       });
-      
+
       // Bonus categories
       BONUS_CATEGORIES.forEach(cat => {
         const score = userRating[cat.key];
@@ -310,11 +328,16 @@
           reviewHTML += `<span class="score-item bonus">${shortLabel(cat.label)}: ${score}</span>`;
         }
       });
-      
+
       reviewHTML += '</div>';
       reviewDiv.innerHTML = reviewHTML;
       reviewsList.appendChild(reviewDiv);
     });
+
+    // Track manual toggle so we don't force open after user closed it
+    details.addEventListener('toggle', () => {
+      details.setAttribute('data-user-toggled','true');
+    }, { once: true });
   }
 
   function getAggregates(movie){
