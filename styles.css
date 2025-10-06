@@ -47,8 +47,8 @@ body { margin:0; background: radial-gradient(circle at 25% 15%, #1c2230, #0d0f12
 .form-grid { 
   display:grid;
   gap:.9rem 1rem;
-  /* Title flexible, Year scales with panel but bounded */
-  grid-template-columns: minmax(0,1fr) clamp(90px, 22%, 160px);
+  /* 3 columns: Title, Year, Chooser */
+  grid-template-columns: 2fr 1fr 1.5fr;
   align-items:start;
   width:100%;
   max-width:100%;
