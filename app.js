@@ -102,14 +102,17 @@
   // Winner panel events
   dom.winnerForm?.addEventListener('submit', e => {
     e.preventDefault();
+    console.log('Winner form submitted');
     const movieId = dom.winnerMovie.value;
     const personName = dom.winnerPerson.value;
+    console.log('Selected movie ID:', movieId, 'Selected person:', personName);
     
     if(!movieId || !personName){
       alert('Please select both a movie and a person.');
       return;
     }
     
+    console.log('Calling setWinner...');
     setWinner(movieId, personName);
   });
   
@@ -382,9 +385,14 @@
   }
   
   function setWinner(movieId, personName){
+    console.log('setWinner called with:', movieId, personName);
     const movie = state.movies.find(m => m.id === movieId);
-    if(!movie) return;
+    if(!movie) {
+      console.error('Movie not found for ID:', movieId);
+      return;
+    }
     
+    console.log('Found movie:', movie);
     currentWinner = {
       movieId,
       movieTitle: movie.title,
@@ -393,10 +401,12 @@
       nextTheme: null
     };
     
+    console.log('Created winner object:', currentWinner);
     displayWinner();
     
     // Store in localStorage
     localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
+    console.log('Winner saved to localStorage');
   }
   
   function clearWinner(){
