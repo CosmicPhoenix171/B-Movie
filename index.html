@@ -15,11 +15,19 @@
       <h1 class="logo">🛸 B‑Movie Ratings</h1>
       <p class="tagline">Celebrate the best of the worst (and the worst of the best).</p>
     </div>
-    <div class="user-box">
-      <label for="username" class="visually-hidden">Your Name</label>
-      <input id="username" type="text" placeholder="Your name (for ratings)" autocomplete="off" />
+    <div class="header-right">
+      <div class="score-tracker" id="scoreTracker">
+        <div class="tracker-title">Movie Chooser Scores</div>
+        <div class="tracker-scores" id="trackerScores">
+          <span class="no-scores">Add movies to see scores</span>
+        </div>
+      </div>
+      <div class="user-box">
+        <label for="username" class="visually-hidden">Your Name</label>
+        <input id="username" type="text" placeholder="Your name (for ratings)" autocomplete="off" />
+      </div>
+      <div class="sync-status" id="syncStatus" title="Storage mode">Local Only</div>
     </div>
-    <div class="sync-status" id="syncStatus" title="Storage mode">Local Only</div>
   </header>
 
   <main class="layout layout-wide">

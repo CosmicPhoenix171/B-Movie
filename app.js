@@ -45,7 +45,9 @@
     clearWinner: document.getElementById('clearWinner'),
     clearDisplayedWinner: document.getElementById('clearDisplayedWinner'),
     editTheme: document.getElementById('editTheme'),
-    saveTheme: document.getElementById('saveTheme')
+    saveTheme: document.getElementById('saveTheme'),
+    scoreTracker: document.getElementById('scoreTracker'),
+    trackerScores: document.getElementById('trackerScores')
   };
 
   let activeMovieId = null; // used for dialog context
@@ -91,6 +93,7 @@
   state.movies.push(movie);
   persist(); // local + remote (if enabled)
   renderMovie(movie, true); // optimistic
+    updateScoreTracker();
     dom.addForm.reset();
     dom.title.focus();
     applyFilters();
@@ -225,6 +228,7 @@
   movie.ratings[username] = entry;
   persist(); // local + remote (if enabled)
   updateMovieCard(movie.id); // optimistic UI; remote listener will reconcile if needed
+    updateScoreTracker();
     closeDialog();
   });
 
@@ -379,6 +383,7 @@
     delete movie.ratings[uname];
     persist();
     updateMovieCard(movieId);
+    updateScoreTracker();
   }
 
   // Winner functions
@@ -622,6 +627,70 @@
     }
   }
 
+  // Score Tracker Functions
+  function updateScoreTracker(){
+    if(!dom.trackerScores) return;
+    
+    // Calculate scores for each movie chooser
+    const chooserScores = {};
+    
+    state.movies.forEach(movie => {
+      if(!movie.chooser) return;
+      
+      // Get total score for this movie (sum of all raters' totals)
+      const aggregates = getAggregates(movie);
+      if(aggregates.raterCount === 0) return;
+      
+      // Sum all raters' main category totals for this movie
+      let movieTotalScore = 0;
+      Object.values(movie.ratings || {}).forEach(userRating => {
+        const userTotal = CATEGORIES.reduce((sum, cat) => {
+          return sum + (Number(userRating[cat.key]) || 0);
+        }, 0);
+        movieTotalScore += userTotal;
+      });
+      
+      // Add to chooser's total
+      if(!chooserScores[movie.chooser]) {
+        chooserScores[movie.chooser] = {
+          totalScore: 0,
+          movieCount: 0,
+          avgScore: 0
+        };
+      }
+      
+      chooserScores[movie.chooser].totalScore += movieTotalScore;
+      chooserScores[movie.chooser].movieCount += 1;
+      chooserScores[movie.chooser].avgScore = Math.round(chooserScores[movie.chooser].totalScore / chooserScores[movie.chooser].movieCount);
+    });
+    
+    // Convert to sorted array
+    const sortedScores = Object.entries(chooserScores)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.totalScore - a.totalScore);
+    
+    // Render score tracker
+    if(sortedScores.length === 0) {
+      dom.trackerScores.innerHTML = '<span class="no-scores">Add movies to see scores</span>';
+      return;
+    }
+    
+    const topScore = sortedScores[0]?.totalScore || 0;
+    dom.trackerScores.innerHTML = '';
+    
+    sortedScores.forEach((scorer, index) => {
+      const scoreItem = document.createElement('div');
+      scoreItem.className = `score-item-tracker ${scorer.totalScore === topScore && topScore > 0 ? 'top-scorer' : ''}`;
+      scoreItem.innerHTML = `
+        <span class="scorer-name">${sanitize(scorer.name)}</span>
+        <span class="scorer-points">${scorer.totalScore}pts</span>
+        <span class="scorer-avg">(${scorer.avgScore} avg)</span>
+      `;
+      scoreItem.title = `${scorer.name}: ${scorer.totalScore} total points from ${scorer.movieCount} movie(s), ${scorer.avgScore} average per movie`;
+      dom.trackerScores.appendChild(scoreItem);
+    });
+  }
+
   function persist(){
     // Always save local for offline resilience
     localStorage.setItem(LS_KEY, JSON.stringify(state));
@@ -639,6 +708,7 @@
     dom.moviesList.innerHTML = '';
     state.movies.forEach(m => renderMovie(m));
     updateWinnerDropdowns();
+    updateScoreTracker();
     applyFilters();
   }
 
