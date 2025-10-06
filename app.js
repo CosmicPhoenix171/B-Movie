@@ -1,5 +1,5 @@
-/* B-Movie Ratings App Logic */
-(function(){
+/* B-Movie Ratings App Logic (with optional Firebase Firestore sync) */
+(async function(){
   const LS_KEY = 'bmovie:data:v2';
   const CATEGORIES = [
     { key:'overacting', label:'Overacting Award' },
@@ -61,9 +61,9 @@
     }
 
     const movie = { id: crypto.randomUUID(), title, year, notes, addedAt: Date.now(), ratings: {} };
-    state.movies.push(movie);
-    persist();
-    renderMovie(movie, true);
+  state.movies.push(movie);
+  persist(); // local + remote (if enabled)
+  renderMovie(movie, true); // optimistic
     dom.addForm.reset();
     dom.title.focus();
     applyFilters();
@@ -103,9 +103,9 @@
       }
     }
 
-    movie.ratings[username] = entry;
-    persist();
-    updateMovieCard(movie.id);
+  movie.ratings[username] = entry;
+  persist(); // local + remote (if enabled)
+  updateMovieCard(movie.id); // optimistic UI; remote listener will reconcile if needed
     closeDialog();
   });
 
@@ -179,7 +179,75 @@
     return { movies: [] };
   }
 
-  function persist(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+  // --- Persistence Layer (local + optional Firestore) ---
+  let remote = { enabled:false };
+  let firestore = null;
+  let moviesCollection = null;
+  let unsubscribeMovies = null;
+
+  async function initFirebase(){
+    if(!window.FIREBASE_ENABLED || !window.FIREBASE_CONFIG) return; // feature flag & config presence
+    try {
+      const [{ initializeApp }, { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot }] = await Promise.all([
+        import('https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js')
+      ]);
+      const app = initializeApp(window.FIREBASE_CONFIG);
+      firestore = getFirestore(app);
+      moviesCollection = collection(firestore, 'bmovie_movies');
+      remote = { enabled:true, doc, setDoc, deleteDoc, onSnapshot };
+      document.getElementById('storageModeNote')?.replaceChildren(document.createTextNode('Shared mode: Live synced via Firestore.'));
+      attachRemoteListener();
+
+      // Optional analytics (only if measurementId provided)
+      if(window.FIREBASE_CONFIG.measurementId){
+        try {
+          const { getAnalytics } = await import('https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js');
+          getAnalytics(app); // no need to store; side-effect init
+        } catch(aErr){
+          console.warn('[Firebase] analytics init failed (ignored)', aErr);
+        }
+      }
+    } catch(err){
+      console.warn('[Firebase] init failed – falling back to local only.', err);
+      remote.enabled = false;
+    }
+  }
+
+  function sanitizeForFirestore(movie){
+    const { id, title, year=null, notes='', addedAt, ratings={} } = movie;
+    return { id, title, year, notes, addedAt, ratings };
+  }
+
+  function attachRemoteListener(){
+    if(!remote.enabled || !moviesCollection) return;
+    if(unsubscribeMovies) unsubscribeMovies();
+    unsubscribeMovies = remote.onSnapshot(moviesCollection, snapshot => {
+      const remoteMovies = [];
+      snapshot.forEach(d => { const data = d.data(); if(data && data.id) remoteMovies.push(data); });
+      mergeRemoteState(remoteMovies);
+    }, err => console.warn('[Firebase] listener error', err));
+  }
+
+  function mergeRemoteState(remoteMovies){
+    const map = new Map(state.movies.map(m => [m.id, m]));
+    remoteMovies.forEach(r => {
+      map.set(r.id, { ...map.get(r.id), ...r });
+    });
+    state.movies = Array.from(map.values()).sort((a,b)=> b.addedAt - a.addedAt);
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    renderAll();
+  }
+
+  function persist(){
+    // Always save local for offline resilience
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    if(!remote.enabled || !moviesCollection) return;
+    // Upsert each movie (simple approach; fine for small scale)
+    state.movies.forEach(m => {
+      remote.setDoc(remote.doc(moviesCollection, m.id), sanitizeForFirestore(m)).catch(e=>console.warn('[Firebase] write fail', e));
+    });
+  }
   function sanitize(str){ return str.replace(/[<>]/g,''); }
   function flashField(el,msg){ el.classList.add('error'); el.setAttribute('title',msg); setTimeout(()=>{ el.classList.remove('error'); el.removeAttribute('title'); },1600); }
   function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
@@ -223,6 +291,9 @@
       if(!confirm('Delete this movie?')) return;
       state.movies = state.movies.filter(m => m.id !== movie.id);
       persist();
+      if(remote.enabled && moviesCollection){
+        remote.deleteDoc(remote.doc(moviesCollection, movie.id)).catch(e=>console.warn('[Firebase] delete fail', e));
+      }
       clone.remove();
       applyFilters();
     });
@@ -465,4 +536,5 @@
   window.addEventListener('keydown', e => { if(e.key==='Escape' && activeMovieId){ closeDialog(); }});
 
   renderAll();
+  await initFirebase();
 })();

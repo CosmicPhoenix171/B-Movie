@@ -165,9 +165,16 @@
   </dialog>
 
   <footer class="app-footer">
-    <p>Local only demo. Ratings stored in your browser. Invite a friend by sending them the files.</p>
+    <p id="storageModeNote">Local only demo. Ratings stored in your browser. Invite a friend by sending them the files.</p>
   </footer>
 
-  <script src="app.js"></script>
+  <!-- Firebase config (user must create firebase-config.js from example) -->
+  <script src="firebase-config.js" defer></script>
+  <!-- Firebase SDK (modular) -->
+  <script type="module" defer>
+    // Defer initialization until app.js checks window.FIREBASE_ENABLED
+    // Just load SDK modules here so they are cached.
+  </script>
+  <script src="app.js" type="module"></script>
 </body>
 </html>
