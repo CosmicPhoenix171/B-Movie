@@ -51,6 +51,19 @@ body { margin:0; background: radial-gradient(circle at 25% 15%, #1c2230, #0d0f12
 .span-2 { grid-column:1 / -1; }
 .actions { display:flex; justify-content:flex-end; }
 
+/* Responsive collapse to keep Add Movie form inside panel */
+@media (max-width: 620px){
+  .form-grid { grid-template-columns:1fr; }
+  .span-2 { grid-column:auto; }
+  .actions { justify-content:stretch; }
+  .actions .btn.primary { width:100%; justify-content:center; }
+}
+/* Extra small safeguards */
+@media (max-width:400px){
+  .btn { padding:.55rem .7rem; }
+  .btn.primary { font-size:.8rem; }
+}
+
 .btn { --btn-bg:var(--panel-alt); --btn-color:var(--text); background:var(--btn-bg); color:var(--btn-color); border:1px solid var(--border); padding:.65rem 1rem; border-radius:var(--radius-s); font-weight:500; cursor:pointer; font-size:.9rem; line-height:1; letter-spacing:.3px; display:inline-flex; align-items:center; gap:.4rem; transition:.22s background, .22s color, .22s border; }
 .btn.primary { --btn-bg:linear-gradient(120deg,#ffb347,#ff9d1d 55%,#ff7b4f); border:none; color:#1d1205; font-weight:600; box-shadow:0 4px 10px -3px rgba(var(--accent-glow)/55%), 0 1px 0 0 rgba(255 255 255 / 25%) inset; }
 .btn.primary:hover { filter:brightness(1.05); }
