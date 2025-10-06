@@ -27,6 +27,7 @@
     addForm: document.getElementById('addMovieForm'),
     title: document.getElementById('movieTitle'),
     year: document.getElementById('movieYear'),
+    chooser: document.getElementById('movieChooser'),
     notes: document.getElementById('movieNotes'),
     username: document.getElementById('username'),
     moviesList: document.getElementById('moviesList'),
@@ -66,7 +67,15 @@
       return;
     }
 
-    const movie = { id: crypto.randomUUID(), title, year, notes, addedAt: Date.now(), ratings: {} };
+    const movie = {
+      id: Math.random().toString(36).substr(2,9),
+      title: dom.title.value.trim(),
+      year: parseInt(dom.year.value,10) || null,
+      chooser: dom.chooser.value.trim() || null,
+      notes: dom.notes.value.trim(),
+      addedAt: Date.now(),
+      ratings: {}
+    };
   state.movies.push(movie);
   persist(); // local + remote (if enabled)
   renderMovie(movie, true); // optimistic
@@ -390,7 +399,14 @@
     clone.dataset.id = movie.id;
     clone.querySelector('.movie-title').textContent = movie.title;
     clone.querySelector('.year').textContent = movie.year || '';
-    clone.querySelector('.notes').textContent = movie.notes || '';
+    
+    // Add chooser info if available
+    const notesEl = clone.querySelector('.notes');
+    let notesText = movie.notes || '';
+    if(movie.chooser){
+      notesText = `Chosen by: ${movie.chooser}${movie.notes ? ` • ${movie.notes}` : ''}`;
+    }
+    notesEl.textContent = notesText;
 
     // categories row container
     const catRow = clone.querySelector('.score-row.categories');

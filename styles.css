@@ -284,8 +284,16 @@ body.theme-bmovie .panel:after { content:""; position:absolute; inset:0; backgro
 .winner-title { font-size:1.1rem; font-weight:600; color:#8be79f; margin-bottom:.25rem; }
 .winner-subtitle { font-size:.8rem; color:var(--text-dim); }
 
-/* Responsive winner panel */
+/* Responsive forms */
+@media (max-width: 760px){
+  .form-grid { grid-template-columns:1fr 120px; }
+  .form-grid .field-chooser { grid-column:1 / -1; }
+}
 @media (max-width: 620px){
+  .form-grid { grid-template-columns:1fr; }
+  .form-grid .field-year { grid-column:1 / -1; }
+  .form-grid .field-chooser { grid-column:1 / -1; }
+  /* Winner panel */
   .winner-grid { grid-template-columns:1fr; }
   .winner-actions { justify-content:stretch; }
   .winner-actions .btn { flex:1; }
