@@ -36,7 +36,12 @@
     rateDialog: document.getElementById('rateDialog'),
     rateForm: document.getElementById('rateForm'),
     dialogMovieTitle: document.getElementById('dialogMovieTitle'),
-    syncStatus: document.getElementById('syncStatus')
+    syncStatus: document.getElementById('syncStatus'),
+    winnerForm: document.getElementById('winnerForm'),
+    winnerMovie: document.getElementById('winnerMovie'),
+    winnerPerson: document.getElementById('winnerPerson'),
+    winnerDisplay: document.getElementById('winnerDisplay'),
+    clearWinner: document.getElementById('clearWinner')
   };
 
   let activeMovieId = null; // used for dialog context
@@ -72,6 +77,22 @@
 
   dom.sort?.addEventListener('change', applyFilters);
   dom.search?.addEventListener('input', applyFilters);
+  
+  // Winner panel events
+  dom.winnerForm?.addEventListener('submit', e => {
+    e.preventDefault();
+    const movieId = dom.winnerMovie.value;
+    const personName = dom.winnerPerson.value;
+    
+    if(!movieId || !personName){
+      alert('Please select both a movie and a person.');
+      return;
+    }
+    
+    setWinner(movieId, personName);
+  });
+  
+  dom.clearWinner?.addEventListener('click', clearWinner);
 
   // Rating dialog events
   dom.rateForm.addEventListener('submit', e => {
@@ -185,6 +206,9 @@
   let firestore = null;
   let moviesCollection = null;
   let unsubscribeMovies = null;
+  
+  // Winner state
+  let currentWinner = null;
 
   function updateSyncStatus(mode,label){
     if(!dom.syncStatus) return;
@@ -258,6 +282,89 @@
     updateMovieCard(movieId);
   }
 
+  // Winner functions
+  function updateWinnerDropdowns(){
+    if(!dom.winnerMovie || !dom.winnerPerson) return;
+    
+    // Clear existing options (keep first placeholder)
+    dom.winnerMovie.innerHTML = '<option value="">Select movie...</option>';
+    dom.winnerPerson.innerHTML = '<option value="">Select person...</option>';
+    
+    // Populate movies
+    state.movies.forEach(movie => {
+      const option = document.createElement('option');
+      option.value = movie.id;
+      option.textContent = `${movie.title} (${movie.year || 'Unknown'})`;
+      dom.winnerMovie.appendChild(option);
+    });
+    
+    // Collect all unique raters
+    const allRaters = new Set();
+    state.movies.forEach(movie => {
+      if(movie.ratings){
+        Object.keys(movie.ratings).forEach(username => allRaters.add(username));
+      }
+    });
+    
+    // Populate raters
+    Array.from(allRaters).sort().forEach(username => {
+      const option = document.createElement('option');
+      option.value = username;
+      option.textContent = username;
+      dom.winnerPerson.appendChild(option);
+    });
+  }
+  
+  function setWinner(movieId, personName){
+    const movie = state.movies.find(m => m.id === movieId);
+    if(!movie) return;
+    
+    currentWinner = {
+      movieId,
+      movieTitle: movie.title,
+      movieYear: movie.year,
+      personName
+    };
+    
+    displayWinner();
+    
+    // Store in localStorage
+    localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
+  }
+  
+  function clearWinner(){
+    currentWinner = null;
+    dom.winnerDisplay.style.display = 'none';
+    dom.winnerForm.style.display = 'block';
+    dom.winnerForm.reset();
+    localStorage.removeItem('bmovie:winner');
+  }
+  
+  function displayWinner(){
+    if(!currentWinner) return;
+    
+    const titleEl = dom.winnerDisplay.querySelector('.winner-title');
+    const subtitleEl = dom.winnerDisplay.querySelector('.winner-subtitle');
+    
+    titleEl.textContent = `${currentWinner.movieTitle} (${currentWinner.movieYear || 'Unknown'})`;
+    subtitleEl.textContent = `Champion: ${currentWinner.personName}`;
+    
+    dom.winnerDisplay.style.display = 'block';
+    dom.winnerForm.style.display = 'none';
+  }
+  
+  function loadWinner(){
+    try {
+      const stored = localStorage.getItem('bmovie:winner');
+      if(stored){
+        currentWinner = JSON.parse(stored);
+        displayWinner();
+      }
+    } catch(e) {
+      console.warn('Failed to load winner:', e);
+    }
+  }
+
   function persist(){
     // Always save local for offline resilience
     localStorage.setItem(LS_KEY, JSON.stringify(state));
@@ -274,6 +381,7 @@
   function renderAll(){
     dom.moviesList.innerHTML = '';
     state.movies.forEach(m => renderMovie(m));
+    updateWinnerDropdowns();
     applyFilters();
   }
 
@@ -570,6 +678,8 @@
   window.addEventListener('keydown', e => { if(e.key==='Escape' && activeMovieId){ closeDialog(); }});
 
   renderAll();
+  updateWinnerDropdowns();
+  loadWinner();
   await initFirebase();
   if(!remote.enabled){
     updateSyncStatus('local','Local Only');
