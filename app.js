@@ -127,20 +127,31 @@
     const themeEl = dom.winnerDisplay.querySelector('.winner-theme');
     if(currentWinner.nextTheme){
       themeEl.textContent = `Next Theme: ${currentWinner.nextTheme}`;
+      themeEl.title = 'Click to edit theme';
       themeEl.style.display = 'block';
+      
+      // Make theme clickable to edit
+      themeEl.onclick = () => {
+        const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
+        if(themeEditor) {
+          themeEditor.style.display = 'block';
+          dom.editTheme.focus();
+        }
+      };
     } else {
       themeEl.style.display = 'none';
+      themeEl.onclick = null;
     }
-    
-    // Save to localStorage
-    localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
-    console.log('Theme saved:', currentWinner.nextTheme);
     
     // Hide theme editor after saving
     const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
     if(themeEditor) {
       themeEditor.style.display = 'none';
     }
+    
+    // Save to localStorage
+    localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
+    console.log('Theme saved:', currentWinner.nextTheme);
   });
   
   // Allow Enter key to save theme
