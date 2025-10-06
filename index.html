@@ -76,19 +76,19 @@
     <section class="panel" id="add-movie-panel">
       <h2>Add a Movie</h2>
       <form id="addMovieForm" class="form-grid" autocomplete="off">
-        <div class="field">
+        <div class="field field-title">
           <label for="movieTitle">Title</label>
           <input id="movieTitle" name="title" required maxlength="120" placeholder="e.g. Sharknado" />
         </div>
-        <div class="field">
+        <div class="field field-year">
           <label for="movieYear">Year</label>
           <input id="movieYear" name="year" type="number" min="1900" max="2100" placeholder="2013" />
         </div>
-        <div class="field span-2">
+        <div class="field field-notes">
           <label for="movieNotes">Notes (optional)</label>
           <textarea id="movieNotes" name="notes" rows="2" placeholder="Cheesy tornado full of sharks..."></textarea>
         </div>
-        <div class="actions span-2">
+        <div class="actions actions-add">
           <button type="submit" class="btn primary">Add Movie</button>
         </div>
       </form>
