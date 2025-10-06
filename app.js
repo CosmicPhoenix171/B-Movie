@@ -228,6 +228,7 @@
     });
 
     updateCardScores(movie, clone);
+    updateIndividualReviews(movie, clone);
 
     if(prepend) dom.moviesList.prepend(clone); else dom.moviesList.appendChild(clone);
   }
@@ -236,7 +237,10 @@
     const movie = state.movies.find(m => m.id === id);
     if(!movie) return;
     const card = dom.moviesList.querySelector(`.movie-card[data-id="${id}"]`);
-    if(card) updateCardScores(movie, card);
+    if(card) {
+      updateCardScores(movie, card);
+      updateIndividualReviews(movie, card);
+    }
   }
 
   function updateCardScores(movie, card){
@@ -257,6 +261,60 @@
     }
     card.querySelector('.total-val').textContent = aggregates.totalAllRaters;
     card.querySelector('.rater-count').textContent = aggregates.raterCount ? `(${aggregates.raterCount} rater${aggregates.raterCount===1?'':'s'})` : '';
+  }
+
+  function updateIndividualReviews(movie, card){
+    const reviewsList = card.querySelector('.reviews-list');
+    const reviewsToggle = card.querySelector('.reviews-toggle');
+    
+    if(!reviewsList) return;
+    
+    reviewsList.innerHTML = '';
+    const ratings = movie.ratings || {};
+    const usernames = Object.keys(ratings);
+    
+    if(usernames.length === 0){
+      reviewsList.innerHTML = '<p class="no-reviews">No reviews yet</p>';
+      reviewsToggle.textContent = 'Individual Reviews';
+      return;
+    }
+    
+    reviewsToggle.textContent = `Individual Reviews (${usernames.length})`;
+    
+    usernames.forEach(username => {
+      const userRating = ratings[username];
+      const reviewDiv = document.createElement('div');
+      reviewDiv.className = 'user-review';
+      
+      // Calculate user's total from main categories only
+      const userTotal = CATEGORIES.reduce((sum, cat) => sum + (Number(userRating[cat.key]) || 0), 0);
+      
+      let reviewHTML = `<div class="reviewer-header">
+        <strong class="reviewer-name">${sanitize(username)}</strong>
+        <span class="reviewer-total">Total: ${userTotal}</span>
+      </div>
+      <div class="reviewer-scores">`;
+      
+      // Main categories
+      CATEGORIES.forEach(cat => {
+        const score = userRating[cat.key];
+        if(score !== undefined && score !== null){
+          reviewHTML += `<span class="score-item">${shortLabel(cat.label)}: ${score}</span>`;
+        }
+      });
+      
+      // Bonus categories
+      BONUS_CATEGORIES.forEach(cat => {
+        const score = userRating[cat.key];
+        if(score !== undefined && score !== null){
+          reviewHTML += `<span class="score-item bonus">${shortLabel(cat.label)}: ${score}</span>`;
+        }
+      });
+      
+      reviewHTML += '</div>';
+      reviewDiv.innerHTML = reviewHTML;
+      reviewsList.appendChild(reviewDiv);
+    });
   }
 
   function getAggregates(movie){
