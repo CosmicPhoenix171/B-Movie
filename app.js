@@ -35,7 +35,8 @@
     search: document.getElementById('searchBox'),
     rateDialog: document.getElementById('rateDialog'),
     rateForm: document.getElementById('rateForm'),
-    dialogMovieTitle: document.getElementById('dialogMovieTitle')
+    dialogMovieTitle: document.getElementById('dialogMovieTitle'),
+    syncStatus: document.getElementById('syncStatus')
   };
 
   let activeMovieId = null; // used for dialog context
@@ -185,9 +186,16 @@
   let moviesCollection = null;
   let unsubscribeMovies = null;
 
+  function updateSyncStatus(mode,label){
+    if(!dom.syncStatus) return;
+    dom.syncStatus.dataset.mode = mode;
+    dom.syncStatus.textContent = label;
+  }
+
   async function initFirebase(){
     if(!window.FIREBASE_ENABLED || !window.FIREBASE_CONFIG) return; // feature flag & config presence
     try {
+      updateSyncStatus('connecting','Connecting…');
       const [{ initializeApp }, { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot }] = await Promise.all([
         import('https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js'),
         import('https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js')
@@ -197,6 +205,7 @@
       moviesCollection = collection(firestore, 'bmovie_movies');
       remote = { enabled:true, doc, setDoc, deleteDoc, onSnapshot };
       document.getElementById('storageModeNote')?.replaceChildren(document.createTextNode('Shared mode: Live synced via Firestore.'));
+      updateSyncStatus('remote','Live Sync');
       attachRemoteListener();
 
       // Optional analytics (only if measurementId provided)
@@ -211,6 +220,7 @@
     } catch(err){
       console.warn('[Firebase] init failed – falling back to local only.', err);
       remote.enabled = false;
+      updateSyncStatus('error','Local (Init Failed)');
     }
   }
 
@@ -537,4 +547,7 @@
 
   renderAll();
   await initFirebase();
+  if(!remote.enabled){
+    updateSyncStatus('local','Local Only');
+  }
 })();
