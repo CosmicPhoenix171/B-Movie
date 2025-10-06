@@ -27,7 +27,6 @@
     addForm: document.getElementById('addMovieForm'),
     title: document.getElementById('movieTitle'),
     year: document.getElementById('movieYear'),
-    chooser: document.getElementById('movieChooser'),
     notes: document.getElementById('movieNotes'),
     username: document.getElementById('username'),
     moviesList: document.getElementById('moviesList'),
@@ -61,6 +60,15 @@
     e.preventDefault();
     const title = sanitize(dom.title.value.trim());
     if(!title) return;
+    
+    // Get current username for chooser
+    const currentUser = dom.username.value.trim();
+    if(!currentUser){
+      alert('Please enter your name first (top right corner).');
+      dom.username.focus();
+      return;
+    }
+    
     const yearVal = dom.year.value.trim();
     const year = yearVal ? parseInt(yearVal,10) : undefined;
     const notes = sanitize(dom.notes.value.trim());
@@ -75,7 +83,7 @@
       id: Math.random().toString(36).substr(2,9),
       title: dom.title.value.trim(),
       year: parseInt(dom.year.value,10) || null,
-      chooser: dom.chooser.value.trim() || null,
+      chooser: currentUser,
       notes: dom.notes.value.trim(),
       addedAt: Date.now(),
       ratings: {}

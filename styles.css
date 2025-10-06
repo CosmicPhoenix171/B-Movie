@@ -47,8 +47,8 @@ body { margin:0; background: radial-gradient(circle at 25% 15%, #1c2230, #0d0f12
 .form-grid { 
   display:grid;
   gap:.9rem 1rem;
-  /* 3 columns: Title, Year, Chooser */
-  grid-template-columns: 2fr 1fr 1.5fr;
+  /* 2 columns: Title, Year */
+  grid-template-columns: 2fr 1fr;
   align-items:start;
   width:100%;
   max-width:100%;
@@ -351,14 +351,9 @@ body.theme-bmovie .panel:after { content:""; position:absolute; inset:0; backgro
 }
 
 /* Responsive forms */
-@media (max-width: 760px){
-  .form-grid { grid-template-columns:1fr 120px; }
-  .form-grid .field-chooser { grid-column:1 / -1; }
-}
 @media (max-width: 620px){
   .form-grid { grid-template-columns:1fr; }
   .form-grid .field-year { grid-column:1 / -1; }
-  .form-grid .field-chooser { grid-column:1 / -1; }
   /* Winner panel */
   .winner-grid { grid-template-columns:1fr; }
   .winner-actions { justify-content:stretch; }
