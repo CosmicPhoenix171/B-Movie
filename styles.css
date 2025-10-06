@@ -51,13 +51,24 @@ body { margin:0; background: radial-gradient(circle at 25% 15%, #1c2230, #0d0f12
   grid-template-columns: minmax(0,1fr) clamp(90px, 22%, 160px);
   align-items:start;
   width:100%;
+  max-width:100%;
+  box-sizing:border-box;
 }
 .form-grid .field-notes { grid-column:1 / -1; }
 .form-grid .actions, .form-grid .actions-add { grid-column:1 / -1; }
-.form-grid .actions { display:flex; }
+.form-grid .actions { display:flex; justify-content:flex-end; }
 #add-movie-panel .form-grid input,
-#add-movie-panel .form-grid textarea { width:100%; }
-#add-movie-panel .actions .btn.primary { width:100%; max-width:none; justify-content:center; }
+#add-movie-panel .form-grid textarea { 
+  width:100%; 
+  max-width:100%;
+  box-sizing:border-box;
+}
+#add-movie-panel .actions .btn.primary { 
+  max-width:140px;
+  min-width:100px;
+  padding:.65rem .8rem;
+  box-sizing:border-box;
+}
 .form-grid .field { display:flex; flex-direction:column; gap:.35rem; }
 .form-grid label { font-size:.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:600; color:var(--text-dim); }
 .form-grid input, .form-grid textarea { background:var(--panel-alt); color:var(--text); border:1px solid var(--border); padding:.65rem .75rem; border-radius:var(--radius-s); resize:vertical; font:inherit; }
@@ -239,8 +250,14 @@ body.theme-bmovie:after { content:""; position:fixed; inset:0; pointer-events:no
 /* Fun subtle scanline overlay */
 body.theme-bmovie .panel:after { content:""; position:absolute; inset:0; background:repeating-linear-gradient(0deg, rgba(255 255 255 / 2%) 0 1px, transparent 1px 3px); mix-blend-mode:overlay; opacity:.04; pointer-events:none; }
 
-/* Allow Add Movie panel contents (button glow, letter-spacing) to breathe */
-#add-movie-panel { overflow:visible; }
+/* Constrain Add Movie panel contents to prevent overflow */
+#add-movie-panel { 
+  overflow:hidden; 
+  max-width:100%;
+}
+#add-movie-panel .panel { 
+  padding:1.25rem 1.2rem 1.5rem;
+}
 
 /* Headings inside rules panel */
 .theme-bmovie #rules-panel summary { font-family:'Share Tech Mono', monospace; }
