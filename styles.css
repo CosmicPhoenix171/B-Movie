@@ -47,14 +47,17 @@ body { margin:0; background: radial-gradient(circle at 25% 15%, #1c2230, #0d0f12
 .form-grid { 
   display:grid;
   gap:.9rem 1rem;
-  grid-template-columns: 1fr 130px; /* title grows, year fixed */
+  /* Title flexible, Year scales with panel but bounded */
+  grid-template-columns: minmax(0,1fr) clamp(90px, 22%, 160px);
   align-items:start;
+  width:100%;
 }
 .form-grid .field-notes { grid-column:1 / -1; }
 .form-grid .actions, .form-grid .actions-add { grid-column:1 / -1; }
-.form-grid .actions { display:flex; justify-content:flex-end; }
-/* Prevent button overflow */
-#add-movie-panel .actions .btn.primary { max-width:160px; }
+.form-grid .actions { display:flex; }
+#add-movie-panel .form-grid input,
+#add-movie-panel .form-grid textarea { width:100%; }
+#add-movie-panel .actions .btn.primary { width:100%; max-width:none; justify-content:center; }
 .form-grid .field { display:flex; flex-direction:column; gap:.35rem; }
 .form-grid label { font-size:.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:600; color:var(--text-dim); }
 .form-grid input, .form-grid textarea { background:var(--panel-alt); color:var(--text); border:1px solid var(--border); padding:.65rem .75rem; border-radius:var(--radius-s); resize:vertical; font:inherit; }
@@ -66,7 +69,6 @@ body { margin:0; background: radial-gradient(circle at 25% 15%, #1c2230, #0d0f12
   .form-grid { grid-template-columns:1fr; }
   .form-grid .field-year { grid-column:1 / -1; }
   .form-grid .actions { justify-content:stretch; }
-  .form-grid .actions .btn.primary { width:100%; max-width:none; }
 }
 /* Extra small safeguards */
 @media (max-width:400px){
