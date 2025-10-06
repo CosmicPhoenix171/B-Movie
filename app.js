@@ -40,7 +40,7 @@
     winnerForm: document.getElementById('winnerForm'),
     winnerMovie: document.getElementById('winnerMovie'),
     winnerPerson: document.getElementById('winnerPerson'),
-    nextTheme: document.getElementById('nextTheme'),
+
     winnerDisplay: document.getElementById('winnerDisplay'),
     clearWinner: document.getElementById('clearWinner'),
     clearDisplayedWinner: document.getElementById('clearDisplayedWinner'),
@@ -104,14 +104,13 @@
     e.preventDefault();
     const movieId = dom.winnerMovie.value;
     const personName = dom.winnerPerson.value;
-    const nextTheme = dom.nextTheme.value.trim();
     
     if(!movieId || !personName){
       alert('Please select both a movie and a person.');
       return;
     }
     
-    setWinner(movieId, personName, nextTheme);
+    setWinner(movieId, personName);
   });
   
   dom.clearWinner?.addEventListener('click', clearWinner);
@@ -382,7 +381,7 @@
     });
   }
   
-  function setWinner(movieId, personName, nextTheme){
+  function setWinner(movieId, personName){
     const movie = state.movies.find(m => m.id === movieId);
     if(!movie) return;
     
@@ -391,7 +390,7 @@
       movieTitle: movie.title,
       movieYear: movie.year,
       personName,
-      nextTheme: nextTheme || null
+      nextTheme: null
     };
     
     displayWinner();

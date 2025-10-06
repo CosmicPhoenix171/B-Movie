@@ -266,10 +266,7 @@ body.theme-bmovie .panel:after { content:""; position:absolute; inset:0; backgro
 .winner-grid label { font-size:.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:600; color:var(--text-dim); }
 .winner-grid select { background:var(--panel-alt); color:var(--text); border:1px solid var(--border); padding:.65rem .75rem; border-radius:var(--radius-s); font:inherit; }
 .winner-grid select:focus { outline:2px solid rgba(var(--accent-glow)/55%); outline-offset:2px; }
-.theme-field { grid-column:1 / -1; }
-.theme-field label { font-size:.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:600; color:var(--text-dim); }
-.theme-field input { background:var(--panel-alt); color:var(--text); border:1px solid var(--border); padding:.65rem .75rem; border-radius:var(--radius-s); font:inherit; }
-.theme-field input:focus { outline:2px solid rgba(var(--accent-glow)/55%); outline-offset:2px; }
+
 .winner-actions { display:flex; gap:.6rem; justify-content:flex-end; }
 
 .winner-display { margin-top:1rem; }
