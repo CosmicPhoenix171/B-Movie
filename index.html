@@ -94,6 +94,39 @@
       </form>
     </section>
 
+    <section class="panel" id="winner-panel">
+      <h2>🏆 Declare Winner</h2>
+      <form id="winnerForm" class="winner-form" autocomplete="off">
+        <div class="winner-grid">
+          <div class="field">
+            <label for="winnerMovie">Winning Movie</label>
+            <select id="winnerMovie" name="movie" required>
+              <option value="">Select movie...</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="winnerPerson">Champion Rater</label>
+            <select id="winnerPerson" name="person" required>
+              <option value="">Select person...</option>
+            </select>
+          </div>
+        </div>
+        <div class="winner-actions">
+          <button type="submit" class="btn primary">Crown Winner</button>
+          <button type="button" class="btn ghost" id="clearWinner">Clear Winner</button>
+        </div>
+      </form>
+      <div id="winnerDisplay" class="winner-display" style="display:none;">
+        <div class="winner-badge">
+          <span class="winner-icon">👑</span>
+          <div class="winner-info">
+            <div class="winner-title"></div>
+            <div class="winner-subtitle"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="panel" id="movies-section">
       <div class="panel-header">
         <h2>Movies</h2>
