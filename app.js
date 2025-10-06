@@ -114,8 +114,26 @@
     if(!currentWinner) return;
     const newTheme = dom.editTheme.value.trim();
     currentWinner.nextTheme = newTheme || null;
+    
+    // Update the display immediately
+    const themeEl = dom.winnerDisplay.querySelector('.winner-theme');
+    if(currentWinner.nextTheme){
+      themeEl.textContent = `Next Theme: ${currentWinner.nextTheme}`;
+      themeEl.style.display = 'block';
+    } else {
+      themeEl.style.display = 'none';
+    }
+    
+    // Save to localStorage
     localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
-    displayWinner();
+    console.log('Theme saved:', currentWinner.nextTheme);
+  });
+  
+  // Allow Enter key to save theme
+  dom.editTheme?.addEventListener('keypress', (e) => {
+    if(e.key === 'Enter'){
+      dom.saveTheme?.click();
+    }
   });
 
   // Rating dialog events
@@ -385,9 +403,10 @@
     }
     
     // Show theme editor and populate current theme
-    if(dom.editTheme){
+    if(dom.editTheme && themeEditor){
       dom.editTheme.value = currentWinner.nextTheme || '';
       themeEditor.style.display = 'block';
+      console.log('Theme editor populated with:', currentWinner.nextTheme);
     }
     
     dom.winnerDisplay.style.display = 'block';
@@ -399,6 +418,7 @@
       const stored = localStorage.getItem('bmovie:winner');
       if(stored){
         currentWinner = JSON.parse(stored);
+        console.log('Loaded winner with theme:', currentWinner);
         displayWinner();
       }
     } catch(e) {
