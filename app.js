@@ -177,6 +177,11 @@
     // Save to localStorage
     localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
     console.log('Theme saved:', currentWinner.nextTheme);
+    
+    // Save to Firebase if enabled
+    if(remote.enabled && firestore){
+      saveWinnerToFirebase(currentWinner);
+    }
   });
   
   // Allow Enter key to save theme
@@ -323,6 +328,7 @@
       document.getElementById('storageModeNote')?.replaceChildren(document.createTextNode('Shared mode: Live synced via Firestore.'));
       updateSyncStatus('remote','Live Sync');
       attachRemoteListener();
+      attachWinnerListener();
 
       // Optional analytics (only if measurementId provided)
       if(window.FIREBASE_CONFIG.measurementId){
@@ -421,7 +427,8 @@
       movieTitle: movie.title,
       movieYear: movie.year,
       personName,
-      nextTheme: null
+      nextTheme: null,
+      setAt: Date.now()
     };
     
     console.log('Created winner object:', currentWinner);
@@ -430,6 +437,11 @@
     // Store in localStorage
     localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
     console.log('Winner saved to localStorage');
+    
+    // Store in Firebase if enabled
+    if(remote.enabled && firestore){
+      saveWinnerToFirebase(currentWinner);
+    }
   }
   
   function clearWinner(){
@@ -439,6 +451,11 @@
     dom.winnerForm.reset();
     if(dom.editTheme) dom.editTheme.value = '';
     localStorage.removeItem('bmovie:winner');
+    
+    // Clear from Firebase if enabled
+    if(remote.enabled && firestore){
+      clearWinnerFromFirebase();
+    }
   }
   
   function displayWinner(){
@@ -496,6 +513,76 @@
       }
     } catch(e) {
       console.warn('Failed to load winner:', e);
+    }
+  }
+
+  // Firebase winner functions
+  async function saveWinnerToFirebase(winner){
+    try {
+      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
+      const winnerDoc = remote.doc(winnersCollection, 'current');
+      await remote.setDoc(winnerDoc, {
+        ...winner,
+        updatedAt: Date.now()
+      });
+      console.log('[Firebase] Winner saved to Firestore');
+    } catch(e) {
+      console.warn('[Firebase] Failed to save winner:', e);
+    }
+  }
+
+  async function clearWinnerFromFirebase(){
+    try {
+      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
+      const winnerDoc = remote.doc(winnersCollection, 'current');
+      await remote.deleteDoc(winnerDoc);
+      console.log('[Firebase] Winner cleared from Firestore');
+    } catch(e) {
+      console.warn('[Firebase] Failed to clear winner:', e);
+    }
+  }
+
+  function attachWinnerListener(){
+    if(!remote.enabled || !firestore) return;
+    
+    try {
+      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
+      const winnerDoc = remote.doc(winnersCollection, 'current');
+      
+      const unsubscribe = remote.onSnapshot(winnerDoc, (doc) => {
+        if(doc.exists()){
+          const remoteWinner = doc.data();
+          console.log('[Firebase] Winner updated from remote:', remoteWinner);
+          
+          // Only update if this is newer than our local version
+          const localTime = currentWinner?.setAt || currentWinner?.updatedAt || 0;
+          const remoteTime = remoteWinner.setAt || remoteWinner.updatedAt || 0;
+          
+          if(remoteTime > localTime) {
+            currentWinner = remoteWinner;
+            localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
+            displayWinner();
+            console.log('[Firebase] Winner synced from remote');
+          }
+        } else {
+          // Winner was cleared remotely
+          if(currentWinner) {
+            console.log('[Firebase] Winner cleared remotely');
+            currentWinner = null;
+            dom.winnerDisplay.style.display = 'none';
+            dom.winnerForm.style.display = 'block';
+            dom.winnerForm.reset();
+            if(dom.editTheme) dom.editTheme.value = '';
+            localStorage.removeItem('bmovie:winner');
+          }
+        }
+      });
+      
+      // Store unsubscribe function for cleanup
+      window.unsubscribeWinner = unsubscribe;
+      console.log('[Firebase] Winner listener attached');
+    } catch(e) {
+      console.warn('[Firebase] Failed to attach winner listener:', e);
     }
   }
 
