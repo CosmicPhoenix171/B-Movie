@@ -41,6 +41,7 @@
     winnerForm: document.getElementById('winnerForm'),
     winnerMovie: document.getElementById('winnerMovie'),
     winnerPerson: document.getElementById('winnerPerson'),
+    nextTheme: document.getElementById('nextTheme'),
     winnerDisplay: document.getElementById('winnerDisplay'),
     clearWinner: document.getElementById('clearWinner')
   };
@@ -92,13 +93,14 @@
     e.preventDefault();
     const movieId = dom.winnerMovie.value;
     const personName = dom.winnerPerson.value;
+    const nextTheme = dom.nextTheme.value.trim();
     
     if(!movieId || !personName){
       alert('Please select both a movie and a person.');
       return;
     }
     
-    setWinner(movieId, personName);
+    setWinner(movieId, personName, nextTheme);
   });
   
   dom.clearWinner?.addEventListener('click', clearWinner);
@@ -324,7 +326,7 @@
     });
   }
   
-  function setWinner(movieId, personName){
+  function setWinner(movieId, personName, nextTheme){
     const movie = state.movies.find(m => m.id === movieId);
     if(!movie) return;
     
@@ -332,7 +334,8 @@
       movieId,
       movieTitle: movie.title,
       movieYear: movie.year,
-      personName
+      personName,
+      nextTheme: nextTheme || null
     };
     
     displayWinner();
@@ -354,9 +357,17 @@
     
     const titleEl = dom.winnerDisplay.querySelector('.winner-title');
     const subtitleEl = dom.winnerDisplay.querySelector('.winner-subtitle');
+    const themeEl = dom.winnerDisplay.querySelector('.winner-theme');
     
     titleEl.textContent = `${currentWinner.movieTitle} (${currentWinner.movieYear || 'Unknown'})`;
     subtitleEl.textContent = `Champion: ${currentWinner.personName}`;
+    
+    if(currentWinner.nextTheme){
+      themeEl.textContent = `Next Theme: ${currentWinner.nextTheme}`;
+      themeEl.style.display = 'block';
+    } else {
+      themeEl.style.display = 'none';
+    }
     
     dom.winnerDisplay.style.display = 'block';
     dom.winnerForm.style.display = 'none';

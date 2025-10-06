@@ -266,6 +266,10 @@ body.theme-bmovie .panel:after { content:""; position:absolute; inset:0; backgro
 .winner-grid label { font-size:.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:600; color:var(--text-dim); }
 .winner-grid select { background:var(--panel-alt); color:var(--text); border:1px solid var(--border); padding:.65rem .75rem; border-radius:var(--radius-s); font:inherit; }
 .winner-grid select:focus { outline:2px solid rgba(var(--accent-glow)/55%); outline-offset:2px; }
+.theme-field { grid-column:1 / -1; }
+.theme-field label { font-size:.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:600; color:var(--text-dim); }
+.theme-field input { background:var(--panel-alt); color:var(--text); border:1px solid var(--border); padding:.65rem .75rem; border-radius:var(--radius-s); font:inherit; }
+.theme-field input:focus { outline:2px solid rgba(var(--accent-glow)/55%); outline-offset:2px; }
 .winner-actions { display:flex; gap:.6rem; justify-content:flex-end; }
 
 .winner-display { margin-top:1rem; }
@@ -282,7 +286,8 @@ body.theme-bmovie .panel:after { content:""; position:absolute; inset:0; backgro
 .winner-icon { font-size:2rem; }
 .winner-info { flex:1; }
 .winner-title { font-size:1.1rem; font-weight:600; color:#8be79f; margin-bottom:.25rem; }
-.winner-subtitle { font-size:.8rem; color:var(--text-dim); }
+.winner-subtitle { font-size:.8rem; color:var(--text-dim); margin-bottom:.4rem; }
+.winner-theme { font-size:.75rem; color:#ffce4f; font-weight:500; background:rgba(255 206 79 / 10%); padding:.3rem .5rem; border-radius:var(--radius-s); border:1px solid rgba(255 206 79 / 20%); }
 
 /* Responsive forms */
 @media (max-width: 760px){
