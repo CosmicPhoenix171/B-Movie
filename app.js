@@ -43,7 +43,10 @@
     winnerPerson: document.getElementById('winnerPerson'),
     nextTheme: document.getElementById('nextTheme'),
     winnerDisplay: document.getElementById('winnerDisplay'),
-    clearWinner: document.getElementById('clearWinner')
+    clearWinner: document.getElementById('clearWinner'),
+    clearDisplayedWinner: document.getElementById('clearDisplayedWinner'),
+    editTheme: document.getElementById('editTheme'),
+    saveTheme: document.getElementById('saveTheme')
   };
 
   let activeMovieId = null; // used for dialog context
@@ -104,6 +107,16 @@
   });
   
   dom.clearWinner?.addEventListener('click', clearWinner);
+  dom.clearDisplayedWinner?.addEventListener('click', clearWinner);
+  
+  // Theme editing after winner is declared
+  dom.saveTheme?.addEventListener('click', () => {
+    if(!currentWinner) return;
+    const newTheme = dom.editTheme.value.trim();
+    currentWinner.nextTheme = newTheme || null;
+    localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
+    displayWinner();
+  });
 
   // Rating dialog events
   dom.rateForm.addEventListener('submit', e => {
@@ -349,6 +362,7 @@
     dom.winnerDisplay.style.display = 'none';
     dom.winnerForm.style.display = 'block';
     dom.winnerForm.reset();
+    if(dom.editTheme) dom.editTheme.value = '';
     localStorage.removeItem('bmovie:winner');
   }
   
@@ -358,6 +372,7 @@
     const titleEl = dom.winnerDisplay.querySelector('.winner-title');
     const subtitleEl = dom.winnerDisplay.querySelector('.winner-subtitle');
     const themeEl = dom.winnerDisplay.querySelector('.winner-theme');
+    const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
     
     titleEl.textContent = `${currentWinner.movieTitle} (${currentWinner.movieYear || 'Unknown'})`;
     subtitleEl.textContent = `Champion: ${currentWinner.personName}`;
@@ -367,6 +382,12 @@
       themeEl.style.display = 'block';
     } else {
       themeEl.style.display = 'none';
+    }
+    
+    // Show theme editor and populate current theme
+    if(dom.editTheme){
+      dom.editTheme.value = currentWinner.nextTheme || '';
+      themeEditor.style.display = 'block';
     }
     
     dom.winnerDisplay.style.display = 'block';
