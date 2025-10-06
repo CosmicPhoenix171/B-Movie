@@ -144,3 +144,75 @@ body { margin:0; background: radial-gradient(circle at 25% 15%, #1c2230, #0d0f12
 /* Utility error highlight */
 .error { animation:flash 1.2s ease; }
 @keyframes flash { 0%,100%{ box-shadow:0 0 0 0 rgba(255 77 85 / 0%);} 20%,50%{ box-shadow:0 0 0 3px rgba(255 77 85 / 60%);} }
+
+/* ==============================
+   B‑Movie Theme Enhancements
+   ============================== */
+body.theme-bmovie {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255 30 60 / 12%), transparent 60%),
+    radial-gradient(circle at 85% 70%, rgba(255 180 40 / 10%), transparent 55%),
+    repeating-linear-gradient(135deg, #0d0f12 0 14px, #101319 14px 28px);
+  position:relative;
+  overflow-x:hidden;
+}
+body.theme-bmovie:before {
+  content:""; position:fixed; inset:0; pointer-events:none; opacity:.25;
+  background:
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 100 100" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"><path d="M0 10 H100 M0 50 H100 M0 90 H100 M10 0 V100 M50 0 V100 M90 0 V100"/></svg>');
+  mix-blend-mode:overlay;
+}
+
+/* Film grain */
+@keyframes filmGrain { 0%{transform:translate(0,0);} 25%{transform:translate(-1px,1px);} 50%{transform:translate(1px,-1px);} 75%{transform:translate(-1px,-1px);} }
+body.theme-bmovie:after { content:""; position:fixed; inset:0; pointer-events:none; background:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"> <filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/></filter><rect width="160" height="160" filter="url(%23n)" opacity="0.25"/></svg>'); mix-blend-mode:soft-light; animation:filmGrain 1.8s steps(4,end) infinite; opacity:.18; }
+
+/* Pulpy headline styling */
+.theme-bmovie .logo { font-family:'Bangers', Impact, sans-serif; letter-spacing:1.5px; text-shadow:2px 2px 0 #3d0d00, 3px 3px 6px rgba(0 0 0 / 70%); animation:logoPulse 6s ease-in-out infinite; }
+@keyframes logoPulse { 0%,100%{ filter:drop-shadow(0 0 0 rgba(255 120 0 / 0.4)); } 50% { filter:drop-shadow(0 0 10px rgba(255 150 60 / 0.55)); } }
+
+.theme-bmovie h2 { font-family:'Bangers', Impact, sans-serif; letter-spacing:1px; color:#ffce4f; text-shadow:1px 1px 0 #5c1d00, 2px 2px 4px rgba(0 0 0 / 70%); }
+
+/* Panel cinematic edge */
+.theme-bmovie .panel { background:linear-gradient(150deg,#1b2027 0%,#12161b 60%,#181d24 100%); border:1px solid #2d343d; box-shadow:0 6px 18px -4px rgba(0 0 0 / 70%), 0 0 0 1px rgba(255 200 60 / 4%), inset 0 0 0 1px rgba(255 255 255 / 3%); position:relative; }
+.theme-bmovie .panel:before { content:""; position:absolute; inset:0; background:radial-gradient(circle at 30% 20%, rgba(255 160 50 / 7%), transparent 60%); pointer-events:none; }
+
+/* Buttons mutation */
+.theme-bmovie .btn.primary { font-family:'Share Tech Mono', monospace; text-transform:uppercase; letter-spacing:1px; box-shadow:0 4px 14px -4px rgba(255 150 40 / 55%), 0 0 0 1px rgba(255 255 255 / 28%) inset; }
+.theme-bmovie .btn.primary:hover { transform:translateY(-2px); box-shadow:0 6px 16px -4px rgba(255 170 60 / 65%), 0 0 0 1px rgba(255 255 255 / 32%) inset; }
+
+/* Category badges – horror comic vibe */
+.theme-bmovie .cat-badge { font-family:'Share Tech Mono', monospace; text-transform:uppercase; }
+.theme-bmovie .cat-badge.bonus { background:linear-gradient(145deg,#2d2340,#251d34); border-color:#4b3370; }
+.theme-bmovie .cat-badge.bonus[data-empty="false"] { color:#c29dff; text-shadow:0 0 4px rgba(180 120 255 / 40%); }
+
+/* Locked message embellishment */
+.theme-bmovie .locked-msg { background:linear-gradient(120deg,#2a171a,#251d10); border:1px solid #3c2629; box-shadow:0 0 0 1px rgba(255 120 80 / 10%); }
+.theme-bmovie .locked-msg strong { color:#ffb347; }
+
+/* Individual reviews styling adjustments */
+.theme-bmovie .user-review { background:linear-gradient(145deg,#232831,#1c2027); border:1px solid #313840; box-shadow:0 2px 6px -2px rgba(0 0 0 / 60%); }
+.theme-bmovie .reviewer-name { font-family:'Share Tech Mono', monospace; letter-spacing:.5px; }
+.theme-bmovie .score-item { font-family:'Share Tech Mono', monospace; }
+.theme-bmovie .score-item.bonus { background:linear-gradient(130deg,#322244,#281c37); border:1px solid #46325e; }
+
+/* Dialog styling tweaks */
+.theme-bmovie #rateDialog { background:linear-gradient(160deg,#181d23,#101317); box-shadow:0 15px 38px -8px rgba(0 0 0 / 80%), 0 0 0 1px rgba(255 160 60 / 8%); }
+.theme-bmovie .dialog-title { font-family:'Bangers', Impact, sans-serif; letter-spacing:1px; color:#ffce4f; text-shadow:1px 1px 0 #552800; }
+.theme-bmovie .cat-grid label { font-family:'Share Tech Mono', monospace; }
+
+/* Footer flicker accent */
+.theme-bmovie .app-footer { font-family:'Share Tech Mono', monospace; opacity:.85; }
+
+/* Fun subtle scanline overlay */
+body.theme-bmovie .panel:after { content:""; position:absolute; inset:0; background:repeating-linear-gradient(0deg, rgba(255 255 255 / 2%) 0 1px, transparent 1px 3px); mix-blend-mode:overlay; opacity:.04; pointer-events:none; }
+
+/* Headings inside rules panel */
+.theme-bmovie #rules-panel summary { font-family:'Share Tech Mono', monospace; }
+
+/* Hover pulses */
+.theme-bmovie .movie-card:hover { outline:1px solid rgba(255 160 60 / 35%); box-shadow:0 6px 18px -6px rgba(255 140 40 / 35%), 0 0 0 1px rgba(255 255 255 / 6%) inset; }
+
+/* Enjoyment highlight */
+.theme-bmovie .score-item.bonus { color:#d5bbff; }
+
