@@ -100,6 +100,11 @@
   dom.search?.addEventListener('input', applyFilters);
   
   // Winner panel events
+  console.log('Winner form element:', dom.winnerForm);
+  if(!dom.winnerForm) {
+    console.error('Winner form not found!');
+  }
+  
   dom.winnerForm?.addEventListener('submit', e => {
     e.preventDefault();
     console.log('Winner form submitted');
@@ -118,6 +123,24 @@
   
   dom.clearWinner?.addEventListener('click', clearWinner);
   dom.clearDisplayedWinner?.addEventListener('click', clearWinner);
+  
+  // Backup: Direct click event on Crown Winner button
+  const crownButton = document.querySelector('#winnerForm button[type="submit"]');
+  console.log('Crown Winner button found:', crownButton);
+  crownButton?.addEventListener('click', (e) => {
+    console.log('Crown Winner button clicked directly');
+    
+    // If form submission isn't working, handle it manually
+    const movieId = dom.winnerMovie.value;
+    const personName = dom.winnerPerson.value;
+    console.log('Manual check - Movie ID:', movieId, 'Person:', personName);
+    
+    if(movieId && personName) {
+      console.log('Manual crown winner triggered');
+      e.preventDefault();
+      setWinner(movieId, personName);
+    }
+  });
   
   // Theme editing after winner is declared
   dom.saveTheme?.addEventListener('click', () => {
