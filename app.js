@@ -317,18 +317,19 @@
     if(!window.FIREBASE_ENABLED || !window.FIREBASE_CONFIG) return; // feature flag & config presence
     try {
       updateSyncStatus('connecting','Connecting…');
-      const [{ initializeApp }, { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot }] = await Promise.all([
+      const [{ initializeApp }, { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc }] = await Promise.all([
         import('https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js'),
         import('https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js')
       ]);
       const app = initializeApp(window.FIREBASE_CONFIG);
       firestore = getFirestore(app);
       moviesCollection = collection(firestore, 'bmovie_movies');
-      remote = { enabled:true, doc, setDoc, deleteDoc, onSnapshot };
+      remote = { enabled:true, doc, setDoc, deleteDoc, onSnapshot, getDoc, collection };
       document.getElementById('storageModeNote')?.replaceChildren(document.createTextNode('Shared mode: Live synced via Firestore.'));
       updateSyncStatus('remote','Live Sync');
       attachRemoteListener();
       attachWinnerListener();
+      loadRemoteWinner(); // Load existing winner on connect
 
       // Optional analytics (only if measurementId provided)
       if(window.FIREBASE_CONFIG.measurementId){
@@ -539,6 +540,31 @@
       console.log('[Firebase] Winner cleared from Firestore');
     } catch(e) {
       console.warn('[Firebase] Failed to clear winner:', e);
+    }
+  }
+
+  async function loadRemoteWinner(){
+    if(!remote.enabled || !firestore) return;
+    
+    try {
+      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
+      const winnerDoc = remote.doc(winnersCollection, 'current');
+      const docSnap = await remote.getDoc(winnerDoc);
+      
+      if(docSnap.exists()){
+        const remoteWinner = docSnap.data();
+        console.log('[Firebase] Loading existing winner:', remoteWinner);
+        
+        // Always load remote winner on startup (don't check timestamps)
+        currentWinner = remoteWinner;
+        localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
+        displayWinner();
+        console.log('[Firebase] Winner loaded from remote');
+      } else {
+        console.log('[Firebase] No existing winner found');
+      }
+    } catch(e) {
+      console.warn('[Firebase] Failed to load remote winner:', e);
     }
   }
 
