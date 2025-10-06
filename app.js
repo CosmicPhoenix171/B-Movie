@@ -520,13 +520,14 @@
   // Firebase winner functions
   async function saveWinnerToFirebase(winner){
     try {
-      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
-      const winnerDoc = remote.doc(winnersCollection, 'current');
-      await remote.setDoc(winnerDoc, {
+      const { collection, doc, setDoc } = remote;
+      const winnersCollection = collection(firestore, 'bmovie_winners');
+      const winnerDoc = doc(winnersCollection, 'current');
+      await setDoc(winnerDoc, {
         ...winner,
         updatedAt: Date.now()
       });
-      console.log('[Firebase] Winner saved to Firestore');
+      console.log('[Firebase] Winner saved to Firestore:', winner);
     } catch(e) {
       console.warn('[Firebase] Failed to save winner:', e);
     }
@@ -534,9 +535,10 @@
 
   async function clearWinnerFromFirebase(){
     try {
-      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
-      const winnerDoc = remote.doc(winnersCollection, 'current');
-      await remote.deleteDoc(winnerDoc);
+      const { collection, doc, deleteDoc } = remote;
+      const winnersCollection = collection(firestore, 'bmovie_winners');
+      const winnerDoc = doc(winnersCollection, 'current');
+      await deleteDoc(winnerDoc);
       console.log('[Firebase] Winner cleared from Firestore');
     } catch(e) {
       console.warn('[Firebase] Failed to clear winner:', e);
@@ -544,12 +546,17 @@
   }
 
   async function loadRemoteWinner(){
-    if(!remote.enabled || !firestore) return;
+    if(!remote.enabled || !firestore) {
+      console.log('[Firebase] Remote not enabled or firestore not ready');
+      return;
+    }
     
     try {
-      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
-      const winnerDoc = remote.doc(winnersCollection, 'current');
-      const docSnap = await remote.getDoc(winnerDoc);
+      const { collection, doc, getDoc } = remote;
+      const winnersCollection = collection(firestore, 'bmovie_winners');
+      const winnerDoc = doc(winnersCollection, 'current');
+      console.log('[Firebase] Attempting to load winner document...');
+      const docSnap = await getDoc(winnerDoc);
       
       if(docSnap.exists()){
         const remoteWinner = docSnap.data();
@@ -561,7 +568,7 @@
         displayWinner();
         console.log('[Firebase] Winner loaded from remote');
       } else {
-        console.log('[Firebase] No existing winner found');
+        console.log('[Firebase] No existing winner found in Firestore');
       }
     } catch(e) {
       console.warn('[Firebase] Failed to load remote winner:', e);
@@ -569,31 +576,32 @@
   }
 
   function attachWinnerListener(){
-    if(!remote.enabled || !firestore) return;
+    if(!remote.enabled || !firestore) {
+      console.log('[Firebase] Cannot attach winner listener - remote not enabled');
+      return;
+    }
     
     try {
-      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
-      const winnerDoc = remote.doc(winnersCollection, 'current');
+      const { collection, doc, onSnapshot } = remote;
+      const winnersCollection = collection(firestore, 'bmovie_winners');
+      const winnerDoc = doc(winnersCollection, 'current');
       
-      const unsubscribe = remote.onSnapshot(winnerDoc, (doc) => {
+      console.log('[Firebase] Attaching winner listener...');
+      const unsubscribe = onSnapshot(winnerDoc, (doc) => {
+        console.log('[Firebase] Winner document changed, exists:', doc.exists());
         if(doc.exists()){
           const remoteWinner = doc.data();
           console.log('[Firebase] Winner updated from remote:', remoteWinner);
           
-          // Only update if this is newer than our local version
-          const localTime = currentWinner?.setAt || currentWinner?.updatedAt || 0;
-          const remoteTime = remoteWinner.setAt || remoteWinner.updatedAt || 0;
-          
-          if(remoteTime > localTime) {
-            currentWinner = remoteWinner;
-            localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
-            displayWinner();
-            console.log('[Firebase] Winner synced from remote');
-          }
+          // Always update on real-time changes (skip timestamp check for now)
+          currentWinner = remoteWinner;
+          localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
+          displayWinner();
+          console.log('[Firebase] Winner synced from remote listener');
         } else {
           // Winner was cleared remotely
           if(currentWinner) {
-            console.log('[Firebase] Winner cleared remotely');
+            console.log('[Firebase] Winner cleared remotely via listener');
             currentWinner = null;
             dom.winnerDisplay.style.display = 'none';
             dom.winnerForm.style.display = 'block';
@@ -602,11 +610,13 @@
             localStorage.removeItem('bmovie:winner');
           }
         }
+      }, (error) => {
+        console.error('[Firebase] Winner listener error:', error);
       });
       
       // Store unsubscribe function for cleanup
       window.unsubscribeWinner = unsubscribe;
-      console.log('[Firebase] Winner listener attached');
+      console.log('[Firebase] Winner listener attached successfully');
     } catch(e) {
       console.warn('[Firebase] Failed to attach winner listener:', e);
     }
