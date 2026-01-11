@@ -1058,13 +1058,13 @@
       raterEl.textContent = '(hidden)';
       if(cardTier) cardTier.style.display = 'none';
     } else {
-      totalEl.textContent = aggregates.totalAllRaters;
+      // Show average total (rounded to 1 decimal)
+      totalEl.textContent = raterCount ? aggregates.avgTotal.toFixed(1) : '0';
       raterEl.textContent = raterCount ? `(${raterCount} rater${raterCount===1?'':'s'})` : '';
       
       // Show tier badge
       if(cardTier && tierEmoji && tierText && raterCount > 0) {
-        const avgScore = aggregates.totalAllRaters / raterCount;
-        const tier = getTrashTier(Math.round(avgScore));
+        const tier = getTrashTier(Math.round(aggregates.avgTotal));
         tierEmoji.textContent = tier.emoji;
         tierText.textContent = tier.label;
         tierText.style.color = tier.color;
@@ -1213,9 +1213,9 @@
     const bonusAverages = {};
     BONUS_CATEGORIES.forEach(c => { bonusAverages[c.key] = raterCount ? bonusSums[c.key]/raterCount : NaN; });
     
-    // total per rater (sum of main categories only) aggregated across raters
-    const totalAllRaters = userEntries.reduce((acc,entry)=> acc + CATEGORIES.reduce((s,c)=> s + (Number(entry[c.key])||0),0), 0);
-    return { raterCount, categoryAverages, bonusAverages, totalAllRaters };
+    // Average total: sum of category averages (gives average score per movie across all raters)
+    const avgTotal = raterCount ? CATEGORIES.reduce((sum, c) => sum + (categoryAverages[c.key] || 0), 0) : 0;
+    return { raterCount, categoryAverages, bonusAverages, avgTotal };
   }
 
   function shortLabel(label){
@@ -1238,7 +1238,7 @@
     switch(sortMode){
       case 'title-asc': arr.sort((a,b)=> a.title.localeCompare(b.title)); break;
       case 'ratings-count-desc': arr.sort((a,b)=> getAggregates(b).raterCount - getAggregates(a).raterCount); break;
-      case 'total-desc': arr.sort((a,b)=> getAggregates(b).totalAllRaters - getAggregates(a).totalAllRaters); break;
+      case 'total-desc': arr.sort((a,b)=> getAggregates(b).avgTotal - getAggregates(a).avgTotal); break;
       case 'added-desc':
       default: arr.sort((a,b)=> b.addedAt - a.addedAt); break;
     }
