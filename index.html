@@ -1,158 +1,78 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>B‑Movie Ratings Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#12161c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>B-Movie Ratings Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bangers&family=Share+Tech+Mono&family=Creepster&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="theme-bmovie">
+  <!-- Mobile Header -->
   <header class="app-header">
-    <div class="branding">
-      <h1 class="logo">🛸 B‑Movie Ratings</h1>
-      <p class="tagline">Celebrate the best of the worst (and the worst of the best).</p>
+    <div class="header-top">
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+        <span class="hamburger"></span>
+      </button>
+      <div class="branding">
+        <h1 class="logo">B-Movie</h1>
+      </div>
+      <div class="sync-status" id="syncStatus" title="Storage mode">Local</div>
     </div>
-    <div class="header-right">
-      <div class="score-tracker" id="scoreTracker">
-        <div class="tracker-title">Movie Chooser Scores</div>
-        <div class="tracker-scores" id="trackerScores">
-          <span class="no-scores">Add movies to see scores</span>
+    
+    <!-- Collapsible menu for mobile -->
+    <nav class="mobile-menu" id="mobileMenu">
+      <div class="menu-content">
+        <div class="user-box">
+          <label for="username">Your Name</label>
+          <input id="username" type="text" placeholder="Enter your name for ratings" autocomplete="off" />
+        </div>
+        <div class="score-tracker" id="scoreTracker">
+          <div class="tracker-title">Chooser Scores</div>
+          <div class="tracker-scores" id="trackerScores">
+            <span class="no-scores">Add movies to see scores</span>
+          </div>
         </div>
       </div>
-      <div class="user-box">
-        <label for="username" class="visually-hidden">Your Name</label>
-        <input id="username" type="text" placeholder="Your name (for ratings)" autocomplete="off" />
-      </div>
-      <div class="sync-status" id="syncStatus" title="Storage mode">Local Only</div>
-    </div>
+    </nav>
   </header>
 
-  <main class="layout layout-wide">
-    <section class="panel" id="rules-panel">
-      <h2>Official Rules: Double Feature Night</h2>
-      <details open>
-        <summary>Movie Selection</summary>
-        <ul class="rules-list">
-          <li>Each player secretly picks one B‑movie (the cheesier the better).</li>
-          <li>Keep your choice a mystery until it’s time to press play.</li>
-          <li>What counts as a B‑movie?</li>
-          <ul>
-            <li>Low budget</li>
-            <li>Questionable acting</li>
-            <li>Plot holes you could drive a Jeep through</li>
-          </ul>
-        </ul>
-      </details>
-      <details open>
-        <summary>Viewing Protocol</summary>
-        <ul class="rules-list">
-          <li>Both movies must be watched fully — no skipping scenes, no mercy.</li>
-          <li>Talking is encouraged: mock bad dialogue, spot cheap effects, celebrate foam rubber.</li>
-        </ul>
-      </details>
-      <details open>
-        <summary>Scoring Categories (1–10 each)</summary>
-        <ol class="rules-list numbered">
-          <li><strong>Overacting Award</strong> – Best worst performance.</li>
-          <li><strong>Over the Top Effects</strong> – How unnecessarily big were the effects?</li>
-          <li><strong>Plot Confusion</strong> – Story coherence (lower coherence often = higher fun).</li>
-          <li><strong>Creature/Monster Quality</strong> – Foam rubber? CGI? Sock puppet? All valid art.</li>
-          <li><strong>Dialogue Disaster</strong> – Peak awful line delivery / script chaos.</li>
-        </ol>
-        <p class="mini-note">Total Score = Sum of all 5 main category scores (max 50 per rater).</p>
-        <details>
-          <summary>Bonus Category (Optional)</summary>
-          <ul class="rules-list">
-            <li><strong>Enjoyment</strong> – How much you actually enjoyed watching it (personal fun factor).</li>
-          </ul>
-          <p class="mini-note">Bonus categories are tracked separately and do NOT count toward the total score.</p>
-        </details>
-      </details>
-      <details open>
-        <summary>Awards & Winner</summary>
-        <ul class="rules-list">
-          <li>After both films: tally per‑movie totals (sum across raters).</li>
-          <li>Highest total = <em>Night’s Champion of Cheese</em>.</li>
-          <li>Winner earns the right to choose next session’s theme.</li>
-        </ul>
-      </details>
-    </section>
+  <!-- Bottom Navigation for Mobile -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" data-section="movies-section" aria-label="Movies">
+      <span class="nav-icon"></span>
+      <span class="nav-label">Movies</span>
+    </button>
+    <button class="nav-item" data-section="add-movie-panel" aria-label="Add Movie">
+      <span class="nav-icon"></span>
+      <span class="nav-label">Add</span>
+    </button>
+    <button class="nav-item" data-section="winner-panel" aria-label="Winner">
+      <span class="nav-icon"></span>
+      <span class="nav-label">Winner</span>
+    </button>
+    <button class="nav-item" data-section="rules-panel" aria-label="Rules">
+      <span class="nav-icon"></span>
+      <span class="nav-label">Rules</span>
+    </button>
+  </nav>
 
-    <section class="panel" id="add-movie-panel">
-      <h2>Add a Movie</h2>
-      <form id="addMovieForm" class="form-grid" autocomplete="off">
-        <div class="field field-title">
-          <label for="movieTitle">Title</label>
-          <input id="movieTitle" name="title" required maxlength="120" placeholder="e.g. Sharknado" />
-        </div>
-        <div class="field field-year">
-          <label for="movieYear">Year</label>
-          <input id="movieYear" name="year" type="number" min="1900" max="2100" placeholder="2013" />
-        </div>
-        <div class="field field-notes">
-          <label for="movieNotes">Notes (optional)</label>
-          <textarea id="movieNotes" name="notes" rows="2" placeholder="Cheesy tornado full of sharks..."></textarea>
-        </div>
-        <div class="actions actions-add">
-          <button type="submit" class="btn primary">Add Movie</button>
-        </div>
-      </form>
-    </section>
-
-    <section class="panel" id="winner-panel">
-      <h2>🏆 Declare Winner</h2>
-      <form id="winnerForm" class="winner-form" autocomplete="off">
-        <div class="winner-grid">
-          <div class="field">
-            <label for="winnerMovie">Winning Movie</label>
-            <select id="winnerMovie" name="movie" required>
-              <option value="">Select movie...</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="winnerPerson">Champion Rater</label>
-            <select id="winnerPerson" name="person" required>
-              <option value="">Select person...</option>
-            </select>
-          </div>
-        </div>
-        <div class="winner-actions">
-          <button type="submit" class="btn primary">Crown Winner</button>
-          <button type="button" class="btn ghost" id="clearWinner">Clear Winner</button>
-        </div>
-      </form>
-      <div id="winnerDisplay" class="winner-display" style="display:none;">
-        <div class="winner-badge">
-          <span class="winner-icon">👑</span>
-          <div class="winner-info">
-            <div class="winner-title"></div>
-            <div class="winner-subtitle"></div>
-            <div class="winner-theme"></div>
-          </div>
-          <button type="button" class="btn ghost small" id="clearDisplayedWinner" title="Clear winner for new session">✖</button>
-        </div>
-        <div class="winner-theme-editor">
-          <label for="editTheme">Next Session Theme (Winner's Choice)</label>
-          <div class="theme-input-group">
-            <input id="editTheme" type="text" maxlength="80" placeholder="e.g. 80s Sci-Fi, Zombie Movies, Christmas Horror..." />
-            <button type="button" class="btn primary small" id="saveTheme">Save Theme</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel" id="movies-section">
+  <main class="layout mobile-layout">
+    <!-- Movies Section - Primary on mobile -->
+    <section class="panel mobile-panel active" id="movies-section">
       <div class="panel-header">
         <h2>Movies</h2>
         <div class="filters">
           <select id="sortSelect" title="Sort movies">
-            <option value="added-desc">Recently Added</option>
-            <option value="title-asc">Title A→Z</option>
-            <option value="total-desc">Highest Total Score</option>
-            <option value="ratings-count-desc">Most Raters</option>
+            <option value="added-desc">Recent</option>
+            <option value="title-asc">A-Z</option>
+            <option value="total-desc">Top Score</option>
+            <option value="ratings-count-desc">Most Rated</option>
           </select>
           <input id="searchBox" type="search" placeholder="Search..." />
         </div>
@@ -168,20 +88,133 @@
           <div class="scores-wrap">
             <div class="score-row categories"></div>
             <div class="total-line">
-              <span class="total-badge" title="Total across categories (avg per category shown)">Total: <strong class="total-val">0</strong></span>
+              <span class="total-badge" title="Total score">Total: <strong class="total-val">0</strong></span>
               <span class="rater-count"></span>
-              <button class="btn small primary open-rate" type="button">Rate / Edit</button>
             </div>
+            <button class="btn primary rate-btn open-rate" type="button">Rate</button>
           </div>
           <details class="individual-reviews">
             <summary class="reviews-toggle">Individual Reviews</summary>
             <div class="reviews-list"></div>
           </details>
           <footer class="card-actions">
-            <button class="btn ghost small delete-btn" title="Delete movie">✖</button>
+            <button class="btn ghost small delete-btn" title="Delete movie">Delete</button>
           </footer>
         </article>
       </template>
+    </section>
+
+    <!-- Add Movie Panel -->
+    <section class="panel mobile-panel" id="add-movie-panel">
+      <h2>Add Movie</h2>
+      <form id="addMovieForm" class="form-stack" autocomplete="off">
+        <div class="field">
+          <label for="movieTitle">Movie Title</label>
+          <input id="movieTitle" name="title" required maxlength="120" placeholder="e.g. Sharknado" />
+        </div>
+        <div class="field">
+          <label for="movieYear">Year</label>
+          <input id="movieYear" name="year" type="number" min="1900" max="2100" placeholder="2013" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label for="movieNotes">Notes (optional)</label>
+          <textarea id="movieNotes" name="notes" rows="3" placeholder="Cheesy tornado full of sharks..."></textarea>
+        </div>
+        <button type="submit" class="btn primary btn-block">Add Movie</button>
+      </form>
+    </section>
+
+    <!-- Winner Panel -->
+    <section class="panel mobile-panel" id="winner-panel">
+      <h2>Declare Winner</h2>
+      <form id="winnerForm" class="form-stack" autocomplete="off">
+        <div class="field">
+          <label for="winnerMovie">Winning Movie</label>
+          <select id="winnerMovie" name="movie" required>
+            <option value="">Select movie...</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="winnerPerson">Champion Rater</label>
+          <select id="winnerPerson" name="person" required>
+            <option value="">Select person...</option>
+          </select>
+        </div>
+        <div class="btn-group">
+          <button type="submit" class="btn primary">Crown Winner</button>
+          <button type="button" class="btn ghost" id="clearWinner">Clear</button>
+        </div>
+      </form>
+      <div id="winnerDisplay" class="winner-display" style="display:none;">
+        <div class="winner-badge">
+          <span class="winner-icon"></span>
+          <div class="winner-info">
+            <div class="winner-title"></div>
+            <div class="winner-subtitle"></div>
+            <div class="winner-theme"></div>
+          </div>
+          <button type="button" class="btn ghost small" id="clearDisplayedWinner" title="Clear winner">X</button>
+        </div>
+        <div class="winner-theme-editor">
+          <label for="editTheme">Next Session Theme</label>
+          <div class="theme-input-group">
+            <input id="editTheme" type="text" maxlength="80" placeholder="e.g. 80s Sci-Fi, Zombie Movies..." />
+            <button type="button" class="btn primary" id="saveTheme">Save</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Rules Panel -->
+    <section class="panel mobile-panel" id="rules-panel">
+      <h2>Official Rules</h2>
+      <p class="rules-subtitle">Double Feature Night</p>
+      <details>
+        <summary>Movie Selection</summary>
+        <ul class="rules-list">
+          <li>Each player secretly picks one B-movie (the cheesier the better).</li>
+          <li>Keep your choice a mystery until it's time to press play.</li>
+          <li>What counts as a B-movie?
+            <ul>
+              <li>Low budget</li>
+              <li>Questionable acting</li>
+              <li>Plot holes you could drive a Jeep through</li>
+            </ul>
+          </li>
+        </ul>
+      </details>
+      <details>
+        <summary>Viewing Protocol</summary>
+        <ul class="rules-list">
+          <li>Both movies must be watched fully - no skipping scenes, no mercy.</li>
+          <li>Talking is encouraged: mock bad dialogue, spot cheap effects!</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Scoring (1-10 each)</summary>
+        <ol class="rules-list numbered">
+          <li><strong>Overacting Award</strong> - Best worst performance.</li>
+          <li><strong>Over the Top Effects</strong> - How unnecessarily big?</li>
+          <li><strong>Plot Confusion</strong> - Story coherence (lower = more fun).</li>
+          <li><strong>Creature/Monster Quality</strong> - Foam rubber? CGI? Sock puppet?</li>
+          <li><strong>Dialogue Disaster</strong> - Peak awful line delivery.</li>
+        </ol>
+        <p class="mini-note">Total Score = Sum of all 5 categories (max 50 per rater).</p>
+        <details>
+          <summary>Bonus Category</summary>
+          <ul class="rules-list">
+            <li><strong>Enjoyment</strong> - Personal fun factor (doesn't count toward total).</li>
+          </ul>
+        </details>
+      </details>
+      <details>
+        <summary>Awards and Winner</summary>
+        <ul class="rules-list">
+          <li>After both films: tally per-movie totals.</li>
+          <li>Highest total = Night's Champion of Cheese.</li>
+          <li>Winner chooses next session's theme.</li>
+        </ul>
+      </details>
     </section>
   </main>
 
@@ -190,22 +223,22 @@
       <h3 class="dialog-title">Rate: <span id="dialogMovieTitle"></span></h3>
       <div class="cat-grid">
         <label>Overacting Award
-          <input type="number" name="overacting" min="1" max="10" required />
+          <input type="number" name="overacting" min="1" max="10" required inputmode="numeric" />
         </label>
         <label>Over the Top Effects
-          <input type="number" name="explosive" min="1" max="10" required />
+          <input type="number" name="explosive" min="1" max="10" required inputmode="numeric" />
         </label>
         <label>Plot Confusion
-          <input type="number" name="plot" min="1" max="10" required />
+          <input type="number" name="plot" min="1" max="10" required inputmode="numeric" />
         </label>
         <label>Creature/Monster Quality
-          <input type="number" name="creature" min="1" max="10" required />
+          <input type="number" name="creature" min="1" max="10" required inputmode="numeric" />
         </label>
         <label>Dialogue Disaster
-          <input type="number" name="dialogue" min="1" max="10" required />
+          <input type="number" name="dialogue" min="1" max="10" required inputmode="numeric" />
         </label>
         <label class="bonus-category">Enjoyment <small>(bonus - optional)</small>
-          <input type="number" name="enjoyment" min="1" max="10" />
+          <input type="number" name="enjoyment" min="1" max="10" inputmode="numeric" />
         </label>
       </div>
       <div class="dialog-actions">
@@ -216,16 +249,11 @@
   </dialog>
 
   <footer class="app-footer">
-    <p id="storageModeNote">Local only demo. Ratings stored in your browser. Invite a friend by sending them the files.</p>
+    <p id="storageModeNote">Local only demo. Ratings stored in your browser.</p>
   </footer>
 
-  <!-- Firebase config (user must create firebase-config.js from example) -->
   <script src="firebase-config.js" defer></script>
-  <!-- Firebase SDK (modular) -->
-  <script type="module" defer>
-    // Defer initialization until app.js checks window.FIREBASE_ENABLED
-    // Just load SDK modules here so they are cached.
-  </script>
+  <script type="module" defer></script>
   <script src="app.js" type="module"></script>
 </body>
 </html>

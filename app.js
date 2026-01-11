@@ -1024,6 +1024,62 @@
   });
   window.addEventListener('keydown', e => { if(e.key==='Escape' && activeMovieId){ closeDialog(); }});
 
+  // =========================================
+  // MOBILE NAVIGATION
+  // =========================================
+  const menuToggle = document.getElementById('menuToggle');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const bottomNav = document.getElementById('bottomNav');
+  const navItems = bottomNav?.querySelectorAll('.nav-item');
+  const mobilePanels = document.querySelectorAll('.mobile-panel');
+  
+  // Hamburger menu toggle
+  menuToggle?.addEventListener('click', () => {
+    menuToggle.classList.toggle('active');
+    mobileMenu?.classList.toggle('open');
+  });
+  
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if(mobileMenu?.classList.contains('open') && 
+       !mobileMenu.contains(e.target) && 
+       !menuToggle?.contains(e.target)) {
+      menuToggle?.classList.remove('active');
+      mobileMenu?.classList.remove('open');
+    }
+  });
+  
+  // Bottom navigation - switch between panels
+  function switchToSection(sectionId) {
+    // Update nav items
+    navItems?.forEach(item => {
+      item.classList.toggle('active', item.dataset.section === sectionId);
+    });
+    
+    // Update panels
+    mobilePanels?.forEach(panel => {
+      panel.classList.toggle('active', panel.id === sectionId);
+    });
+    
+    // Scroll to top of content
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  
+  navItems?.forEach(item => {
+    item.addEventListener('click', () => {
+      const sectionId = item.dataset.section;
+      if(sectionId) {
+        switchToSection(sectionId);
+      }
+    });
+  });
+  
+  // Handle touch feedback
+  navItems?.forEach(item => {
+    item.addEventListener('touchstart', () => item.style.opacity = '0.7', { passive: true });
+    item.addEventListener('touchend', () => item.style.opacity = '1', { passive: true });
+  });
+
   renderAll();
   updateWinnerDropdowns();
   loadWinner();
