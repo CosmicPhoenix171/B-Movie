@@ -516,49 +516,108 @@ body {
 #rateDialog::backdrop { background: rgba(0 0 0 / 80%); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
 
 .dialog-title {
-  margin: 0 0 20px;
+  margin: 0 0 4px;
   font-family: 'Bangers', Impact, sans-serif;
   font-size: 1.2rem;
   color: #ffce4f;
 }
 
+.dialog-subtitle {
+  margin: 0 0 16px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+.dialog-subtitle .subtitle-hint {
+  font-weight: 400;
+  color: var(--text-dim);
+  font-size: 0.6rem;
+}
+
 .cat-grid {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   margin-bottom: 20px;
 }
-.cat-grid label {
+
+/* Rating category item */
+.rating-category {
+  background: rgba(255 255 255 / 2%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  padding: 12px;
+}
+.rating-category.bonus-category {
+  border-color: rgba(157 123 255 / 30%);
+  background: rgba(157 123 255 / 5%);
+}
+
+.category-header {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.75rem;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.category-icon { font-size: 1.1rem; }
+.category-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-weight: 600;
+}
+.bonus-tag {
+  font-size: 0.55rem;
+  background: rgba(157 123 255 / 20%);
+  color: #c29dff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+.category-question {
+  font-size: 0.7rem;
   color: var(--text-dim);
+  margin-bottom: 10px;
 }
-.cat-grid label.bonus-category {
-  opacity: 0.8;
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
-  margin-top: 6px;
-}
-.cat-grid label small { font-size: 0.6rem; color: #9d7bff; }
-.cat-grid input {
+
+/* Rating select dropdown */
+.rating-select {
+  width: 100%;
   background: var(--panel-alt);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 14px;
+  padding: 12px 14px;
   border-radius: var(--radius-s);
-  font-size: 18px;
-  font-weight: 600;
-  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239aa8b9' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
 }
-.cat-grid input:focus {
+.rating-select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(var(--accent-glow) / 20%);
+}
+.rating-select option {
+  background: var(--panel);
+  color: var(--text);
+  padding: 8px;
+}
+.rating-select.has-value {
+  border-color: rgba(var(--accent-glow) / 40%);
+  background-color: rgba(var(--accent-glow) / 5%);
+}
+.bonus-category .rating-select.has-value {
+  border-color: rgba(157 123 255 / 40%);
+  background-color: rgba(157 123 255 / 8%);
 }
 
 .dialog-actions {
@@ -764,4 +823,130 @@ body.theme-bmovie {
     gap: 32px;
     padding: 32px;
   }
+}
+
+/* ====================================
+   TIER BADGES & TIER LIST
+   ==================================== */
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tier-badge .tier-emoji {
+  font-size: 1rem;
+}
+
+/* Tier-specific colors */
+.tier-1 { background: #1a1a2e; color: #8b5cf6; border: 1px solid #8b5cf6; }
+.tier-2 { background: #1a2e1a; color: #10b981; border: 1px solid #10b981; }
+.tier-3 { background: #2e2a1a; color: #f59e0b; border: 1px solid #f59e0b; }
+.tier-4 { background: #2e1a1a; color: #ef4444; border: 1px solid #ef4444; }
+.tier-5 { background: #1a1a1a; color: #6b7280; border: 1px solid #6b7280; }
+.tier-6 { background: #0d0d0d; color: #374151; border: 1px solid #374151; }
+
+/* Tier list in Rules panel */
+.tier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.tier-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border-left: 4px solid;
+}
+
+.tier-item.tier-1 { border-left-color: #8b5cf6; }
+.tier-item.tier-2 { border-left-color: #10b981; }
+.tier-item.tier-3 { border-left-color: #f59e0b; }
+.tier-item.tier-4 { border-left-color: #ef4444; }
+.tier-item.tier-5 { border-left-color: #6b7280; }
+.tier-item.tier-6 { border-left-color: #374151; }
+
+.tier-emoji-large {
+  font-size: 1.5rem;
+}
+
+.tier-info {
+  flex: 1;
+}
+
+.tier-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+
+.tier-range {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* Category list in Rules panel */
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+}
+
+.category-item .cat-icon {
+  font-size: 1.1rem;
+}
+
+.category-item .cat-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.category-item .cat-range {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* Movie card tier display */
+.card-tier {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  margin-top: 12px;
+}
+
+.card-tier .tier-emoji {
+  font-size: 1.2rem;
+}
+
+.card-tier .tier-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }

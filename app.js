@@ -1,23 +1,184 @@
 /* B-Movie Ratings App Logic (with optional Firebase Firestore sync) */
 (async function(){
   const LS_KEY = 'bmovie:data:v2';
+  
+  // =========================================
+  // THE B-MOVIE INDEX - Rating Categories
+  // 7 Main Categories (max 70 points)
+  // 1 = normal movie, 10 = glorious disaster
+  // =========================================
   const CATEGORIES = [
-    { key:'overacting', label:'Overacting Award' },
-    { key:'explosive', label:'Over the Top Effects' },
-    { key:'plot', label:'Plot Confusion' },
-    { key:'creature', label:'Creature/Monster Quality' },
-    { key:'dialogue', label:'Dialogue Disaster' }
+    { 
+      key: 'overacting', 
+      label: 'Overacting',
+      icon: '🎭',
+      question: 'How exaggerated are the performances?',
+      levels: [
+        '1 - Realistic acting',
+        '2 - Slightly stiff',
+        '3 - A little dramatic',
+        '4 - Clearly acting',
+        '5 - Cheesy',
+        '6 - Over-dramatic',
+        '7 - Lots of shouting and big emotions',
+        '8 - Constant emotional extremes',
+        '9 - Every line is intense',
+        '10 - Actors act like they\'re in a different movie'
+      ]
+    },
+    { 
+      key: 'action', 
+      label: 'Action & Explosions',
+      icon: '💥',
+      question: 'How ridiculous is the action?',
+      levels: [
+        '1 - Little or no action',
+        '2 - Realistic',
+        '3 - Normal movie action',
+        '4 - Stylized',
+        '5 - Flashy',
+        '6 - Lots of explosions',
+        '7 - Things explode for no reason',
+        '8 - Physics is ignored',
+        '9 - Constant chaos',
+        '10 - Everything explodes all the time'
+      ]
+    },
+    { 
+      key: 'practical', 
+      label: 'Practical Effects & Gore',
+      icon: '🩸',
+      question: 'How fake and messy are the physical effects?',
+      levels: [
+        '1 - Clean and realistic',
+        '2 - Small amounts of blood',
+        '3 - Some fake wounds',
+        '4 - Obvious makeup',
+        '5 - Fake blood and prosthetics',
+        '6 - Latex, slime, and goo',
+        '7 - Overdone blood',
+        '8 - Body parts everywhere',
+        '9 - Looks like toys',
+        '10 - Looks like a Halloween store'
+      ]
+    },
+    { 
+      key: 'cgi', 
+      label: 'CGI & Visual Crimes',
+      icon: '🖥️',
+      question: 'How bad is the digital stuff?',
+      levels: [
+        '1 - Looks good',
+        '2 - Minor flaws',
+        '3 - Slightly fake',
+        '4 - Distracting',
+        '5 - Obviously bad',
+        '6 - Lots of green screen',
+        '7 - Video-game looking',
+        '8 - Old console quality',
+        '9 - Very broken',
+        '10 - Looks unfinished'
+      ]
+    },
+    { 
+      key: 'plot', 
+      label: 'Plot Confusion',
+      icon: '🤯',
+      question: 'How hard is it to follow?',
+      levels: [
+        '1 - Everything makes sense',
+        '2 - Very clear',
+        '3 - Small plot holes',
+        '4 - Some confusion',
+        '5 - Many "wait what?" moments',
+        '6 - Logic breaks',
+        '7 - Events don\'t connect',
+        '8 - Story jumps around',
+        '9 - Nothing makes sense',
+        '10 - Total nonsense'
+      ]
+    },
+    { 
+      key: 'creature', 
+      label: 'Creature / Monster',
+      icon: '👹',
+      question: 'How fake does the monster look?',
+      levels: [
+        '1 - No monster',
+        '2 - Very realistic',
+        '3 - Slightly fake',
+        '4 - Cheap looking',
+        '5 - Looks off',
+        '6 - Bad design',
+        '7 - Clearly a suit',
+        '8 - Rubber monster',
+        '9 - Moves weird',
+        '10 - You can see the zipper'
+      ]
+    },
+    { 
+      key: 'dialogue', 
+      label: 'Dialogue Disaster',
+      icon: '💬',
+      question: 'How bad are the lines?',
+      levels: [
+        '1 - Normal conversation',
+        '2 - Slightly awkward',
+        '3 - Stiff',
+        '4 - Unnatural',
+        '5 - Corny',
+        '6 - Strange',
+        '7 - Hard to listen to',
+        '8 - Meme lines',
+        '9 - Almost nonsense',
+        '10 - Legendary bad quotes'
+      ]
+    }
   ];
   
   const BONUS_CATEGORIES = [
-    { key:'enjoyment', label:'Enjoyment' }
+    { 
+      key: 'enjoyment', 
+      label: 'Enjoyment',
+      icon: '🎉',
+      question: 'How much fun did you have?',
+      levels: [
+        '1 - Hated it',
+        '2 - Very boring',
+        '3 - Mostly dull',
+        '4 - Meh',
+        '5 - Some fun',
+        '6 - Entertaining',
+        '7 - Enjoyable',
+        '8 - Very fun',
+        '9 - Loved it',
+        '10 - Want to watch again immediately'
+      ]
+    }
   ];
+  
+  // Trash Cinema Rankings (based on total score out of 70)
+  const TRASH_TIERS = [
+    { min: 0, max: 15, label: 'Accidentally Competent', emoji: '😐', color: '#9aa8b9' },
+    { min: 16, max: 30, label: 'Mild Cheese', emoji: '🧀', color: '#f0e68c' },
+    { min: 31, max: 45, label: 'Certified B-Movie', emoji: '🎬', color: '#ff9d1d' },
+    { min: 46, max: 55, label: 'Cult Classic', emoji: '⭐', color: '#ff6b6b' },
+    { min: 56, max: 65, label: 'So Bad It\'s Beautiful', emoji: '💎', color: '#c29dff' },
+    { min: 66, max: 70, label: 'HALL OF TRASH LEGENDS', emoji: '👑', color: '#ffd700' }
+  ];
+  
+  function getTrashTier(score) {
+    for (const tier of TRASH_TIERS) {
+      if (score >= tier.min && score <= tier.max) return tier;
+    }
+    return TRASH_TIERS[0];
+  }
 
   /** Data shape v2
    * {
    *   movies: [{
    *     id,title,year,notes,addedAt,
-   *     ratings: { username: { overacting:number, explosive:number, plot:number, creature:number, dialogue:number } }
+   *     ratings: { username: { overacting:number, action:number, practical:number, cgi:number, plot:number, creature:number, dialogue:number, enjoyment?:number } }
    *   }]
    * }
    */
@@ -47,8 +208,62 @@
     editTheme: document.getElementById('editTheme'),
     saveTheme: document.getElementById('saveTheme'),
     scoreTracker: document.getElementById('scoreTracker'),
-    trackerScores: document.getElementById('trackerScores')
+    trackerScores: document.getElementById('trackerScores'),
+    categoryGrid: document.getElementById('categoryGrid')
   };
+
+  // Generate the rating dialog category dropdowns
+  function generateCategoryGrid() {
+    if (!dom.categoryGrid) return;
+    dom.categoryGrid.innerHTML = '';
+    
+    // Main categories
+    CATEGORIES.forEach(cat => {
+      const div = document.createElement('div');
+      div.className = 'rating-category';
+      div.innerHTML = `
+        <div class="category-header">
+          <span class="category-icon">${cat.icon}</span>
+          <span class="category-label">${cat.label}</span>
+        </div>
+        <p class="category-question">${cat.question}</p>
+        <select name="${cat.key}" class="rating-select" required>
+          <option value="">— Select —</option>
+          ${cat.levels.map((level, i) => `<option value="${i + 1}">${level}</option>`).join('')}
+        </select>
+      `;
+      dom.categoryGrid.appendChild(div);
+    });
+    
+    // Bonus categories
+    BONUS_CATEGORIES.forEach(cat => {
+      const div = document.createElement('div');
+      div.className = 'rating-category bonus-category';
+      div.innerHTML = `
+        <div class="category-header">
+          <span class="category-icon">${cat.icon}</span>
+          <span class="category-label">${cat.label}</span>
+          <span class="bonus-tag">Bonus</span>
+        </div>
+        <p class="category-question">${cat.question}</p>
+        <select name="${cat.key}" class="rating-select">
+          <option value="">— Select —</option>
+          ${cat.levels.map((level, i) => `<option value="${i + 1}">${level}</option>`).join('')}
+        </select>
+      `;
+      dom.categoryGrid.appendChild(div);
+    });
+    
+    // Add change handler for visual feedback
+    dom.categoryGrid.querySelectorAll('.rating-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        sel.classList.toggle('has-value', sel.value !== '');
+      });
+    });
+  }
+  
+  // Initialize the category grid
+  generateCategoryGrid();
 
   let activeMovieId = null; // used for dialog context
 
@@ -746,7 +961,7 @@
       span.className = 'cat-badge';
       span.dataset.cat = cat.key;
       span.title = cat.label;
-      span.textContent = `${shortLabel(cat.label)}: –`;
+      span.textContent = `${cat.icon} –`;
       catRow.appendChild(span);
     }
     
@@ -756,7 +971,7 @@
       span.className = 'cat-badge bonus';
       span.dataset.cat = cat.key;
       span.title = cat.label + ' (bonus - not counted in total)';
-      span.textContent = `${shortLabel(cat.label)}: –`;
+      span.textContent = `${cat.icon} –`;
       catRow.appendChild(span);
     }
 
@@ -801,12 +1016,14 @@
       const badge = card.querySelector(`.cat-badge[data-cat="${cat.key}"]`);
       if(!badge) continue;
       if(lockNeeded){
-        badge.textContent = `${shortLabel(cat.label)}: ?`;
+        badge.textContent = `${cat.icon} ?`;
+        badge.title = cat.label + ' (locked)';
         badge.dataset.empty = 'true';
         badge.dataset.locked = 'true';
       } else {
         const avg = aggregates.categoryAverages[cat.key];
-        badge.textContent = `${shortLabel(cat.label)}: ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
+        badge.textContent = `${cat.icon} ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
+        badge.title = cat.label;
         badge.dataset.empty = Number.isFinite(avg)?'false':'true';
         badge.dataset.locked = 'false';
       }
@@ -816,12 +1033,14 @@
       const badge = card.querySelector(`.cat-badge[data-cat="${cat.key}"]`);
       if(!badge) continue;
       if(lockNeeded){
-        badge.textContent = `${shortLabel(cat.label)}: ?`;
+        badge.textContent = `${cat.icon} ?`;
+        badge.title = cat.label + ' (bonus - locked)';
         badge.dataset.empty = 'true';
         badge.dataset.locked = 'true';
       } else {
         const avg = aggregates.bonusAverages[cat.key];
-        badge.textContent = `${shortLabel(cat.label)}: ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
+        badge.textContent = `${cat.icon} ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
+        badge.title = cat.label + ' (bonus - not counted in total)';
         badge.dataset.empty = Number.isFinite(avg)?'false':'true';
         badge.dataset.locked = 'false';
       }
@@ -830,12 +1049,29 @@
     // Total & rater count (masked if locked)
     const totalEl = card.querySelector('.total-val');
     const raterEl = card.querySelector('.rater-count');
+    const tierEmoji = card.querySelector('.tier-emoji');
+    const tierText = card.querySelector('.tier-text');
+    const cardTier = card.querySelector('.card-tier');
+    
     if(lockNeeded){
       totalEl.textContent = '?';
       raterEl.textContent = '(hidden)';
+      if(cardTier) cardTier.style.display = 'none';
     } else {
       totalEl.textContent = aggregates.totalAllRaters;
       raterEl.textContent = raterCount ? `(${raterCount} rater${raterCount===1?'':'s'})` : '';
+      
+      // Show tier badge
+      if(cardTier && tierEmoji && tierText && raterCount > 0) {
+        const avgScore = aggregates.totalAllRaters / raterCount;
+        const tier = getTrashTier(Math.round(avgScore));
+        tierEmoji.textContent = tier.emoji;
+        tierText.textContent = tier.label;
+        tierText.style.color = tier.color;
+        cardTier.style.display = 'flex';
+      } else if(cardTier) {
+        cardTier.style.display = 'none';
+      }
     }
 
     // Locked message handling
@@ -924,7 +1160,8 @@
       CATEGORIES.forEach(cat => {
         const score = userRating[cat.key];
         if(score !== undefined && score !== null){
-          reviewHTML += `<span class="score-item">${shortLabel(cat.label)}: ${score}</span>`;
+          const level = cat.levels[score - 1] || '';
+          reviewHTML += `<span class="score-item" title="${level}">${cat.icon} ${score}</span>`;
         }
       });
 
@@ -932,7 +1169,8 @@
       BONUS_CATEGORIES.forEach(cat => {
         const score = userRating[cat.key];
         if(score !== undefined && score !== null){
-          reviewHTML += `<span class="score-item bonus">${shortLabel(cat.label)}: ${score}</span>`;
+          const level = cat.levels[score - 1] || '';
+          reviewHTML += `<span class="score-item bonus" title="${level}">${cat.icon} ${score}</span>`;
         }
       });
 

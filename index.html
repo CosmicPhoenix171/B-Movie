@@ -88,8 +88,12 @@
           <div class="scores-wrap">
             <div class="score-row categories"></div>
             <div class="total-line">
-              <span class="total-badge" title="Total score">Total: <strong class="total-val">0</strong></span>
+              <span class="total-badge" title="Total score">Total: <strong class="total-val">0</strong>/70</span>
               <span class="rater-count"></span>
+            </div>
+            <div class="card-tier">
+              <span class="tier-emoji"></span>
+              <span class="tier-text"></span>
             </div>
             <button class="btn primary rate-btn open-rate" type="button">Rate</button>
           </div>
@@ -191,21 +195,54 @@
         </ul>
       </details>
       <details>
-        <summary>Scoring (1-10 each)</summary>
+        <summary>The B-Movie Index (1-10 each)</summary>
+        <p class="mini-note" style="padding-top:10px;">Rate from 1 (normal movie) to 10 (glorious disaster)</p>
         <ol class="rules-list numbered">
-          <li><strong>Overacting Award</strong> - Best worst performance.</li>
-          <li><strong>Over the Top Effects</strong> - How unnecessarily big?</li>
-          <li><strong>Plot Confusion</strong> - Story coherence (lower = more fun).</li>
-          <li><strong>Creature/Monster Quality</strong> - Foam rubber? CGI? Sock puppet?</li>
-          <li><strong>Dialogue Disaster</strong> - Peak awful line delivery.</li>
+          <li><strong>🎭 Overacting</strong> - How exaggerated are the performances?</li>
+          <li><strong>💥 Action & Explosions</strong> - How ridiculous is the action?</li>
+          <li><strong>🩸 Practical Effects & Gore</strong> - How fake and messy?</li>
+          <li><strong>🖥️ CGI & Visual Crimes</strong> - How bad is the digital stuff?</li>
+          <li><strong>🤯 Plot Confusion</strong> - How hard is it to follow?</li>
+          <li><strong>👹 Creature / Monster</strong> - How fake does the monster look?</li>
+          <li><strong>💬 Dialogue Disaster</strong> - How bad are the lines?</li>
         </ol>
-        <p class="mini-note">Total Score = Sum of all 5 categories (max 50 per rater).</p>
+        <p class="mini-note">Max Score = 70 points (7 categories × 10)</p>
         <details>
-          <summary>Bonus Category</summary>
+          <summary>🎉 Bonus: Enjoyment</summary>
           <ul class="rules-list">
-            <li><strong>Enjoyment</strong> - Personal fun factor (doesn't count toward total).</li>
+            <li>How much fun did you have? (1-10)</li>
+            <li>Tracked separately - doesn't count toward total.</li>
           </ul>
         </details>
+      </details>
+      <details>
+        <summary>🏆 Trash Cinema Rankings</summary>
+        <div class="tier-list">
+          <div class="tier-item tier-1">
+            <span class="tier-emoji-large">😐</span>
+            <div class="tier-info"><div class="tier-label">Accidentally Competent</div><div class="tier-range">0 – 15 pts</div></div>
+          </div>
+          <div class="tier-item tier-2">
+            <span class="tier-emoji-large">🧀</span>
+            <div class="tier-info"><div class="tier-label">Mild Cheese</div><div class="tier-range">16 – 30 pts</div></div>
+          </div>
+          <div class="tier-item tier-3">
+            <span class="tier-emoji-large">🎬</span>
+            <div class="tier-info"><div class="tier-label">Certified B-Movie</div><div class="tier-range">31 – 45 pts</div></div>
+          </div>
+          <div class="tier-item tier-4">
+            <span class="tier-emoji-large">⭐</span>
+            <div class="tier-info"><div class="tier-label">Cult Classic</div><div class="tier-range">46 – 55 pts</div></div>
+          </div>
+          <div class="tier-item tier-5">
+            <span class="tier-emoji-large">💎</span>
+            <div class="tier-info"><div class="tier-label">So Bad It's Beautiful</div><div class="tier-range">56 – 65 pts</div></div>
+          </div>
+          <div class="tier-item tier-6">
+            <span class="tier-emoji-large">👑</span>
+            <div class="tier-info"><div class="tier-label">HALL OF TRASH LEGENDS</div><div class="tier-range">66 – 70 pts</div></div>
+          </div>
+        </div>
       </details>
       <details>
         <summary>Awards and Winner</summary>
@@ -221,26 +258,12 @@
   <dialog id="rateDialog">
     <form method="dialog" id="rateForm">
       <h3 class="dialog-title">Rate: <span id="dialogMovieTitle"></span></h3>
-      <div class="cat-grid">
-        <label>Overacting Award
-          <input type="number" name="overacting" min="1" max="10" required inputmode="numeric" />
-        </label>
-        <label>Over the Top Effects
-          <input type="number" name="explosive" min="1" max="10" required inputmode="numeric" />
-        </label>
-        <label>Plot Confusion
-          <input type="number" name="plot" min="1" max="10" required inputmode="numeric" />
-        </label>
-        <label>Creature/Monster Quality
-          <input type="number" name="creature" min="1" max="10" required inputmode="numeric" />
-        </label>
-        <label>Dialogue Disaster
-          <input type="number" name="dialogue" min="1" max="10" required inputmode="numeric" />
-        </label>
-        <label class="bonus-category">Enjoyment <small>(bonus - optional)</small>
-          <input type="number" name="enjoyment" min="1" max="10" inputmode="numeric" />
-        </label>
+      <p class="dialog-subtitle">THE B-MOVIE INDEX <span class="subtitle-hint">(1 = normal, 10 = glorious disaster)</span></p>
+      
+      <div class="cat-grid" id="categoryGrid">
+        <!-- Categories will be dynamically generated by JavaScript -->
       </div>
+      
       <div class="dialog-actions">
         <button value="cancel" class="btn ghost" type="reset">Cancel</button>
         <button value="save" class="btn primary" type="submit">Save Ratings</button>
