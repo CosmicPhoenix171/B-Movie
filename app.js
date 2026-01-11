@@ -3,168 +3,204 @@
   const LS_KEY = 'bmovie:data:v2';
   
   // =========================================
-  // THE B-MOVIE INDEX - Rating Categories
-  // 7 Main Categories (max 70 points)
-  // 1 = normal movie, 10 = glorious disaster
+  // THE GOOD-BAD MOVIE INDEX - Rating Categories
+  // 10 Categories (max 100 points)
+  // 1 = boring/normal, 10 = glorious trash
   // =========================================
   const CATEGORIES = [
     { 
       key: 'overacting', 
       label: 'Overacting',
       icon: '🎭',
-      question: 'How exaggerated are the performances?',
+      question: 'How exaggerated and entertaining were the performances?',
       levels: [
-        '1 - Realistic acting',
+        '1 - Natural, realistic acting',
         '2 - Slightly stiff',
-        '3 - A little dramatic',
+        '3 - Mildly dramatic',
         '4 - Clearly acting',
         '5 - Cheesy',
         '6 - Over-dramatic',
-        '7 - Lots of shouting and big emotions',
-        '8 - Constant emotional extremes',
-        '9 - Every line is intense',
-        '10 - Actors act like they\'re in a different movie'
+        '7 - Loud, emotional, silly',
+        '8 - Constant mugging and shouting',
+        '9 - Actors feel out of control',
+        '10 - Completely unhinged performances'
+      ]
+    },
+    { 
+      key: 'explosions', 
+      label: 'Explosions & Destruction',
+      icon: '💥',
+      question: 'How fun was the large-scale chaos?',
+      levels: [
+        '1 - None or very rare',
+        '2 - Realistic',
+        '3 - Standard action',
+        '4 - Stylized',
+        '5 - Over-the-top',
+        '6 - Lots of explosions',
+        '7 - Things explode for no reason',
+        '8 - Buildings, cars, people constantly fly',
+        '9 - Nonstop destruction',
+        '10 - Total visual chaos'
       ]
     },
     { 
       key: 'action', 
-      label: 'Action & Explosions',
-      icon: '💥',
-      question: 'How ridiculous is the action?',
+      label: 'Action',
+      icon: '🎬',
+      question: 'How entertaining were the fights, chases, and stunts?',
       levels: [
-        '1 - Little or no action',
-        '2 - Realistic',
+        '1 - Slow or dull',
+        '2 - Minimal action',
         '3 - Normal movie action',
-        '4 - Stylized',
-        '5 - Flashy',
-        '6 - Lots of explosions',
-        '7 - Things explode for no reason',
-        '8 - Physics is ignored',
-        '9 - Constant chaos',
-        '10 - Everything explodes all the time'
+        '4 - Slightly silly',
+        '5 - Over-dramatic',
+        '6 - Lots of fights or chases',
+        '7 - Ridiculous stunts',
+        '8 - Constant chaos',
+        '9 - Never slows down',
+        '10 - Every scene is wild'
       ]
     },
     { 
       key: 'practical', 
-      label: 'Practical Effects & Gore',
-      icon: '🩸',
-      question: 'How fake and messy are the physical effects?',
+      label: 'Practical Effects',
+      icon: '🧟',
+      question: 'How fun were the physical effects, props, and makeup?',
       levels: [
-        '1 - Clean and realistic',
-        '2 - Small amounts of blood',
-        '3 - Some fake wounds',
-        '4 - Obvious makeup',
-        '5 - Fake blood and prosthetics',
-        '6 - Latex, slime, and goo',
-        '7 - Overdone blood',
-        '8 - Body parts everywhere',
+        '1 - Realistic or boring',
+        '2 - Minor effects',
+        '3 - Some makeup',
+        '4 - Noticeable prosthetics',
+        '5 - Clearly fake',
+        '6 - Latex and props',
+        '7 - Silly fake wounds',
+        '8 - Very obvious effects',
         '9 - Looks like toys',
-        '10 - Looks like a Halloween store'
+        '10 - So fake it\'s amazing'
+      ]
+    },
+    { 
+      key: 'gore', 
+      label: 'Gore',
+      icon: '🩸',
+      question: 'How entertaining was the blood and damage?',
+      levels: [
+        '1 - None or barely any',
+        '2 - Light blood',
+        '3 - Some injuries',
+        '4 - Noticeable gore',
+        '5 - Over-the-top',
+        '6 - Lots of blood',
+        '7 - Silly injuries',
+        '8 - Body parts',
+        '9 - Excessive splatter',
+        '10 - Buckets of ridiculous gore'
       ]
     },
     { 
       key: 'cgi', 
-      label: 'CGI & Visual Crimes',
-      icon: '🖥️',
-      question: 'How bad is the digital stuff?',
+      label: 'CGI Crimes',
+      icon: '🧬',
+      question: 'How funny or distracting was the digital work?',
       levels: [
         '1 - Looks good',
         '2 - Minor flaws',
         '3 - Slightly fake',
         '4 - Distracting',
         '5 - Obviously bad',
-        '6 - Lots of green screen',
-        '7 - Video-game looking',
-        '8 - Old console quality',
-        '9 - Very broken',
+        '6 - Green-screen heavy',
+        '7 - Looks like a video game',
+        '8 - Very broken',
+        '9 - Laugh-out-loud',
         '10 - Looks unfinished'
       ]
     },
     { 
       key: 'plot', 
-      label: 'Plot Confusion',
-      icon: '🤯',
-      question: 'How hard is it to follow?',
+      label: 'Plot Chaos',
+      icon: '🧠',
+      question: 'How entertaining was the nonsense?',
       levels: [
-        '1 - Everything makes sense',
-        '2 - Very clear',
-        '3 - Small plot holes',
-        '4 - Some confusion',
-        '5 - Many "wait what?" moments',
+        '1 - Clear and logical',
+        '2 - Minor confusion',
+        '3 - Some weird moments',
+        '4 - A few plot holes',
+        '5 - Many "wait what?"',
         '6 - Logic breaks',
         '7 - Events don\'t connect',
-        '8 - Story jumps around',
+        '8 - Story jumps wildly',
         '9 - Nothing makes sense',
         '10 - Total nonsense'
       ]
     },
     { 
       key: 'creature', 
-      label: 'Creature / Monster',
-      icon: '👹',
-      question: 'How fake does the monster look?',
+      label: 'Creature',
+      icon: '🦖',
+      question: 'How fun was the monster?',
       levels: [
         '1 - No monster',
-        '2 - Very realistic',
-        '3 - Slightly fake',
-        '4 - Cheap looking',
-        '5 - Looks off',
+        '2 - Generic',
+        '3 - Slightly goofy',
+        '4 - Looks off',
+        '5 - Clearly fake',
         '6 - Bad design',
-        '7 - Clearly a suit',
-        '8 - Rubber monster',
-        '9 - Moves weird',
-        '10 - You can see the zipper'
+        '7 - Rubber suit',
+        '8 - Silly movements',
+        '9 - Ridiculous and lovable',
+        '10 - Iconic B-movie monster'
       ]
     },
     { 
       key: 'dialogue', 
-      label: 'Dialogue Disaster',
-      icon: '💬',
-      question: 'How bad are the lines?',
+      label: 'Dialogue',
+      icon: '🗣',
+      question: 'How quotable was the writing?',
       levels: [
-        '1 - Normal conversation',
+        '1 - Forgettable',
         '2 - Slightly awkward',
         '3 - Stiff',
-        '4 - Unnatural',
-        '5 - Corny',
-        '6 - Strange',
-        '7 - Hard to listen to',
-        '8 - Meme lines',
-        '9 - Almost nonsense',
-        '10 - Legendary bad quotes'
+        '4 - Corny',
+        '5 - Cheesy',
+        '6 - Weird',
+        '7 - Funny bad lines',
+        '8 - Meme-worthy',
+        '9 - Constant quotes',
+        '10 - Legendary dialogue'
       ]
-    }
-  ];
-  
-  const BONUS_CATEGORIES = [
+    },
     { 
       key: 'enjoyment', 
       label: 'Enjoyment',
-      icon: '🎉',
+      icon: '❤️',
       question: 'How much fun did you have?',
       levels: [
-        '1 - Hated it',
+        '1 - Miserable',
         '2 - Very boring',
         '3 - Mostly dull',
         '4 - Meh',
         '5 - Some fun',
         '6 - Entertaining',
-        '7 - Enjoyable',
+        '7 - Good',
         '8 - Very fun',
         '9 - Loved it',
-        '10 - Want to watch again immediately'
+        '10 - Want to watch again'
       ]
     }
   ];
   
-  // Trash Cinema Rankings (based on total score out of 70)
+  // No bonus categories - all 10 count toward the total
+  const BONUS_CATEGORIES = [];
+  
+  // Good-Bad Movie Tiers (based on total score out of 100)
   const TRASH_TIERS = [
-    { min: 0, max: 15, label: 'Accidentally Competent', emoji: '😐', color: '#9aa8b9' },
-    { min: 16, max: 30, label: 'Mild Cheese', emoji: '🧀', color: '#f0e68c' },
-    { min: 31, max: 45, label: 'Certified B-Movie', emoji: '🎬', color: '#ff9d1d' },
-    { min: 46, max: 55, label: 'Cult Classic', emoji: '⭐', color: '#ff6b6b' },
-    { min: 56, max: 65, label: 'So Bad It\'s Beautiful', emoji: '💎', color: '#c29dff' },
-    { min: 66, max: 70, label: 'HALL OF TRASH LEGENDS', emoji: '👑', color: '#ffd700' }
+    { min: 0, max: 25, label: 'Boring or Forgettable', emoji: '😴', color: '#6b7280' },
+    { min: 26, max: 45, label: 'Weak Cheese', emoji: '🧀', color: '#a3a37a' },
+    { min: 46, max: 65, label: 'Fun Bad Movie', emoji: '🎬', color: '#ff9d1d' },
+    { min: 66, max: 80, label: 'Cult Classic', emoji: '⭐', color: '#ff6b6b' },
+    { min: 81, max: 95, label: 'Iconic Trash', emoji: '💎', color: '#c29dff' },
+    { min: 96, max: 100, label: 'ALL-TIME TRASH LEGEND', emoji: '👑', color: '#ffd700' }
   ];
   
   function getTrashTier(score) {
@@ -178,7 +214,7 @@
    * {
    *   movies: [{
    *     id,title,year,notes,addedAt,
-   *     ratings: { username: { overacting:number, action:number, practical:number, cgi:number, plot:number, creature:number, dialogue:number, enjoyment?:number } }
+   *     ratings: { username: { overacting, explosions, action, practical, gore, cgi, plot, creature, dialogue, enjoyment } }
    *   }]
    * }
    */

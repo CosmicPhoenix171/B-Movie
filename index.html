@@ -88,7 +88,7 @@
           <div class="scores-wrap">
             <div class="score-row categories"></div>
             <div class="total-line">
-              <span class="total-badge" title="Total score">Total: <strong class="total-val">0</strong>/70</span>
+              <span class="total-badge" title="Total score">Total: <strong class="total-val">0</strong>/100</span>
               <span class="rater-count"></span>
             </div>
             <div class="card-tier">
@@ -195,52 +195,48 @@
         </ul>
       </details>
       <details>
-        <summary>The B-Movie Index (1-10 each)</summary>
-        <p class="mini-note" style="padding-top:10px;">Rate from 1 (normal movie) to 10 (glorious disaster)</p>
+        <summary>The Good-Bad Movie Index (1-10 each)</summary>
+        <p class="mini-note" style="padding-top:10px;">Rate from 1 (boring/normal) to 10 (glorious trash)</p>
         <ol class="rules-list numbered">
-          <li><strong>🎭 Overacting</strong> - How exaggerated are the performances?</li>
-          <li><strong>💥 Action & Explosions</strong> - How ridiculous is the action?</li>
-          <li><strong>🩸 Practical Effects & Gore</strong> - How fake and messy?</li>
-          <li><strong>🖥️ CGI & Visual Crimes</strong> - How bad is the digital stuff?</li>
-          <li><strong>🤯 Plot Confusion</strong> - How hard is it to follow?</li>
-          <li><strong>👹 Creature / Monster</strong> - How fake does the monster look?</li>
-          <li><strong>💬 Dialogue Disaster</strong> - How bad are the lines?</li>
+          <li><strong>🎭 Overacting</strong> - How exaggerated were the performances?</li>
+          <li><strong>💥 Explosions & Destruction</strong> - How fun was the chaos?</li>
+          <li><strong>🎬 Action</strong> - How entertaining were fights/chases/stunts?</li>
+          <li><strong>🧟 Practical Effects</strong> - How fun were props and makeup?</li>
+          <li><strong>🩸 Gore</strong> - How entertaining was the blood?</li>
+          <li><strong>🧬 CGI Crimes</strong> - How funny was the digital work?</li>
+          <li><strong>🧠 Plot Chaos</strong> - How entertaining was the nonsense?</li>
+          <li><strong>🦖 Creature</strong> - How fun was the monster?</li>
+          <li><strong>🗣 Dialogue</strong> - How quotable was the writing?</li>
+          <li><strong>❤️ Enjoyment</strong> - How much fun did you have?</li>
         </ol>
-        <p class="mini-note">Max Score = 70 points (7 categories × 10)</p>
-        <details>
-          <summary>🎉 Bonus: Enjoyment</summary>
-          <ul class="rules-list">
-            <li>How much fun did you have? (1-10)</li>
-            <li>Tracked separately - doesn't count toward total.</li>
-          </ul>
-        </details>
+        <p class="mini-note">Max Score = 100 points (10 categories × 10)</p>
       </details>
       <details>
-        <summary>🏆 Trash Cinema Rankings</summary>
+        <summary>🏆 Good-Bad Movie Tiers</summary>
         <div class="tier-list">
           <div class="tier-item tier-1">
-            <span class="tier-emoji-large">😐</span>
-            <div class="tier-info"><div class="tier-label">Accidentally Competent</div><div class="tier-range">0 – 15 pts</div></div>
+            <span class="tier-emoji-large">😴</span>
+            <div class="tier-info"><div class="tier-label">Boring or Forgettable</div><div class="tier-range">0 – 25 pts</div></div>
           </div>
           <div class="tier-item tier-2">
             <span class="tier-emoji-large">🧀</span>
-            <div class="tier-info"><div class="tier-label">Mild Cheese</div><div class="tier-range">16 – 30 pts</div></div>
+            <div class="tier-info"><div class="tier-label">Weak Cheese</div><div class="tier-range">26 – 45 pts</div></div>
           </div>
           <div class="tier-item tier-3">
             <span class="tier-emoji-large">🎬</span>
-            <div class="tier-info"><div class="tier-label">Certified B-Movie</div><div class="tier-range">31 – 45 pts</div></div>
+            <div class="tier-info"><div class="tier-label">Fun Bad Movie</div><div class="tier-range">46 – 65 pts</div></div>
           </div>
           <div class="tier-item tier-4">
             <span class="tier-emoji-large">⭐</span>
-            <div class="tier-info"><div class="tier-label">Cult Classic</div><div class="tier-range">46 – 55 pts</div></div>
+            <div class="tier-info"><div class="tier-label">Cult Classic</div><div class="tier-range">66 – 80 pts</div></div>
           </div>
           <div class="tier-item tier-5">
             <span class="tier-emoji-large">💎</span>
-            <div class="tier-info"><div class="tier-label">So Bad It's Beautiful</div><div class="tier-range">56 – 65 pts</div></div>
+            <div class="tier-info"><div class="tier-label">Iconic Trash</div><div class="tier-range">81 – 95 pts</div></div>
           </div>
           <div class="tier-item tier-6">
             <span class="tier-emoji-large">👑</span>
-            <div class="tier-info"><div class="tier-label">HALL OF TRASH LEGENDS</div><div class="tier-range">66 – 70 pts</div></div>
+            <div class="tier-info"><div class="tier-label">ALL-TIME TRASH LEGEND</div><div class="tier-range">96 – 100 pts</div></div>
           </div>
         </div>
       </details>
@@ -258,7 +254,7 @@
   <dialog id="rateDialog">
     <form method="dialog" id="rateForm">
       <h3 class="dialog-title">Rate: <span id="dialogMovieTitle"></span></h3>
-      <p class="dialog-subtitle">THE B-MOVIE INDEX <span class="subtitle-hint">(1 = normal, 10 = glorious disaster)</span></p>
+      <p class="dialog-subtitle">THE GOOD-BAD MOVIE INDEX <span class="subtitle-hint">(1 = boring, 10 = glorious trash)</span></p>
       
       <div class="cat-grid" id="categoryGrid">
         <!-- Categories will be dynamically generated by JavaScript -->
