@@ -430,6 +430,9 @@ body {
   font-size: 0.8rem;
   font-weight: 700;
 }
+.cheese-badge {
+  background: linear-gradient(135deg, #ffd76a, #f59e0b);
+}
 .rater-count { font-size: 0.75rem; color: var(--text-dim); }
 
 .cat-badge {
