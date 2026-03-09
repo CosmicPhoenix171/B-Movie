@@ -208,11 +208,11 @@
   
   // Cheese tiers (based on signed cheese score, range -50 to 50)
   const TRASH_TIERS = [
-    { min: -50, max: -41, label: 'Masterpiece Tier 5', emoji: '🏆', color: '#7dd3fc' },
-    { min: -40, max: -31, label: 'Great Movie Tier 4', emoji: '⭐', color: '#60a5fa' },
+    { min: -50, max: -41, label: 'Masterpiece Tier 1', emoji: '🏆', color: '#7dd3fc' },
+    { min: -40, max: -31, label: 'Great Movie Tier 2', emoji: '⭐', color: '#60a5fa' },
     { min: -30, max: -21, label: 'Good Movie Tier 3', emoji: '🎥', color: '#94a3b8' },
-    { min: -20, max: -11, label: 'Solid Movie Tier 2', emoji: '🎞️', color: '#a1a1aa' },
-    { min: -10, max: -1, label: 'Slightly Good Tier 1', emoji: '🙂', color: '#cbd5e1' },
+    { min: -20, max: -11, label: 'Solid Movie Tier 4', emoji: '🎞️', color: '#a1a1aa' },
+    { min: -10, max: -1, label: 'Slightly Good Tier 5', emoji: '🙂', color: '#cbd5e1' },
     { min: 0, max: 0, label: 'Neutral', emoji: '😐', color: '#f87171' },
     { min: 1, max: 10, label: 'Cheese Tier 1', emoji: '🧀', color: '#d6b45d' },
     { min: 11, max: 20, label: 'Cheese Tier 2', emoji: '🧀🧀', color: '#f59e0b' },
@@ -232,6 +232,15 @@
     return JSON.parse(JSON.stringify(value));
   }
 
+  function normalizeState(state){
+    if(!state?.movies) return { movies: [] };
+    state.movies.forEach(movie => {
+      delete movie.legacySets;
+      delete movie.legacyRatings;
+    });
+    return state;
+  }
+
   function getRatingTotals(entry){
     let pointsTotal = 0;
     let cheeseTotal = 0;
@@ -243,32 +252,6 @@
     });
 
     return { pointsTotal, cheeseTotal };
-  }
-
-  function createLegacySet(label, ratings, totalSuffix){
-    return {
-      label,
-      ratings: cloneData(ratings),
-      totalSuffix
-    };
-  }
-
-  function getLegacySets(movie){
-    const sets = [];
-    if(Array.isArray(movie.legacySets)){
-      movie.legacySets.forEach(set => {
-        if(set && set.ratings && Object.keys(set.ratings).length > 0){
-          sets.push(set);
-        }
-      });
-    }
-    if(movie.legacyRatings && Object.keys(movie.legacyRatings).length > 0){
-      const exists = sets.some(set => set.label === 'Legacy Ratings (old 1-10 scale)');
-      if(!exists){
-        sets.push(createLegacySet('Legacy Ratings (old 1-10 scale)', movie.legacyRatings, '/100'));
-      }
-    }
-    return sets;
   }
 
   /** Data shape v2
@@ -579,7 +562,7 @@
       const raw = localStorage.getItem(LS_KEY);
       if(raw){
         const parsed = JSON.parse(raw);
-        if(parsed.movies) return parsed;
+        if(parsed.movies) return normalizeState(parsed);
       }
     } catch {}
 
@@ -590,14 +573,11 @@
         const v4 = JSON.parse(v4raw);
         if(v4.movies){
           v4.movies.forEach(m => {
-            const legacySets = getLegacySets(m);
-            if(m.ratings && Object.keys(m.ratings).length > 0){
-              legacySets.push(createLegacySet('Legacy Ratings (old -5 to 5 scale, 0 = bad)', m.ratings, ''));
-            }
-            m.legacySets = legacySets;
             m.ratings = {};
+            delete m.legacySets;
+            delete m.legacyRatings;
           });
-          const migrated = { movies: v4.movies };
+          const migrated = normalizeState({ movies: v4.movies });
           localStorage.setItem(LS_KEY, JSON.stringify(migrated));
           return migrated;
         }
@@ -611,14 +591,11 @@
         const v3 = JSON.parse(v3raw);
         if(v3.movies){
           v3.movies.forEach(m => {
-            const legacySets = getLegacySets(m);
-            if(m.ratings && Object.keys(m.ratings).length > 0){
-              legacySets.push(createLegacySet('Legacy Ratings (old -5 to 5 scale, 0 = none)', m.ratings, ''));
-            }
-            m.legacySets = legacySets;
             m.ratings = {};
+            delete m.legacySets;
+            delete m.legacyRatings;
           });
-          const migrated = { movies: v3.movies };
+          const migrated = normalizeState({ movies: v3.movies });
           localStorage.setItem(LS_KEY, JSON.stringify(migrated));
           return migrated;
         }
@@ -632,12 +609,11 @@
         const v2 = JSON.parse(v2raw);
         if(v2.movies){
           v2.movies.forEach(m => {
-            if(m.ratings && Object.keys(m.ratings).length > 0){
-              m.legacySets = [createLegacySet('Legacy Ratings (old 1-10 scale)', m.ratings, '/100')];
-            }
             m.ratings = {};
+            delete m.legacySets;
+            delete m.legacyRatings;
           });
-          const migrated = { movies: v2.movies };
+          const migrated = normalizeState({ movies: v2.movies });
           localStorage.setItem(LS_KEY, JSON.stringify(migrated));
           return migrated;
         }
@@ -651,12 +627,11 @@
         const v1 = JSON.parse(v1raw);
         if(v1.movies){
           v1.movies.forEach(m => {
-            if(m.ratings && Object.keys(m.ratings).length > 0){
-              m.legacySets = [createLegacySet('Legacy Ratings (old 1-10 scale)', m.ratings, '')];
-            }
             m.ratings = {};
+            delete m.legacySets;
+            delete m.legacyRatings;
           });
-          const migrated = { movies: v1.movies };
+          const migrated = normalizeState({ movies: v1.movies });
           localStorage.setItem(LS_KEY, JSON.stringify(migrated));
           return migrated;
         }
@@ -716,11 +691,8 @@
   }
 
   function sanitizeForFirestore(movie){
-    const { id, title, year=null, notes='', addedAt, ratings={}, chooser, legacySets, legacyRatings } = movie;
-    const data = { id, title, year, notes, addedAt, ratings, chooser };
-    if(legacySets?.length) data.legacySets = legacySets;
-    if(legacyRatings) data.legacyRatings = legacyRatings;
-    return data;
+    const { id, title, year=null, notes='', addedAt, ratings={}, chooser } = movie;
+    return { id, title, year, notes, addedAt, ratings, chooser };
   }
 
   function attachRemoteListener(){
@@ -738,15 +710,12 @@
     remoteMovies.forEach(r => {
       const existing = map.get(r.id);
       if(existing){
-        const merged = { ...existing, ...r };
-        if(existing.legacySets && !r.legacySets) merged.legacySets = existing.legacySets;
-        if(existing.legacyRatings && !r.legacyRatings) merged.legacyRatings = existing.legacyRatings;
-        map.set(r.id, merged);
+        map.set(r.id, { ...existing, ...r });
       } else {
         map.set(r.id, r);
       }
     });
-    state.movies = Array.from(map.values()).sort((a,b)=> b.addedAt - a.addedAt);
+    state.movies = normalizeState({ movies: Array.from(map.values()).sort((a,b)=> b.addedAt - a.addedAt) }).movies;
     localStorage.setItem(LS_KEY, JSON.stringify(state));
     renderAll();
   }
@@ -1164,41 +1133,6 @@
     }
   }
 
-  function appendLegacyRatings(reviewsList, movie){
-    const legacySets = getLegacySets(movie);
-    if(legacySets.length === 0) return 0;
-
-    legacySets.forEach(set => {
-      const legacyRatings = set.ratings || {};
-      const legacyUsernames = Object.keys(legacyRatings);
-      if(legacyUsernames.length === 0) return;
-
-      const legacySection = document.createElement('div');
-      legacySection.className = 'legacy-ratings-section';
-      legacySection.innerHTML = `<div class="legacy-header">${sanitize(set.label || 'Legacy Ratings')}</div>`;
-
-      legacyUsernames.forEach(uname => {
-        const legacyRating = legacyRatings[uname];
-        const legacyTotal = CATEGORIES.reduce((sum, cat) => sum + (Number(legacyRating[cat.key]) || 0), 0);
-        let legacyHTML = `<div class="user-review legacy-review">`;
-        legacyHTML += `<div class="reviewer-header"><strong class="reviewer-name">${sanitize(uname)}</strong><span class="reviewer-total legacy-total">Legacy Total: ${legacyTotal}${set.totalSuffix || ''}</span></div>`;
-        legacyHTML += '<div class="reviewer-scores">';
-        CATEGORIES.forEach(cat => {
-          const score = legacyRating[cat.key];
-          if(score !== undefined && score !== null){
-            legacyHTML += `<span class="score-item legacy" title="${cat.label}: ${score}">${cat.icon} ${score > 0 ? '+' + score : score}</span>`;
-          }
-        });
-        legacyHTML += '</div></div>';
-        legacySection.innerHTML += legacyHTML;
-      });
-
-      reviewsList.appendChild(legacySection);
-    });
-
-    return legacySets.length;
-  }
-
   function updateCardScores(movie, card){
     const username = dom.username.value.trim();
     const userHasRated = !!(username && movie.ratings && movie.ratings[username]);
@@ -1318,14 +1252,8 @@
   const userHasRated = !!(username && ratings[username]);
 
     if(usernames.length === 0){
-      const legacyCount = appendLegacyRatings(reviewsList, movie);
-      if(legacyCount > 0){
-        reviewsList.insertAdjacentHTML('afterbegin', '<p class="no-reviews">No ratings on the current scale yet.</p>');
-        reviewsToggle.textContent = 'Individual Reviews (legacy)';
-      } else {
-        reviewsList.innerHTML = '<p class="no-reviews">No reviews yet</p>';
-        reviewsToggle.textContent = 'Individual Reviews';
-      }
+      reviewsList.innerHTML = '<p class="no-reviews">No reviews yet</p>';
+      reviewsToggle.textContent = 'Individual Reviews';
       return;
     }
 
@@ -1395,8 +1323,6 @@
     details.addEventListener('toggle', () => {
       details.setAttribute('data-user-toggled','true');
     }, { once: true });
-
-    appendLegacyRatings(reviewsList, movie);
   }
 
   function getAggregates(movie){
