@@ -1,13 +1,14 @@
 /* B-Movie Ratings App Logic (with optional Firebase Firestore sync) */
 (async function(){
-  const LS_KEY = 'bmovie:data:v4';
+  const LS_KEY = 'bmovie:data:v5';
+  const LS_KEY_V4 = 'bmovie:data:v4';
   const LS_KEY_V3 = 'bmovie:data:v3';
   const LS_KEY_V2 = 'bmovie:data:v2';
   
   // =========================================
   // THE GOOD-BAD MOVIE INDEX - Rating Categories
   // 10 Categories (range -50 to 50)
-  // -5 = masterpiece side, 0 = bad, 5 = maximum cheese
+  // -5 = masterpiece side, 0 = none, 5 = maximum cheese
   // =========================================
   const CATEGORIES = [
     { 
@@ -21,7 +22,7 @@
         '-3 - Strong and believable',
         '-2 - Solid, normal acting',
         '-1 - Slightly stiff but fine',
-        '0 - Bad acting',
+        '0 - None / Not applicable',
         '1 - A little cheesy',
         '2 - Clearly overdone',
         '3 - Big silly energy',
@@ -40,7 +41,7 @@
         '-3 - Strong and effective',
         '-2 - Normal blockbuster stuff',
         '-1 - Slightly underwhelming',
-        '0 - Bad and weak',
+        '0 - None / Not applicable',
         '1 - A little cheesy',
         '2 - Big dumb fun',
         '3 - Excessive for no reason',
@@ -59,7 +60,7 @@
         '-3 - Strong action scenes',
         '-2 - Normal good action',
         '-1 - Slightly weak',
-        '0 - Bad action',
+        '0 - None / Not applicable',
         '1 - A little cheesy',
         '2 - Silly and fun',
         '3 - Ridiculous stunts',
@@ -78,7 +79,7 @@
         '-3 - Strong and convincing',
         '-2 - Normal solid effects',
         '-1 - A bit weak',
-        '0 - Bad effects',
+        '0 - None / Not applicable',
         '1 - Slightly cheesy',
         '2 - Obviously fake but fun',
         '3 - Silly rubbery effects',
@@ -97,7 +98,7 @@
         '-3 - Strong horror craft',
         '-2 - Normal decent gore',
         '-1 - Slightly weak',
-        '0 - Bad gore',
+        '0 - None / Not applicable',
         '1 - Slightly cheesy',
         '2 - Over-the-top fun',
         '3 - Silly and excessive',
@@ -116,7 +117,7 @@
         '-3 - Strong and polished',
         '-2 - Normal passable CGI',
         '-1 - Slightly rough',
-        '0 - Bad CGI',
+        '0 - None / Not applicable',
         '1 - A little cheesy',
         '2 - Noticeably fake but fun',
         '3 - Video-game nonsense',
@@ -135,7 +136,7 @@
         '-3 - Strong and coherent',
         '-2 - Normal solid story',
         '-1 - Slightly messy',
-        '0 - Bad plot',
+        '0 - None / Not applicable',
         '1 - A little cheesy',
         '2 - Fun nonsense',
         '3 - Wildly disconnected',
@@ -154,7 +155,7 @@
         '-3 - Strong design',
         '-2 - Normal decent creature',
         '-1 - Slightly weak',
-        '0 - Bad creature',
+        '0 - None / Not applicable',
         '1 - A little cheesy',
         '2 - Goofy but fun',
         '3 - Rubber suit greatness',
@@ -173,7 +174,7 @@
         '-3 - Strong lines',
         '-2 - Normal solid dialogue',
         '-1 - Slightly awkward',
-        '0 - Bad dialogue',
+        '0 - None / Not applicable',
         '1 - A little cheesy',
         '2 - Corny and fun',
         '3 - Very quotable cheese',
@@ -192,7 +193,7 @@
         '-3 - Very enjoyable',
         '-2 - Normal good watch',
         '-1 - Slightly underwhelming',
-        '0 - Bad experience',
+        '0 - None / Not applicable',
         '1 - A little cheesy fun',
         '2 - Entertaining cheese',
         '3 - Very fun bad movie',
@@ -210,7 +211,7 @@
     { min: -50, max: -36, label: 'Masterpiece', emoji: '🏆', color: '#7dd3fc' },
     { min: -35, max: -21, label: 'Great Movie', emoji: '⭐', color: '#60a5fa' },
     { min: -20, max: -6, label: 'Normal Good Movie', emoji: '🎥', color: '#94a3b8' },
-    { min: -5, max: 5, label: 'Bad Movie', emoji: '😬', color: '#f87171' },
+    { min: -5, max: 5, label: 'None / Mixed Zone', emoji: '😐', color: '#f87171' },
     { min: 6, max: 15, label: 'Cheese Tier 1', emoji: '🧀', color: '#d6b45d' },
     { min: 16, max: 25, label: 'Cheese Tier 2', emoji: '🧀🧀', color: '#f59e0b' },
     { min: 26, max: 35, label: 'Cheese Tier 3', emoji: '🎬', color: '#fb7185' },
@@ -558,12 +559,33 @@
 
   // Load / migrate
   function loadState(){
-    // Try v4 (current format)
+    // Try v5 (current format)
     try {
       const raw = localStorage.getItem(LS_KEY);
       if(raw){
         const parsed = JSON.parse(raw);
         if(parsed.movies) return parsed;
+      }
+    } catch {}
+
+    // Migrate from v4 (old -5 to 5 meaning, 0 = bad) => v5
+    try {
+      const v4raw = localStorage.getItem(LS_KEY_V4);
+      if(v4raw){
+        const v4 = JSON.parse(v4raw);
+        if(v4.movies){
+          v4.movies.forEach(m => {
+            const legacySets = getLegacySets(m);
+            if(m.ratings && Object.keys(m.ratings).length > 0){
+              legacySets.push(createLegacySet('Legacy Ratings (old -5 to 5 scale, 0 = bad)', m.ratings, ''));
+            }
+            m.legacySets = legacySets;
+            m.ratings = {};
+          });
+          const migrated = { movies: v4.movies };
+          localStorage.setItem(LS_KEY, JSON.stringify(migrated));
+          return migrated;
+        }
       }
     } catch {}
 
