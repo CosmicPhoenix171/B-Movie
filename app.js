@@ -208,15 +208,17 @@
   
   // Cheese tiers (based on signed cheese score, range -50 to 50)
   const TRASH_TIERS = [
-    { min: -50, max: -36, label: 'Masterpiece', emoji: '🏆', color: '#7dd3fc' },
-    { min: -35, max: -21, label: 'Great Movie', emoji: '⭐', color: '#60a5fa' },
-    { min: -20, max: -6, label: 'Normal Good Movie', emoji: '🎥', color: '#94a3b8' },
-    { min: -5, max: 5, label: 'Neutral', emoji: '😐', color: '#f87171' },
-    { min: 6, max: 15, label: 'Cheese Tier 1', emoji: '🧀', color: '#d6b45d' },
-    { min: 16, max: 25, label: 'Cheese Tier 2', emoji: '🧀🧀', color: '#f59e0b' },
-    { min: 26, max: 35, label: 'Cheese Tier 3', emoji: '🎬', color: '#fb7185' },
-    { min: 36, max: 45, label: 'Cheese Tier 4', emoji: '💎', color: '#c084fc' },
-    { min: 46, max: 50, label: 'Cheese Tier 5', emoji: '👑', color: '#facc15' }
+    { min: -50, max: -41, label: 'Masterpiece Tier 5', emoji: '🏆', color: '#7dd3fc' },
+    { min: -40, max: -31, label: 'Great Movie Tier 4', emoji: '⭐', color: '#60a5fa' },
+    { min: -30, max: -21, label: 'Good Movie Tier 3', emoji: '🎥', color: '#94a3b8' },
+    { min: -20, max: -11, label: 'Solid Movie Tier 2', emoji: '🎞️', color: '#a1a1aa' },
+    { min: -10, max: -1, label: 'Slightly Good Tier 1', emoji: '🙂', color: '#cbd5e1' },
+    { min: 0, max: 0, label: 'Neutral', emoji: '😐', color: '#f87171' },
+    { min: 1, max: 10, label: 'Cheese Tier 1', emoji: '🧀', color: '#d6b45d' },
+    { min: 11, max: 20, label: 'Cheese Tier 2', emoji: '🧀🧀', color: '#f59e0b' },
+    { min: 21, max: 30, label: 'Cheese Tier 3', emoji: '🎬', color: '#fb7185' },
+    { min: 31, max: 40, label: 'Cheese Tier 4', emoji: '💎', color: '#c084fc' },
+    { min: 41, max: 50, label: 'Cheese Tier 5', emoji: '👑', color: '#facc15' }
   ];
   
   function getTrashTier(score) {
