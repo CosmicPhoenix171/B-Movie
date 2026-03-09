@@ -88,7 +88,7 @@
           <div class="scores-wrap">
             <div class="score-row categories"></div>
             <div class="total-line">
-              <span class="total-badge" title="Total score">Total: <strong class="total-val">0</strong>/100</span>
+              <span class="total-badge" title="Total score">Total: <strong class="total-val">0</strong>/50</span>
               <span class="rater-count"></span>
             </div>
             <div class="card-tier">
@@ -195,8 +195,8 @@
         </ul>
       </details>
       <details>
-        <summary>The Good-Bad Movie Index (1-10 each)</summary>
-        <p class="mini-note" style="padding-top:10px;">Rate from 1 (boring/normal) to 10 (glorious trash)</p>
+        <summary>The Good-Bad Movie Index (-5 to 5 each)</summary>
+        <p class="mini-note mini-note-spaced">Rate from -5 (masterpiece side) to 5 (cheesiest possible). 0 = bad.</p>
         <ol class="rules-list numbered">
           <li><strong>🎭 Overacting</strong> - How exaggerated were the performances?</li>
           <li><strong>💥 Explosions & Destruction</strong> - How fun was the chaos?</li>
@@ -209,34 +209,46 @@
           <li><strong>🗣 Dialogue</strong> - How quotable was the writing?</li>
           <li><strong>❤️ Enjoyment</strong> - How much fun did you have?</li>
         </ol>
-        <p class="mini-note">Max Score = 100 points (10 categories × 10)</p>
+        <p class="mini-note">Max Score = 50 points (10 categories × 5)</p>
       </details>
       <details>
         <summary>🏆 Good-Bad Movie Tiers</summary>
         <div class="tier-list">
           <div class="tier-item tier-1">
-            <span class="tier-emoji-large">😴</span>
-            <div class="tier-info"><div class="tier-label">Boring or Forgettable</div><div class="tier-range">0 – 25 pts</div></div>
+            <span class="tier-emoji-large">🏆</span>
+            <div class="tier-info"><div class="tier-label">Masterpiece</div><div class="tier-range">-50 – -36 pts</div></div>
           </div>
           <div class="tier-item tier-2">
-            <span class="tier-emoji-large">🧀</span>
-            <div class="tier-info"><div class="tier-label">Weak Cheese</div><div class="tier-range">26 – 45 pts</div></div>
+            <span class="tier-emoji-large">⭐</span>
+            <div class="tier-info"><div class="tier-label">Great Movie</div><div class="tier-range">-35 – -21 pts</div></div>
           </div>
           <div class="tier-item tier-3">
-            <span class="tier-emoji-large">🎬</span>
-            <div class="tier-info"><div class="tier-label">Fun Bad Movie</div><div class="tier-range">46 – 65 pts</div></div>
+            <span class="tier-emoji-large">🎥</span>
+            <div class="tier-info"><div class="tier-label">Normal Good Movie</div><div class="tier-range">-20 – -6 pts</div></div>
           </div>
           <div class="tier-item tier-4">
-            <span class="tier-emoji-large">⭐</span>
-            <div class="tier-info"><div class="tier-label">Cult Classic</div><div class="tier-range">66 – 80 pts</div></div>
+            <span class="tier-emoji-large">😬</span>
+            <div class="tier-info"><div class="tier-label">Bad Movie</div><div class="tier-range">-5 – 5 pts</div></div>
           </div>
           <div class="tier-item tier-5">
-            <span class="tier-emoji-large">💎</span>
-            <div class="tier-info"><div class="tier-label">Iconic Trash</div><div class="tier-range">81 – 95 pts</div></div>
+            <span class="tier-emoji-large">🧀</span>
+            <div class="tier-info"><div class="tier-label">Cheese Tier 1</div><div class="tier-range">6 – 15 pts</div></div>
           </div>
           <div class="tier-item tier-6">
+            <span class="tier-emoji-large">🧀🧀</span>
+            <div class="tier-info"><div class="tier-label">Cheese Tier 2</div><div class="tier-range">16 – 25 pts</div></div>
+          </div>
+          <div class="tier-item tier-7">
+            <span class="tier-emoji-large">🎬</span>
+            <div class="tier-info"><div class="tier-label">Cheese Tier 3</div><div class="tier-range">26 – 35 pts</div></div>
+          </div>
+          <div class="tier-item tier-8">
+            <span class="tier-emoji-large">💎</span>
+            <div class="tier-info"><div class="tier-label">Cheese Tier 4</div><div class="tier-range">36 – 45 pts</div></div>
+          </div>
+          <div class="tier-item tier-9">
             <span class="tier-emoji-large">👑</span>
-            <div class="tier-info"><div class="tier-label">ALL-TIME TRASH LEGEND</div><div class="tier-range">96 – 100 pts</div></div>
+            <div class="tier-info"><div class="tier-label">Cheese Tier 5</div><div class="tier-range">46 – 50 pts</div></div>
           </div>
         </div>
       </details>
@@ -254,7 +266,7 @@
   <dialog id="rateDialog">
     <form method="dialog" id="rateForm">
       <h3 class="dialog-title">Rate: <span id="dialogMovieTitle"></span></h3>
-      <p class="dialog-subtitle">THE GOOD-BAD MOVIE INDEX <span class="subtitle-hint">(1 = boring, 10 = glorious trash)</span></p>
+      <p class="dialog-subtitle">THE GOOD-BAD MOVIE INDEX <span class="subtitle-hint">(-5 = masterpiece side, 0 = bad, 5 = cheesiest)</span></p>
       
       <div class="cat-grid" id="categoryGrid">
         <!-- Categories will be dynamically generated by JavaScript -->

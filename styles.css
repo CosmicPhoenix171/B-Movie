@@ -475,6 +475,33 @@ body {
 }
 .score-item.bonus { color: #c29dff; }
 
+/* Legacy ratings styling */
+.legacy-ratings-section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255 255 255 / 10%);
+}
+.legacy-header {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+.legacy-review {
+  opacity: 0.65;
+  border-style: dashed;
+}
+.legacy-total {
+  color: var(--text-dim) !important;
+}
+.score-item.legacy {
+  color: var(--text-dim);
+  opacity: 0.8;
+}
+
 .card-actions {
   display: flex;
   justify-content: flex-end;
@@ -709,6 +736,10 @@ body {
   color: var(--text-dim);
   margin: 8px 0 0;
   padding: 0 16px 14px;
+}
+
+.mini-note-spaced {
+  padding-top: 10px;
 }
 
 /* ====================================

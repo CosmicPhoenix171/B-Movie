@@ -1,11 +1,13 @@
 /* B-Movie Ratings App Logic (with optional Firebase Firestore sync) */
 (async function(){
-  const LS_KEY = 'bmovie:data:v2';
+  const LS_KEY = 'bmovie:data:v4';
+  const LS_KEY_V3 = 'bmovie:data:v3';
+  const LS_KEY_V2 = 'bmovie:data:v2';
   
   // =========================================
   // THE GOOD-BAD MOVIE INDEX - Rating Categories
-  // 10 Categories (max 100 points)
-  // 1 = boring/normal, 10 = glorious trash
+  // 10 Categories (range -50 to 50)
+  // -5 = masterpiece side, 0 = bad, 5 = maximum cheese
   // =========================================
   const CATEGORIES = [
     { 
@@ -14,16 +16,17 @@
       icon: '🎭',
       question: 'How exaggerated and entertaining were the performances?',
       levels: [
-        '1 - Natural, realistic acting',
-        '2 - Slightly stiff',
-        '3 - Mildly dramatic',
-        '4 - Clearly acting',
-        '5 - Cheesy',
-        '6 - Over-dramatic',
-        '7 - Loud, emotional, silly',
-        '8 - Constant mugging and shouting',
-        '9 - Actors feel out of control',
-        '10 - Completely unhinged performances'
+        '-5 - Masterpiece-level restraint',
+        '-4 - Excellent, grounded performance',
+        '-3 - Strong and believable',
+        '-2 - Solid, normal acting',
+        '-1 - Slightly stiff but fine',
+        '0 - Bad acting',
+        '1 - A little cheesy',
+        '2 - Clearly overdone',
+        '3 - Big silly energy',
+        '4 - Wildly overacted',
+        '5 - Maximum unhinged cheese'
       ]
     },
     { 
@@ -32,16 +35,17 @@
       icon: '💥',
       question: 'How fun was the large-scale chaos?',
       levels: [
-        '1 - None or very rare',
-        '2 - Realistic',
-        '3 - Standard action',
-        '4 - Stylized',
-        '5 - Over-the-top',
-        '6 - Lots of explosions',
-        '7 - Things explode for no reason',
-        '8 - Buildings, cars, people constantly fly',
-        '9 - Nonstop destruction',
-        '10 - Total visual chaos'
+        '-5 - Smart, perfectly used spectacle',
+        '-4 - Great action craft',
+        '-3 - Strong and effective',
+        '-2 - Normal blockbuster stuff',
+        '-1 - Slightly underwhelming',
+        '0 - Bad and weak',
+        '1 - A little cheesy',
+        '2 - Big dumb fun',
+        '3 - Excessive for no reason',
+        '4 - Ridiculous destruction',
+        '5 - Maximum cheese chaos'
       ]
     },
     { 
@@ -50,16 +54,17 @@
       icon: '🎬',
       question: 'How entertaining were the fights, chases, and stunts?',
       levels: [
-        '1 - Slow or dull',
-        '2 - Minimal action',
-        '3 - Normal movie action',
-        '4 - Slightly silly',
-        '5 - Over-dramatic',
-        '6 - Lots of fights or chases',
-        '7 - Ridiculous stunts',
-        '8 - Constant chaos',
-        '9 - Never slows down',
-        '10 - Every scene is wild'
+        '-5 - Masterpiece action filmmaking',
+        '-4 - Excellent and exciting',
+        '-3 - Strong action scenes',
+        '-2 - Normal good action',
+        '-1 - Slightly weak',
+        '0 - Bad action',
+        '1 - A little cheesy',
+        '2 - Silly and fun',
+        '3 - Ridiculous stunts',
+        '4 - Pure chaos',
+        '5 - Maximum cheese action'
       ]
     },
     { 
@@ -68,16 +73,17 @@
       icon: '🧟',
       question: 'How fun were the physical effects, props, and makeup?',
       levels: [
-        '1 - Realistic or boring',
-        '2 - Minor effects',
-        '3 - Some makeup',
-        '4 - Noticeable prosthetics',
-        '5 - Clearly fake',
-        '6 - Latex and props',
-        '7 - Silly fake wounds',
-        '8 - Very obvious effects',
-        '9 - Looks like toys',
-        '10 - So fake it\'s amazing'
+        '-5 - Masterpiece practical craft',
+        '-4 - Excellent effects work',
+        '-3 - Strong and convincing',
+        '-2 - Normal solid effects',
+        '-1 - A bit weak',
+        '0 - Bad effects',
+        '1 - Slightly cheesy',
+        '2 - Obviously fake but fun',
+        '3 - Silly rubbery effects',
+        '4 - Wonderful cheap nonsense',
+        '5 - Maximum cheese effects'
       ]
     },
     { 
@@ -86,16 +92,17 @@
       icon: '🩸',
       question: 'How entertaining was the blood and damage?',
       levels: [
-        '1 - None or barely any',
-        '2 - Light blood',
-        '3 - Some injuries',
-        '4 - Noticeable gore',
-        '5 - Over-the-top',
-        '6 - Lots of blood',
-        '7 - Silly injuries',
-        '8 - Body parts',
-        '9 - Excessive splatter',
-        '10 - Buckets of ridiculous gore'
+        '-5 - Masterful effects gore',
+        '-4 - Excellent and effective',
+        '-3 - Strong horror craft',
+        '-2 - Normal decent gore',
+        '-1 - Slightly weak',
+        '0 - Bad gore',
+        '1 - Slightly cheesy',
+        '2 - Over-the-top fun',
+        '3 - Silly and excessive',
+        '4 - Hilarious splatter',
+        '5 - Maximum cheese gore'
       ]
     },
     { 
@@ -104,16 +111,17 @@
       icon: '🧬',
       question: 'How funny or distracting was the digital work?',
       levels: [
-        '1 - Looks good',
-        '2 - Minor flaws',
-        '3 - Slightly fake',
-        '4 - Distracting',
-        '5 - Obviously bad',
-        '6 - Green-screen heavy',
-        '7 - Looks like a video game',
-        '8 - Very broken',
-        '9 - Laugh-out-loud',
-        '10 - Looks unfinished'
+        '-5 - Seamless, masterpiece CGI',
+        '-4 - Excellent visual work',
+        '-3 - Strong and polished',
+        '-2 - Normal passable CGI',
+        '-1 - Slightly rough',
+        '0 - Bad CGI',
+        '1 - A little cheesy',
+        '2 - Noticeably fake but fun',
+        '3 - Video-game nonsense',
+        '4 - Laughably broken',
+        '5 - Maximum cheese CGI crime'
       ]
     },
     { 
@@ -122,16 +130,17 @@
       icon: '🧠',
       question: 'How entertaining was the nonsense?',
       levels: [
-        '1 - Clear and logical',
-        '2 - Minor confusion',
-        '3 - Some weird moments',
-        '4 - A few plot holes',
-        '5 - Many "wait what?"',
-        '6 - Logic breaks',
-        '7 - Events don\'t connect',
-        '8 - Story jumps wildly',
-        '9 - Nothing makes sense',
-        '10 - Total nonsense'
+        '-5 - Masterpiece storytelling',
+        '-4 - Excellent plot',
+        '-3 - Strong and coherent',
+        '-2 - Normal solid story',
+        '-1 - Slightly messy',
+        '0 - Bad plot',
+        '1 - A little cheesy',
+        '2 - Fun nonsense',
+        '3 - Wildly disconnected',
+        '4 - Hilariously broken',
+        '5 - Maximum chaos cheese'
       ]
     },
     { 
@@ -140,16 +149,17 @@
       icon: '🦖',
       question: 'How fun was the monster?',
       levels: [
-        '1 - No monster',
-        '2 - Generic',
-        '3 - Slightly goofy',
-        '4 - Looks off',
-        '5 - Clearly fake',
-        '6 - Bad design',
-        '7 - Rubber suit',
-        '8 - Silly movements',
-        '9 - Ridiculous and lovable',
-        '10 - Iconic B-movie monster'
+        '-5 - Masterpiece creature design',
+        '-4 - Excellent monster work',
+        '-3 - Strong design',
+        '-2 - Normal decent creature',
+        '-1 - Slightly weak',
+        '0 - Bad creature',
+        '1 - A little cheesy',
+        '2 - Goofy but fun',
+        '3 - Rubber suit greatness',
+        '4 - Ridiculous and lovable',
+        '5 - Maximum cheese monster'
       ]
     },
     { 
@@ -158,16 +168,17 @@
       icon: '🗣',
       question: 'How quotable was the writing?',
       levels: [
-        '1 - Forgettable',
-        '2 - Slightly awkward',
-        '3 - Stiff',
-        '4 - Corny',
-        '5 - Cheesy',
-        '6 - Weird',
-        '7 - Funny bad lines',
-        '8 - Meme-worthy',
-        '9 - Constant quotes',
-        '10 - Legendary dialogue'
+        '-5 - Masterpiece dialogue',
+        '-4 - Excellent writing',
+        '-3 - Strong lines',
+        '-2 - Normal solid dialogue',
+        '-1 - Slightly awkward',
+        '0 - Bad dialogue',
+        '1 - A little cheesy',
+        '2 - Corny and fun',
+        '3 - Very quotable cheese',
+        '4 - Meme-worthy nonsense',
+        '5 - Maximum cheese dialogue'
       ]
     },
     { 
@@ -176,16 +187,17 @@
       icon: '❤️',
       question: 'How much fun did you have?',
       levels: [
-        '1 - Miserable',
-        '2 - Very boring',
-        '3 - Mostly dull',
-        '4 - Meh',
-        '5 - Some fun',
-        '6 - Entertaining',
-        '7 - Good',
-        '8 - Very fun',
-        '9 - Loved it',
-        '10 - Want to watch again'
+        '-5 - Masterpiece, loved every second',
+        '-4 - Excellent time',
+        '-3 - Very enjoyable',
+        '-2 - Normal good watch',
+        '-1 - Slightly underwhelming',
+        '0 - Bad experience',
+        '1 - A little cheesy fun',
+        '2 - Entertaining cheese',
+        '3 - Very fun bad movie',
+        '4 - Loved the cheese',
+        '5 - Peak cheese joy'
       ]
     }
   ];
@@ -193,14 +205,17 @@
   // No bonus categories - all 10 count toward the total
   const BONUS_CATEGORIES = [];
   
-  // Good-Bad Movie Tiers (based on total score out of 100)
+  // Movie tiers (based on total score, range -50 to 50)
   const TRASH_TIERS = [
-    { min: 0, max: 25, label: 'Boring or Forgettable', emoji: '😴', color: '#6b7280' },
-    { min: 26, max: 45, label: 'Weak Cheese', emoji: '🧀', color: '#a3a37a' },
-    { min: 46, max: 65, label: 'Fun Bad Movie', emoji: '🎬', color: '#ff9d1d' },
-    { min: 66, max: 80, label: 'Cult Classic', emoji: '⭐', color: '#ff6b6b' },
-    { min: 81, max: 95, label: 'Iconic Trash', emoji: '💎', color: '#c29dff' },
-    { min: 96, max: 100, label: 'ALL-TIME TRASH LEGEND', emoji: '👑', color: '#ffd700' }
+    { min: -50, max: -36, label: 'Masterpiece', emoji: '🏆', color: '#7dd3fc' },
+    { min: -35, max: -21, label: 'Great Movie', emoji: '⭐', color: '#60a5fa' },
+    { min: -20, max: -6, label: 'Normal Good Movie', emoji: '🎥', color: '#94a3b8' },
+    { min: -5, max: 5, label: 'Bad Movie', emoji: '😬', color: '#f87171' },
+    { min: 6, max: 15, label: 'Cheese Tier 1', emoji: '🧀', color: '#d6b45d' },
+    { min: 16, max: 25, label: 'Cheese Tier 2', emoji: '🧀🧀', color: '#f59e0b' },
+    { min: 26, max: 35, label: 'Cheese Tier 3', emoji: '🎬', color: '#fb7185' },
+    { min: 36, max: 45, label: 'Cheese Tier 4', emoji: '💎', color: '#c084fc' },
+    { min: 46, max: 50, label: 'Cheese Tier 5', emoji: '👑', color: '#facc15' }
   ];
   
   function getTrashTier(score) {
@@ -208,6 +223,36 @@
       if (score >= tier.min && score <= tier.max) return tier;
     }
     return TRASH_TIERS[0];
+  }
+
+  function cloneData(value){
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function createLegacySet(label, ratings, totalSuffix){
+    return {
+      label,
+      ratings: cloneData(ratings),
+      totalSuffix
+    };
+  }
+
+  function getLegacySets(movie){
+    const sets = [];
+    if(Array.isArray(movie.legacySets)){
+      movie.legacySets.forEach(set => {
+        if(set && set.ratings && Object.keys(set.ratings).length > 0){
+          sets.push(set);
+        }
+      });
+    }
+    if(movie.legacyRatings && Object.keys(movie.legacyRatings).length > 0){
+      const exists = sets.some(set => set.label === 'Legacy Ratings (old 1-10 scale)');
+      if(!exists){
+        sets.push(createLegacySet('Legacy Ratings (old 1-10 scale)', movie.legacyRatings, '/100'));
+      }
+    }
+    return sets;
   }
 
   /** Data shape v2
@@ -265,7 +310,7 @@
         <p class="category-question">${cat.question}</p>
         <select name="${cat.key}" class="rating-select" required>
           <option value="">— Select —</option>
-          ${cat.levels.map((level, i) => `<option value="${i + 1}">${level}</option>`).join('')}
+          ${cat.levels.map((level, i) => `<option value="${i - 5}">${level}</option>`).join('')}
         </select>
       `;
       dom.categoryGrid.appendChild(div);
@@ -284,7 +329,7 @@
         <p class="category-question">${cat.question}</p>
         <select name="${cat.key}" class="rating-select">
           <option value="">— Select —</option>
-          ${cat.levels.map((level, i) => `<option value="${i + 1}">${level}</option>`).join('')}
+          ${cat.levels.map((level, i) => `<option value="${i - 5}">${level}</option>`).join('')}
         </select>
       `;
       dom.categoryGrid.appendChild(div);
@@ -461,8 +506,8 @@
     const entry = {};
     for(const cat of CATEGORIES){
       const val = parseInt(dom.rateForm.elements[cat.key].value,10);
-      if(isNaN(val) || val < 1 || val > 10){
-        alert('All main categories must be scored 1–10.');
+      if(isNaN(val) || val < -5 || val > 5){
+        alert('All main categories must be scored -5 to 5.');
         return;
       }
       entry[cat.key] = val;
@@ -471,7 +516,7 @@
     // Handle bonus categories (optional)
     for(const cat of BONUS_CATEGORIES){
       const val = parseInt(dom.rateForm.elements[cat.key].value,10);
-      if(!isNaN(val) && val >= 1 && val <= 10){
+      if(!isNaN(val) && val >= -5 && val <= 5){
         entry[cat.key] = val;
       }
     }
@@ -513,12 +558,52 @@
 
   // Load / migrate
   function loadState(){
-    // Try v2
+    // Try v4 (current format)
     try {
       const raw = localStorage.getItem(LS_KEY);
       if(raw){
         const parsed = JSON.parse(raw);
         if(parsed.movies) return parsed;
+      }
+    } catch {}
+
+    // Migrate from v3 (old -5 to 5 meaning, 0 = none) => v4
+    try {
+      const v3raw = localStorage.getItem(LS_KEY_V3);
+      if(v3raw){
+        const v3 = JSON.parse(v3raw);
+        if(v3.movies){
+          v3.movies.forEach(m => {
+            const legacySets = getLegacySets(m);
+            if(m.ratings && Object.keys(m.ratings).length > 0){
+              legacySets.push(createLegacySet('Legacy Ratings (old -5 to 5 scale, 0 = none)', m.ratings, ''));
+            }
+            m.legacySets = legacySets;
+            m.ratings = {};
+          });
+          const migrated = { movies: v3.movies };
+          localStorage.setItem(LS_KEY, JSON.stringify(migrated));
+          return migrated;
+        }
+      }
+    } catch {}
+
+    // Migrate from v2 (old 1-10 scale) => v4
+    try {
+      const v2raw = localStorage.getItem(LS_KEY_V2);
+      if(v2raw){
+        const v2 = JSON.parse(v2raw);
+        if(v2.movies){
+          v2.movies.forEach(m => {
+            if(m.ratings && Object.keys(m.ratings).length > 0){
+              m.legacySets = [createLegacySet('Legacy Ratings (old 1-10 scale)', m.ratings, '/100')];
+            }
+            m.ratings = {};
+          });
+          const migrated = { movies: v2.movies };
+          localStorage.setItem(LS_KEY, JSON.stringify(migrated));
+          return migrated;
+        }
       }
     } catch {}
 
@@ -528,20 +613,11 @@
       if(v1raw){
         const v1 = JSON.parse(v1raw);
         if(v1.movies){
-          // Convert ratings (username:number) => username:{ each category = that star rating }
           v1.movies.forEach(m => {
-            const newRatings = {};
-            Object.entries(m.ratings || {}).forEach(([user,val]) => {
-              const num = Number(val) || 0;
-              newRatings[user] = {
-                overacting: clamp(num * 2,1,10), // quick heuristic
-                explosive: clamp(num * 2,1,10),
-                plot: clamp(11 - num * 2,1,10), // inverted fun
-                creature: clamp(num * 2,1,10),
-              dialogue: clamp(num * 2,1,10)
-              };
-            });
-            m.ratings = newRatings;
+            if(m.ratings && Object.keys(m.ratings).length > 0){
+              m.legacySets = [createLegacySet('Legacy Ratings (old 1-10 scale)', m.ratings, '')];
+            }
+            m.ratings = {};
           });
           const migrated = { movies: v1.movies };
           localStorage.setItem(LS_KEY, JSON.stringify(migrated));
@@ -603,8 +679,11 @@
   }
 
   function sanitizeForFirestore(movie){
-    const { id, title, year=null, notes='', addedAt, ratings={}, chooser } = movie;
-    return { id, title, year, notes, addedAt, ratings, chooser };
+    const { id, title, year=null, notes='', addedAt, ratings={}, chooser, legacySets, legacyRatings } = movie;
+    const data = { id, title, year, notes, addedAt, ratings, chooser };
+    if(legacySets?.length) data.legacySets = legacySets;
+    if(legacyRatings) data.legacyRatings = legacyRatings;
+    return data;
   }
 
   function attachRemoteListener(){
@@ -620,7 +699,15 @@
   function mergeRemoteState(remoteMovies){
     const map = new Map(state.movies.map(m => [m.id, m]));
     remoteMovies.forEach(r => {
-      map.set(r.id, { ...map.get(r.id), ...r });
+      const existing = map.get(r.id);
+      if(existing){
+        const merged = { ...existing, ...r };
+        if(existing.legacySets && !r.legacySets) merged.legacySets = existing.legacySets;
+        if(existing.legacyRatings && !r.legacyRatings) merged.legacyRatings = existing.legacyRatings;
+        map.set(r.id, merged);
+      } else {
+        map.set(r.id, r);
+      }
     });
     state.movies = Array.from(map.values()).sort((a,b)=> b.addedAt - a.addedAt);
     localStorage.setItem(LS_KEY, JSON.stringify(state));
@@ -1039,6 +1126,41 @@
     }
   }
 
+  function appendLegacyRatings(reviewsList, movie){
+    const legacySets = getLegacySets(movie);
+    if(legacySets.length === 0) return 0;
+
+    legacySets.forEach(set => {
+      const legacyRatings = set.ratings || {};
+      const legacyUsernames = Object.keys(legacyRatings);
+      if(legacyUsernames.length === 0) return;
+
+      const legacySection = document.createElement('div');
+      legacySection.className = 'legacy-ratings-section';
+      legacySection.innerHTML = `<div class="legacy-header">${sanitize(set.label || 'Legacy Ratings')}</div>`;
+
+      legacyUsernames.forEach(uname => {
+        const legacyRating = legacyRatings[uname];
+        const legacyTotal = CATEGORIES.reduce((sum, cat) => sum + (Number(legacyRating[cat.key]) || 0), 0);
+        let legacyHTML = `<div class="user-review legacy-review">`;
+        legacyHTML += `<div class="reviewer-header"><strong class="reviewer-name">${sanitize(uname)}</strong><span class="reviewer-total legacy-total">Legacy Total: ${legacyTotal}${set.totalSuffix || ''}</span></div>`;
+        legacyHTML += '<div class="reviewer-scores">';
+        CATEGORIES.forEach(cat => {
+          const score = legacyRating[cat.key];
+          if(score !== undefined && score !== null){
+            legacyHTML += `<span class="score-item legacy" title="${cat.label}: ${score}">${cat.icon} ${score > 0 ? '+' + score : score}</span>`;
+          }
+        });
+        legacyHTML += '</div></div>';
+        legacySection.innerHTML += legacyHTML;
+      });
+
+      reviewsList.appendChild(legacySection);
+    });
+
+    return legacySets.length;
+  }
+
   function updateCardScores(movie, card){
     const username = dom.username.value.trim();
     const userHasRated = !!(username && movie.ratings && movie.ratings[username]);
@@ -1154,9 +1276,14 @@
   const userHasRated = !!(username && ratings[username]);
 
     if(usernames.length === 0){
-      reviewsList.innerHTML = '<p class="no-reviews">No reviews yet</p>';
-      reviewsToggle.textContent = 'Individual Reviews';
-      details.removeAttribute('open');
+      const legacyCount = appendLegacyRatings(reviewsList, movie);
+      if(legacyCount > 0){
+        reviewsList.insertAdjacentHTML('afterbegin', '<p class="no-reviews">No ratings on the current scale yet.</p>');
+        reviewsToggle.textContent = 'Individual Reviews (legacy)';
+      } else {
+        reviewsList.innerHTML = '<p class="no-reviews">No reviews yet</p>';
+        reviewsToggle.textContent = 'Individual Reviews';
+      }
       return;
     }
 
@@ -1196,8 +1323,8 @@
       CATEGORIES.forEach(cat => {
         const score = userRating[cat.key];
         if(score !== undefined && score !== null){
-          const level = cat.levels[score - 1] || '';
-          reviewHTML += `<span class="score-item" title="${level}">${cat.icon} ${score}</span>`;
+          const level = cat.levels[score + 5] || '';
+          reviewHTML += `<span class="score-item" title="${level}">${cat.icon} ${score > 0 ? '+' + score : score}</span>`;
         }
       });
 
@@ -1205,8 +1332,8 @@
       BONUS_CATEGORIES.forEach(cat => {
         const score = userRating[cat.key];
         if(score !== undefined && score !== null){
-          const level = cat.levels[score - 1] || '';
-          reviewHTML += `<span class="score-item bonus" title="${level}">${cat.icon} ${score}</span>`;
+          const level = cat.levels[score + 5] || '';
+          reviewHTML += `<span class="score-item bonus" title="${level}">${cat.icon} ${score > 0 ? '+' + score : score}</span>`;
         }
       });
 
@@ -1227,6 +1354,8 @@
     details.addEventListener('toggle', () => {
       details.setAttribute('data-user-toggled','true');
     }, { once: true });
+
+    appendLegacyRatings(reviewsList, movie);
   }
 
   function getAggregates(movie){
