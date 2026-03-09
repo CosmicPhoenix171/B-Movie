@@ -206,9 +206,12 @@
   // No bonus categories - all 10 count toward the total
   const BONUS_CATEGORIES = [];
   
-  // Cheese tiers (based on cheese score, range 0 to 50)
+  // Cheese tiers (based on signed cheese score, range -50 to 50)
   const TRASH_TIERS = [
-    { min: 0, max: 5, label: 'No Cheese', emoji: '🎞️', color: '#94a3b8' },
+    { min: -50, max: -36, label: 'Masterpiece', emoji: '🏆', color: '#7dd3fc' },
+    { min: -35, max: -21, label: 'Great Movie', emoji: '⭐', color: '#60a5fa' },
+    { min: -20, max: -6, label: 'Normal Good Movie', emoji: '🎥', color: '#94a3b8' },
+    { min: -5, max: 5, label: 'Neutral', emoji: '😐', color: '#f87171' },
     { min: 6, max: 15, label: 'Cheese Tier 1', emoji: '🧀', color: '#d6b45d' },
     { min: 16, max: 25, label: 'Cheese Tier 2', emoji: '🧀🧀', color: '#f59e0b' },
     { min: 26, max: 35, label: 'Cheese Tier 3', emoji: '🎬', color: '#fb7185' },
@@ -234,7 +237,7 @@
     CATEGORIES.forEach(cat => {
       const score = Number(entry?.[cat.key]) || 0;
       pointsTotal += Math.abs(score);
-      cheeseTotal += Math.max(score, 0);
+      cheeseTotal += score;
     });
 
     return { pointsTotal, cheeseTotal };
@@ -1055,9 +1058,9 @@
       scoreItem.innerHTML = `
         <span class="scorer-name">${sanitize(scorer.name)}</span>
         <span class="scorer-points">${scorer.totalPoints}pts</span>
-        <span class="scorer-avg">${scorer.cheeseScore} cheese</span>
+        <span class="scorer-avg">${scorer.cheeseScore > 0 ? '+' : ''}${scorer.cheeseScore} cheese</span>
       `;
-      scoreItem.title = `${scorer.name}: ${scorer.totalPoints} total points, ${scorer.cheeseScore} total cheese from ${scorer.movieCount} movie(s), ${scorer.avgPoints} average points and ${scorer.avgCheese} average cheese per movie`;
+      scoreItem.title = `${scorer.name}: ${scorer.totalPoints} total points, ${scorer.cheeseScore > 0 ? '+' : ''}${scorer.cheeseScore} total cheese from ${scorer.movieCount} movie(s), ${scorer.avgPoints} average points and ${scorer.avgCheese > 0 ? '+' : ''}${scorer.avgCheese} average cheese per movie`;
       dom.trackerScores.appendChild(scoreItem);
     });
   }
@@ -1252,7 +1255,10 @@
       if(cardTier) cardTier.style.display = 'none';
     } else {
       totalEl.textContent = raterCount ? aggregates.avgPoints.toFixed(1) : '0';
-      if(cheeseEl) cheeseEl.textContent = raterCount ? aggregates.avgCheese.toFixed(1) : '0';
+      if(cheeseEl) {
+        const cheeseValue = raterCount ? aggregates.avgCheese.toFixed(1) : '0';
+        cheeseEl.textContent = Number(cheeseValue) > 0 ? `+${cheeseValue}` : cheeseValue;
+      }
       raterEl.textContent = raterCount ? `(${raterCount} rater${raterCount===1?'':'s'})` : '';
       
       if(cardTier && tierEmoji && tierText && raterCount > 0) {
@@ -1344,7 +1350,7 @@
       const userTotals = getRatingTotals(userRating);
 
       const isOwner = username === dom.username.value.trim();
-      let headerHTML = `<div class="reviewer-header">\n        <strong class="reviewer-name">${sanitize(username)}</strong>\n        <span class="reviewer-total">Points: ${userTotals.pointsTotal} • Cheese: ${userTotals.cheeseTotal}</span>`;
+      let headerHTML = `<div class="reviewer-header">\n        <strong class="reviewer-name">${sanitize(username)}</strong>\n        <span class="reviewer-total">Points: ${userTotals.pointsTotal} • Cheese: ${userTotals.cheeseTotal > 0 ? '+' : ''}${userTotals.cheeseTotal}</span>`;
       if(isOwner){
         headerHTML += ` <button type="button" class="del-rating-btn" data-user="${sanitize(username)}" title="Delete your rating">✖</button>`;
       }
