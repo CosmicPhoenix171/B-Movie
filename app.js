@@ -648,10 +648,9 @@
     return { bMovieScore, mainstreamScore, finalScore, pointsTotal, cheeseTotal };
   }
 
-  function formatSignedScore(value, alwaysShowPlus = false){
-    const numericValue = Number(value) || 0;
-    if(numericValue > 0) return `${alwaysShowPlus ? '+' : ''}${numericValue.toFixed(1).replace(/\.0$/, '')}`;
-    if(numericValue < 0) return numericValue.toFixed(1).replace(/\.0$/, '');
+  function formatSignedScore(value){
+    const numericValue = Math.abs(Number(value) || 0);
+    if(numericValue > 0) return numericValue.toFixed(1).replace(/\.0$/, '');
     return '0';
   }
 
@@ -1924,7 +1923,7 @@
         <div class="tracker-score-grid">
           <div class="tracker-stat tracker-stat-bmovie">
             <span class="tracker-stat-label">B-Movie</span>
-            <strong class="tracker-stat-value">${formatSignedScore(scorer.totalBMovieScore, true)}</strong>
+            <strong class="tracker-stat-value">${formatSignedScore(scorer.totalBMovieScore)}</strong>
           </div>
           <div class="tracker-stat tracker-stat-mainstream">
             <span class="tracker-stat-label">Mainstream</span>
@@ -1932,11 +1931,11 @@
           </div>
         </div>
         <div class="tracker-meta-row">
-          <span class="tracker-meta-pill">Avg B ${formatSignedScore(scorer.avgBMovieScore, true)}</span>
+          <span class="tracker-meta-pill">Avg B ${formatSignedScore(scorer.avgBMovieScore)}</span>
           <span class="tracker-meta-pill">Avg M ${formatSignedScore(scorer.avgMainstreamScore)}</span>
         </div>
       `;
-      scoreItem.title = `${scorer.label}: B-Movie ${formatSignedScore(scorer.totalBMovieScore, true)}, Mainstream ${formatSignedScore(scorer.totalMainstreamScore)} across ${scorer.movieCount} qualified movie(s). Avg B-Movie ${formatSignedScore(scorer.avgBMovieScore, true)}, Avg Mainstream ${formatSignedScore(scorer.avgMainstreamScore)}.`;
+      scoreItem.title = `${scorer.label}: B-Movie ${formatSignedScore(scorer.totalBMovieScore)}, Mainstream ${formatSignedScore(scorer.totalMainstreamScore)} across ${scorer.movieCount} qualified movie(s). Avg B-Movie ${formatSignedScore(scorer.avgBMovieScore)}, Avg Mainstream ${formatSignedScore(scorer.avgMainstreamScore)}.`;
       dom.trackerScores.appendChild(scoreItem);
     });
   }
