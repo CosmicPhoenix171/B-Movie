@@ -263,6 +263,7 @@
     winnerDisplay: document.getElementById('winnerDisplay'),
     clearWinner: document.getElementById('clearWinner'),
     clearDisplayedWinner: document.getElementById('clearDisplayedWinner'),
+    winnerEditorDropdown: document.getElementById('winnerEditorDropdown'),
     editTheme: document.getElementById('editTheme'),
     editRule1: document.getElementById('editRule1'),
     editRule2: document.getElementById('editRule2'),
@@ -1429,6 +1430,7 @@
     dom.winnerDisplay.style.display = 'none';
     dom.winnerForm.style.display = 'block';
     dom.winnerForm.reset();
+    if(dom.winnerEditorDropdown) dom.winnerEditorDropdown.open = false;
     if(dom.editTheme) dom.editTheme.value = '';
     if(dom.editRule1) dom.editRule1.value = '';
     if(dom.editRule2) dom.editRule2.value = '';
@@ -1484,6 +1486,7 @@
       if(dom.editRule2) dom.editRule2.value = ruleValues[1] || '';
       if(dom.editRule3) dom.editRule3.value = ruleValues[2] || '';
       themeEditor.style.display = 'block';
+      if(dom.winnerEditorDropdown) dom.winnerEditorDropdown.open = false;
     }
 
     dom.winnerDisplay.style.display = 'block';
@@ -1565,6 +1568,7 @@
             dom.winnerDisplay.style.display = 'none';
             dom.winnerForm.style.display = 'block';
             dom.winnerForm.reset();
+            if(dom.winnerEditorDropdown) dom.winnerEditorDropdown.open = false;
             if(dom.editTheme) dom.editTheme.value = '';
             if(dom.editRule1) dom.editRule1.value = '';
             if(dom.editRule2) dom.editRule2.value = '';
@@ -2145,6 +2149,7 @@
     }
 
     displayWinner();
+    if(dom.winnerEditorDropdown) dom.winnerEditorDropdown.open = false;
 
     localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
     if(remote.enabled && firestore) saveWinnerToFirebase(currentWinner);
