@@ -127,8 +127,10 @@ body {
   background: linear-gradient(180deg, #0d1014 0%, #12161c 100%);
 }
 .mobile-menu.open {
-  max-height: 300px;
+  max-height: calc(100vh - var(--header-height) - 16px - var(--safe-area-bottom));
   padding: 0 16px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .menu-content {
@@ -1141,7 +1143,7 @@ body.theme-bmovie {
   }
 
   .mobile-menu.open {
-    max-height: 420px;
+    max-height: calc(100vh - var(--header-height) - 24px);
   }
 }
 
