@@ -288,6 +288,15 @@ body {
   box-shadow: 0 0 0 1px rgba(255 153 71 / 12%), 0 0 18px rgba(255 120 70 / 18%);
   animation: emberPulse 2.6s ease-in-out infinite;
 }
+.score-item-tracker.bmovie-champ::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 18%, rgba(255 218 125 / 0.16) 46%, rgba(255 145 77 / 0.12) 56%, transparent 82%);
+  transform: translateX(-120%);
+  animation: championShine 2.9s ease-in-out infinite;
+  pointer-events: none;
+}
 .score-item-tracker.mainstream-champ {
   background:
     linear-gradient(160deg, rgba(16 26 38 / 92%), rgba(20 24 34 / 94%)) padding-box,
@@ -377,9 +386,10 @@ body {
   backdrop-filter: blur(4px);
 }
 .tracker-champ-badge.bmovie-badge {
-  background: rgba(255 140 77 / 14%);
-  border: 1px solid rgba(255 159 78 / 26%);
-  color: #ffb980;
+  background: linear-gradient(135deg, rgba(255 157 77 / 18%), rgba(255 210 110 / 14%));
+  border: 1px solid rgba(255 177 82 / 30%);
+  color: #ffd08d;
+  box-shadow: 0 0 14px rgba(255 162 74 / 14%), inset 0 1px 0 rgba(255 233 180 / 0.16);
 }
 .tracker-champ-badge.mainstream-badge {
   background: rgba(91 189 255 / 14%);
@@ -441,26 +451,17 @@ body {
   font-weight: 800;
   font-family: 'Share Tech Mono', monospace;
 }
+.tracker-stat-subtle {
+  font-size: 0.64rem;
+  color: rgba(232 238 245 / 0.58);
+  letter-spacing: 0.6px;
+  font-weight: 600;
+}
 .tracker-stat-bmovie .tracker-stat-value {
   color: #ffb347;
 }
 .tracker-stat-mainstream .tracker-stat-value {
   color: #9bc2ff;
-}
-.tracker-meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.tracker-meta-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: rgba(255 255 255 / 5%);
-  color: var(--text-dim);
-  font-size: 0.66rem;
-  font-weight: 600;
 }
 .no-scores {
   color: var(--text-dim);
@@ -484,6 +485,24 @@ body {
   }
   100% {
     transform: translateX(120%);
+  }
+}
+
+@keyframes championShine {
+  0%, 18% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  28% {
+    opacity: 1;
+  }
+  52% {
+    transform: translateX(120%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(120%);
+    opacity: 0;
   }
 }
 

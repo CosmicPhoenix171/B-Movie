@@ -1951,15 +1951,13 @@
           <div class="tracker-stat tracker-stat-bmovie">
             <span class="tracker-stat-label">B-Movie</span>
             <strong class="tracker-stat-value">${formatSignedScore(scorer.totalBMovieScore)}</strong>
+            <span class="tracker-stat-subtle">Avg ${formatSignedScore(scorer.avgBMovieScore)}</span>
           </div>
           <div class="tracker-stat tracker-stat-mainstream">
             <span class="tracker-stat-label">Mainstream</span>
             <strong class="tracker-stat-value">${formatSignedScore(scorer.totalMainstreamScore)}</strong>
+            <span class="tracker-stat-subtle">Avg ${formatSignedScore(scorer.avgMainstreamScore)}</span>
           </div>
-        </div>
-        <div class="tracker-meta-row">
-          <span class="tracker-meta-pill">Avg B ${formatSignedScore(scorer.avgBMovieScore)}</span>
-          <span class="tracker-meta-pill">Avg M ${formatSignedScore(scorer.avgMainstreamScore)}</span>
         </div>
       `;
       scoreItem.title = `${scorer.label}: B-Movie ${formatSignedScore(scorer.totalBMovieScore)}, Mainstream ${formatSignedScore(scorer.totalMainstreamScore)} across ${scorer.movieCount} qualified movie(s). Avg B-Movie ${formatSignedScore(scorer.avgBMovieScore)}, Avg Mainstream ${formatSignedScore(scorer.avgMainstreamScore)}.`;
