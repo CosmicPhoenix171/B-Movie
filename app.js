@@ -383,6 +383,17 @@
     localStorage.setItem(getPendingChoicesStorageKey(uid), JSON.stringify(pendingChoices));
   }
 
+  function updatePendingChoice(choiceId, updates){
+    let changed = false;
+    pendingChoices = pendingChoices.map(choice => {
+      if(choice.id !== choiceId) return choice;
+      changed = true;
+      return normalizePendingChoice({ ...choice, ...updates, id: choice.id, addedAt: choice.addedAt });
+    });
+    if(changed) savePendingChoices();
+    return changed;
+  }
+
   function loadPendingChoices(){
     pendingChoices = currentUser ? readPendingChoices(currentUser.uid) : [];
   }
@@ -478,16 +489,25 @@
       card.dataset.id = choice.id;
 
       const safeYear = choice.year || 'Unknown';
-      const notesMarkup = choice.notes
-        ? `<p class="pending-notes">${choice.notes}</p>`
-        : '<p class="pending-notes">No notes yet.</p>';
+      const noteText = choice.notes || 'No notes yet';
+      const notesClassName = choice.notes ? 'pending-notes' : 'pending-notes pending-notes-empty';
 
       card.innerHTML = `
         <div class="pending-card-head">
           <h4 class="pending-title">${choice.title}</h4>
           <span class="pending-year">${safeYear}</span>
         </div>
-        ${notesMarkup}
+        <button type="button" class="pending-notes-button" data-action="edit-notes" data-id="${choice.id}" aria-label="Edit pending notes for ${choice.title}">
+          <p class="${notesClassName}">${noteText}</p>
+        </button>
+        <div class="pending-notes-editor" data-editor-id="${choice.id}" hidden>
+          <label class="pending-notes-label" for="pendingNotes-${choice.id}">Pending notes</label>
+          <textarea id="pendingNotes-${choice.id}" class="pending-notes-input" rows="3" maxlength="300" placeholder="Add private notes for this pending choice">${choice.notes}</textarea>
+          <div class="pending-notes-actions">
+            <button type="button" class="btn primary small" data-action="save-notes" data-id="${choice.id}">Save Notes</button>
+            <button type="button" class="btn ghost small" data-action="cancel-notes" data-id="${choice.id}">Cancel</button>
+          </div>
+        </div>
         <div class="pending-actions">
           <button type="button" class="btn primary small" data-action="add" data-id="${choice.id}">Add Movie</button>
           <button type="button" class="btn ghost small" data-action="remove" data-id="${choice.id}">Remove</button>
@@ -537,6 +557,41 @@
   function removePendingChoice(choiceId){
     pendingChoices = pendingChoices.filter(item => item.id !== choiceId);
     savePendingChoices();
+    renderPendingChoices();
+  }
+
+  function openPendingNotesEditor(choiceId){
+    const card = dom.pendingList?.querySelector(`.pending-card[data-id="${choiceId}"]`);
+    if(!card) return;
+
+    const displayButton = card.querySelector('.pending-notes-button');
+    const editor = card.querySelector(`.pending-notes-editor[data-editor-id="${choiceId}"]`);
+    const input = card.querySelector('.pending-notes-input');
+    if(!displayButton || !editor || !input) return;
+
+    displayButton.hidden = true;
+    editor.hidden = false;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+
+  function closePendingNotesEditor(choiceId){
+    const card = dom.pendingList?.querySelector(`.pending-card[data-id="${choiceId}"]`);
+    if(!card) return;
+
+    const displayButton = card.querySelector('.pending-notes-button');
+    const editor = card.querySelector(`.pending-notes-editor[data-editor-id="${choiceId}"]`);
+    if(displayButton) displayButton.hidden = false;
+    if(editor) editor.hidden = true;
+  }
+
+  function savePendingNotes(choiceId){
+    const card = dom.pendingList?.querySelector(`.pending-card[data-id="${choiceId}"]`);
+    const input = card?.querySelector('.pending-notes-input');
+    if(!input) return;
+
+    const notes = sanitize(input.value.trim());
+    if(!updatePendingChoice(choiceId, { notes })) return;
     renderPendingChoices();
   }
 
@@ -2293,11 +2348,31 @@
     const button = event.target.closest('button[data-action]');
     if(!button) return;
     const { action, id } = button.dataset;
+    if(action === 'edit-notes'){
+      openPendingNotesEditor(id || '');
+      return;
+    }
+    if(action === 'save-notes'){
+      savePendingNotes(id || '');
+      return;
+    }
+    if(action === 'cancel-notes'){
+      closePendingNotesEditor(id || '');
+      return;
+    }
     if(action === 'add'){
       promotePendingChoice(id || '');
       return;
     }
     if(action === 'remove') removePendingChoice(id || '');
+  });
+
+  dom.pendingList?.addEventListener('keydown', event => {
+    if(event.key !== 'Enter' || !event.target.classList.contains('pending-notes-input')) return;
+    event.preventDefault();
+    const card = event.target.closest('.pending-card');
+    const choiceId = card?.dataset.id || '';
+    if(choiceId) savePendingNotes(choiceId);
   });
 
   dom.sort?.addEventListener('change', applyFilters);

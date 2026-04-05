@@ -516,6 +516,76 @@ body {
   line-height: 1.45;
 }
 
+.pending-notes-button {
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pending-notes-button:hover .pending-notes,
+.pending-notes-button:focus-visible .pending-notes {
+  color: var(--text);
+}
+
+.pending-notes-button:focus-visible {
+  outline: none;
+}
+
+.pending-notes-button:focus-visible .pending-notes {
+  box-shadow: 0 0 0 3px rgba(var(--accent-glow) / 18%);
+  border-radius: var(--radius-s);
+}
+
+.pending-notes-empty {
+  font-style: italic;
+}
+
+.pending-notes-editor {
+  margin: 0 0 12px;
+}
+
+.pending-notes-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.pending-notes-input {
+  width: 100%;
+  background: var(--panel-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  border-radius: var(--radius-s);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.pending-notes-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-glow) / 20%);
+}
+
+.pending-notes-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pending-notes-actions .btn {
+  flex: 1;
+}
+
 .pending-actions {
   display: flex;
   gap: 8px;
