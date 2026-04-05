@@ -274,6 +274,10 @@ body {
   overflow: hidden;
   transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease, background 0.24s ease;
 }
+.score-item-tracker > * {
+  position: relative;
+  z-index: 1;
+}
 .score-item-tracker:hover {
   transform: translateY(-3px);
   box-shadow: 0 14px 30px -24px rgba(0 0 0 / 80%);
@@ -288,6 +292,21 @@ body {
   box-shadow: 0 0 0 1px rgba(255 205 92 / 16%), 0 0 20px rgba(255 205 92 / 18%);
   animation: emberPulse 2.6s ease-in-out infinite;
 }
+.score-item-tracker.bmovie-champ::before {
+  content: '🧀   🧀   🧀\A  🧀   🧀   🧀\A🧀   🧀   🧀';
+  position: absolute;
+  inset: -35% -10% 0;
+  white-space: pre;
+  font-size: 1rem;
+  line-height: 1.9;
+  letter-spacing: 12px;
+  opacity: 0.12;
+  filter: drop-shadow(0 0 6px rgba(255 216 110 / 0.18));
+  transform: translateY(-18%);
+  animation: fallingCheese 11s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
 .score-item-tracker.bmovie-champ::after {
   content: '';
   position: absolute;
@@ -296,12 +315,28 @@ body {
   transform: translateX(-120%);
   animation: championShine 2.9s ease-in-out infinite;
   pointer-events: none;
+  z-index: 0;
 }
 .score-item-tracker.mainstream-champ {
   background:
     linear-gradient(160deg, rgba(16 26 38 / 92%), rgba(20 24 34 / 94%)) padding-box,
     linear-gradient(135deg, rgba(88 194 255 / 84%), rgba(109 243 255 / 30%), rgba(90 119 255 / 82%)) border-box;
   box-shadow: 0 0 0 1px rgba(110 196 255 / 10%), 0 0 22px rgba(82 177 255 / 16%);
+}
+.score-item-tracker.mainstream-champ::before {
+  content: '🎬   🎬   🎬\A  🎬   🎬   🎬\A🎬   🎬   🎬';
+  position: absolute;
+  inset: -35% -10% 0;
+  white-space: pre;
+  font-size: 1rem;
+  line-height: 1.95;
+  letter-spacing: 12px;
+  opacity: 0.11;
+  filter: drop-shadow(0 0 6px rgba(129 222 255 / 0.18));
+  transform: translateY(-18%);
+  animation: fallingReels 11.5s linear infinite;
+  pointer-events: none;
+  z-index: 0;
 }
 .score-item-tracker.mainstream-champ::after {
   content: '';
@@ -311,6 +346,7 @@ body {
   transform: translateX(-120%);
   animation: shimmerWave 3.2s linear infinite;
   pointer-events: none;
+  z-index: 0;
 }
 .score-item-tracker.dual-champ {
   background:
@@ -318,6 +354,21 @@ body {
     linear-gradient(135deg, rgba(255 128 64 / 88%), rgba(120 214 255 / 58%), rgba(255 196 88 / 76%), rgba(96 137 255 / 84%)) border-box;
   box-shadow: 0 0 0 1px rgba(255 190 130 / 10%), 0 0 22px rgba(255 136 70 / 12%), 0 0 24px rgba(89 175 255 / 12%);
   animation: emberPulse 2.8s ease-in-out infinite;
+}
+.score-item-tracker.dual-champ::before {
+  content: '🧀  🎬  🧀\A 🎬  🧀  🎬\A🧀  🎬  🧀';
+  position: absolute;
+  inset: -35% -10% 0;
+  white-space: pre;
+  font-size: 1rem;
+  line-height: 1.95;
+  letter-spacing: 10px;
+  opacity: 0.12;
+  filter: drop-shadow(0 0 6px rgba(255 214 92 / 0.14)) drop-shadow(0 0 8px rgba(129 222 255 / 0.14));
+  transform: translateY(-18%);
+  animation: fallingDual 10.8s linear infinite;
+  pointer-events: none;
+  z-index: 0;
 }
 .score-item-tracker.dual-champ::after {
   content: '';
@@ -327,6 +378,7 @@ body {
   transform: translateX(-120%);
   animation: shimmerWave 3.1s linear infinite;
   pointer-events: none;
+  z-index: 0;
 }
 .tracker-card-top {
   display: flex;
@@ -511,6 +563,33 @@ body {
   100% {
     transform: translateX(120%);
     opacity: 0;
+  }
+}
+
+@keyframes fallingCheese {
+  0% {
+    transform: translate3d(0, -18%, 0);
+  }
+  100% {
+    transform: translate3d(-10px, 32%, 0);
+  }
+}
+
+@keyframes fallingReels {
+  0% {
+    transform: translate3d(0, -18%, 0);
+  }
+  100% {
+    transform: translate3d(10px, 32%, 0);
+  }
+}
+
+@keyframes fallingDual {
+  0% {
+    transform: translate3d(0, -18%, 0);
+  }
+  100% {
+    transform: translate3d(6px, 32%, 0);
   }
 }
 
