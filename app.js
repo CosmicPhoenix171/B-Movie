@@ -1950,13 +1950,17 @@
         <div class="tracker-score-grid">
           <div class="tracker-stat tracker-stat-bmovie">
             <span class="tracker-stat-label">B-Movie</span>
-            <strong class="tracker-stat-value">${formatSignedScore(scorer.totalBMovieScore)}</strong>
-            <span class="tracker-stat-subtle">Avg ${formatSignedScore(scorer.avgBMovieScore)}</span>
+            <div class="tracker-stat-bottom">
+              <strong class="tracker-stat-value">${formatSignedScore(scorer.totalBMovieScore)}</strong>
+              <span class="tracker-stat-subtle">Avg ${formatSignedScore(scorer.avgBMovieScore)}</span>
+            </div>
           </div>
           <div class="tracker-stat tracker-stat-mainstream">
             <span class="tracker-stat-label">Mainstream</span>
-            <strong class="tracker-stat-value">${formatSignedScore(scorer.totalMainstreamScore)}</strong>
-            <span class="tracker-stat-subtle">Avg ${formatSignedScore(scorer.avgMainstreamScore)}</span>
+            <div class="tracker-stat-bottom">
+              <strong class="tracker-stat-value">${formatSignedScore(scorer.totalMainstreamScore)}</strong>
+              <span class="tracker-stat-subtle">Avg ${formatSignedScore(scorer.avgMainstreamScore)}</span>
+            </div>
           </div>
         </div>
       `;
