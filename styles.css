@@ -1182,6 +1182,11 @@ body {
   border-radius: var(--radius-s);
   overflow: hidden;
 }
+
+#winner-panel .score-tracker {
+  margin-top: 18px;
+}
+
 .winner-editor-dropdown summary {
   list-style: none;
   cursor: pointer;
