@@ -1113,64 +1113,35 @@ body.theme-bmovie {
 }
 
 /* ====================================
-   DESKTOP BREAKPOINTS (Optional)
+   LARGE SCREEN MOBILE SHELL
+   Keep desktop behaving like the mobile app.
    ==================================== */
 @media (min-width: 768px) {
-  :root {
-    --bottom-nav-height: 0px;
+  .app-header,
+  .layout.mobile-layout,
+  .app-footer {
+    width: min(100%, 760px);
+    margin-inline: auto;
   }
-  
-  body { padding-bottom: 0; }
-  
-  .bottom-nav { display: none; }
-  
-  .layout.mobile-layout {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 24px;
-    padding: 24px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  .mobile-panel {
-    display: block !important;
-  }
-  
-  #movies-section { grid-column: 2; grid-row: 1 / 4; }
-  #add-movie-panel { grid-column: 1; grid-row: 1; }
-  #winner-panel { grid-column: 1; grid-row: 2; }
-  #rules-panel { grid-column: 1; grid-row: 3; }
-  
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
-  }
-  
-  .panel-header { flex-direction: row; justify-content: space-between; align-items: center; }
-  
-  .menu-toggle { display: none; }
-  .mobile-menu { 
-    max-height: none !important;
-    overflow: visible;
-    padding: 0 16px 16px !important;
-    display: block;
-  }
-  .menu-content {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .auth-box { width: 300px; }
-  .score-tracker { flex: 1; max-width: 400px; }
-}
 
-@media (min-width: 1024px) {
   .layout.mobile-layout {
-    grid-template-columns: 340px 1fr;
-    gap: 32px;
-    padding: 32px;
+    padding: 20px;
+    padding-bottom: calc(var(--bottom-nav-height) + 28px + var(--safe-area-bottom));
+  }
+
+  .bottom-nav {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(100%, 760px);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+  }
+
+  .mobile-menu.open {
+    max-height: 420px;
   }
 }
 
