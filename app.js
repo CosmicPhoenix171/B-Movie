@@ -202,17 +202,17 @@
   const BONUS_CATEGORIES = [];
 
   const TRASH_TIERS = [
-    { min: -50, max: -41, label: 'Masterpiece Tier 1', emoji: '🏆', color: '#7dd3fc' },
-    { min: -40, max: -31, label: 'Great Movie Tier 2', emoji: '⭐', color: '#60a5fa' },
+    { min: -50, max: -41, label: 'Good Movie Tier 5', emoji: '🏆', color: '#7dd3fc' },
+    { min: -40, max: -31, label: 'Good Movie Tier 4', emoji: '⭐', color: '#60a5fa' },
     { min: -30, max: -21, label: 'Good Movie Tier 3', emoji: '🎥', color: '#94a3b8' },
-    { min: -20, max: -11, label: 'Solid Movie Tier 4', emoji: '🎞️', color: '#a1a1aa' },
-    { min: -10, max: -1, label: 'Slightly Good Tier 5', emoji: '🙂', color: '#cbd5e1' },
-    { min: 0, max: 0, label: 'Neutral', emoji: '😐', color: '#f87171' },
-    { min: 1, max: 10, label: 'Cheese Tier 1', emoji: '🧀', color: '#d6b45d' },
-    { min: 11, max: 20, label: 'Cheese Tier 2', emoji: '🧀🧀', color: '#f59e0b' },
-    { min: 21, max: 30, label: 'Cheese Tier 3', emoji: '🎬', color: '#fb7185' },
-    { min: 31, max: 40, label: 'Cheese Tier 4', emoji: '💎', color: '#c084fc' },
-    { min: 41, max: 50, label: 'Cheese Tier 5', emoji: '👑', color: '#facc15' }
+    { min: -20, max: -11, label: 'Good Movie Tier 2', emoji: '🎞️', color: '#a1a1aa' },
+    { min: -10, max: -1, label: 'Good Movie Tier 1', emoji: '🙂', color: '#cbd5e1' },
+    { min: 0, max: 0, label: 'Neutral Final Score', emoji: '😐', color: '#f87171' },
+    { min: 1, max: 10, label: 'Cheesy Movie Tier 1', emoji: '🧀', color: '#d6b45d' },
+    { min: 11, max: 20, label: 'Cheesy Movie Tier 2', emoji: '🧀🧀', color: '#f59e0b' },
+    { min: 21, max: 30, label: 'Cheesy Movie Tier 3', emoji: '🎬', color: '#fb7185' },
+    { min: 31, max: 40, label: 'Cheesy Movie Tier 4', emoji: '💎', color: '#c084fc' },
+    { min: 41, max: 50, label: 'Cheesy Movie Tier 5', emoji: '👑', color: '#facc15' }
   ];
 
   const LEGACY_RULE_OPTIONS = {

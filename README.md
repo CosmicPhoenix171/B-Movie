@@ -44,6 +44,11 @@ Scoring formula:
 - Mainstream Movies Score: negative ratings subtract points.
 - Final Score = (B-Movie Score) + (Mainstream Movies Score).
 
+### Final Score Tiers
+- Negative final score = Good Movie tier
+- Positive final score = Cheesy Movie tier
+- Larger absolute final scores move the movie into a higher tier on its side of the scale
+
 ### Awards & Winner
 - After both films: compute each movie’s final score using B-Movie plus Mainstream totals from all raters
 - Higher total = Night’s Champion of Cheese
