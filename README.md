@@ -9,6 +9,7 @@ The app stores data locally for resilience and can also live sync through Fireba
 ## Features
 - Firebase Google sign-in for rating identity
 - Legacy score merge with dropdown selection for old typed names
+- Private pending movie choices saved per signed-in user on the local device
 - Add movies with title, year, notes
 - Multi-category scoring across the full Good-Bad Movie Index
 - Automatic totals + perâ€‘category averages
@@ -48,10 +49,11 @@ Total per rater per movie = Sum of all 5 (max 50). Night totals add every raterâ
 ## Using the App
 1. Sign in with Google from the Account panel.
 2. If you have older scores saved under a typed name, open Merge Old Scores and select that old name from the dropdown.
-3. Add a movie.
-4. Click Rate to score each category.
-5. If the same movie has more than one old score, choose which score to keep from the conflict dropdown before applying the merge.
-6. Sort or search to explore.
+3. In Add, either add a movie directly or save it to your private pending choices list for later.
+4. Use Add Movie on a pending choice when you are ready to move it into the shared movie list.
+5. Click Rate to score each category.
+6. If the same movie has more than one old score, choose which score to keep from the conflict dropdown before applying the merge.
+7. Sort or search to explore.
 
 ## Data Model
 ```

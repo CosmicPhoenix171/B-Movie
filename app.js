@@ -4,6 +4,7 @@
   const LS_KEY_V4 = 'bmovie:data:v4';
   const LS_KEY_V3 = 'bmovie:data:v3';
   const LS_KEY_V2 = 'bmovie:data:v2';
+  const PENDING_CHOICES_PREFIX = 'bmovie:pending:v1:';
 
   const CATEGORIES = [
     {
@@ -223,6 +224,7 @@
   let state = loadState();
   let activeMovieId = null;
   let currentWinner = null;
+  let pendingChoices = [];
   let currentUser = null;
   let currentUserProfile = null;
   let firestore = null;
@@ -246,9 +248,13 @@
 
   const dom = {
     addForm: document.getElementById('addMovieForm'),
+    savePendingMovie: document.getElementById('savePendingMovie'),
     title: document.getElementById('movieTitle'),
     year: document.getElementById('movieYear'),
     notes: document.getElementById('movieNotes'),
+    pendingPanel: document.getElementById('pendingPanel'),
+    pendingList: document.getElementById('pendingList'),
+    pendingEmpty: document.getElementById('pendingEmpty'),
     moviesList: document.getElementById('moviesList'),
     template: document.getElementById('movieCardTemplate'),
     sort: document.getElementById('sortSelect'),
@@ -335,6 +341,203 @@
   function createId(){
     if(globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
     return Math.random().toString(36).slice(2, 11);
+  }
+
+  function getPendingChoicesStorageKey(uid){
+    return `${PENDING_CHOICES_PREFIX}${uid}`;
+  }
+
+  function normalizePendingChoice(choice){
+    const title = sanitize(choice?.title || '').trim();
+    const notes = sanitize(choice?.notes || '').trim();
+    const rawYear = choice?.year;
+    const yearNumber = rawYear === null || rawYear === undefined || rawYear === '' ? null : parseInt(rawYear, 10);
+    return {
+      id: sanitize(choice?.id || createId()),
+      title,
+      year: Number.isFinite(yearNumber) ? yearNumber : null,
+      notes,
+      addedAt: Number(choice?.addedAt) || Date.now()
+    };
+  }
+
+  function readPendingChoices(uid){
+    if(!uid) return [];
+    try {
+      const raw = localStorage.getItem(getPendingChoicesStorageKey(uid));
+      if(!raw) return [];
+      const parsed = JSON.parse(raw);
+      if(!Array.isArray(parsed)) return [];
+      return parsed
+        .map(normalizePendingChoice)
+        .filter(choice => choice.title)
+        .sort((a, b) => b.addedAt - a.addedAt);
+    } catch {
+      return [];
+    }
+  }
+
+  function savePendingChoices(){
+    const uid = getCurrentUserKey();
+    if(!uid) return;
+    localStorage.setItem(getPendingChoicesStorageKey(uid), JSON.stringify(pendingChoices));
+  }
+
+  function loadPendingChoices(){
+    pendingChoices = currentUser ? readPendingChoices(currentUser.uid) : [];
+  }
+
+  function clearAddForm(){
+    dom.addForm?.reset();
+    dom.title?.focus();
+  }
+
+  function getMovieDraftFromForm(){
+    const title = sanitize(dom.title?.value.trim() || '');
+    const yearVal = dom.year?.value.trim() || '';
+    const year = yearVal ? parseInt(yearVal, 10) : null;
+    const notes = sanitize(dom.notes?.value.trim() || '');
+    return {
+      title,
+      year: Number.isFinite(year) ? year : null,
+      notes
+    };
+  }
+
+  function findDuplicateMovie(title, year){
+    return state.movies.find(movie => (
+      movie.title.toLowerCase() === title.toLowerCase() &&
+      (movie.year || null) === (year || null)
+    ));
+  }
+
+  function findDuplicatePendingChoice(title, year, ignoreId = ''){
+    return pendingChoices.find(choice => (
+      choice.id !== ignoreId &&
+      choice.title.toLowerCase() === title.toLowerCase() &&
+      (choice.year || null) === (year || null)
+    ));
+  }
+
+  function buildMovieRecord(draft){
+    const chooserName = getCurrentUserName();
+    return ensureMovieShape({
+      id: createId(),
+      title: draft.title,
+      year: draft.year,
+      chooser: chooserName,
+      chooserId: getCurrentUserKey(),
+      chooserName,
+      notes: draft.notes,
+      addedAt: Date.now(),
+      ratings: {},
+      ratingNames: {}
+    });
+  }
+
+  function addMovieRecordFromDraft(draft){
+    if(!requireSignedIn('Please sign in with Google before adding a movie.')) return false;
+    if(!draft.title) return false;
+    const duplicate = findDuplicateMovie(draft.title, draft.year);
+    if(duplicate){
+      flashField(dom.title, 'Movie already exists');
+      return false;
+    }
+
+    const movie = buildMovieRecord(draft);
+    state.movies.push(movie);
+    persist();
+    renderMovie(movie, true);
+    updateScoreTracker();
+    updateWinnerDropdowns();
+    applyFilters();
+    return true;
+  }
+
+  function renderPendingChoices(){
+    if(!dom.pendingList || !dom.pendingEmpty || !dom.pendingPanel) return;
+
+    dom.pendingList.innerHTML = '';
+
+    if(!currentUser){
+      dom.pendingEmpty.textContent = 'Sign in to save private movie choices ahead of time.';
+      dom.pendingEmpty.hidden = false;
+      return;
+    }
+
+    if(!pendingChoices.length){
+      dom.pendingEmpty.textContent = 'No pending choices yet. Save one above to keep it private until you are ready to add it.';
+      dom.pendingEmpty.hidden = false;
+      return;
+    }
+
+    dom.pendingEmpty.hidden = true;
+    pendingChoices.forEach(choice => {
+      const card = document.createElement('article');
+      card.className = 'pending-card';
+      card.dataset.id = choice.id;
+
+      const safeYear = choice.year || 'Unknown';
+      const notesMarkup = choice.notes
+        ? `<p class="pending-notes">${choice.notes}</p>`
+        : '<p class="pending-notes">No notes yet.</p>';
+
+      card.innerHTML = `
+        <div class="pending-card-head">
+          <h4 class="pending-title">${choice.title}</h4>
+          <span class="pending-year">${safeYear}</span>
+        </div>
+        ${notesMarkup}
+        <div class="pending-actions">
+          <button type="button" class="btn primary small" data-action="add" data-id="${choice.id}">Add Movie</button>
+          <button type="button" class="btn ghost small" data-action="remove" data-id="${choice.id}">Remove</button>
+        </div>
+      `;
+
+      dom.pendingList.appendChild(card);
+    });
+  }
+
+  function saveDraftToPending(){
+    if(!requireSignedIn('Please sign in with Google before saving a private movie choice.')) return;
+
+    const draft = getMovieDraftFromForm();
+    if(!draft.title){
+      flashField(dom.title, 'Enter a movie title first');
+      return;
+    }
+
+    if(findDuplicatePendingChoice(draft.title, draft.year)){
+      flashField(dom.title, 'Pending choice already saved');
+      return;
+    }
+
+    pendingChoices = [
+      normalizePendingChoice({ ...draft, id: createId(), addedAt: Date.now() }),
+      ...pendingChoices
+    ];
+    savePendingChoices();
+    renderPendingChoices();
+    clearAddForm();
+  }
+
+  function promotePendingChoice(choiceId){
+    if(!requireSignedIn('Please sign in with Google before adding a pending movie.')) return;
+    const choice = pendingChoices.find(item => item.id === choiceId);
+    if(!choice) return;
+
+    const added = addMovieRecordFromDraft(choice);
+    if(!added) return;
+
+    pendingChoices = pendingChoices.filter(item => item.id !== choiceId);
+    savePendingChoices();
+    renderPendingChoices();
+  }
+
+  function removePendingChoice(choiceId){
+    pendingChoices = pendingChoices.filter(item => item.id !== choiceId);
+    savePendingChoices();
+    renderPendingChoices();
   }
 
   function normalizeWinnerRules(winner){
@@ -1286,12 +1489,14 @@
           if(unsubscribeUserProfile) unsubscribeUserProfile();
           unsubscribeUserProfile = null;
           currentUserProfile = null;
+          pendingChoices = [];
           mergeState.selectedAliases = [];
           closeMergeDialog();
         } else {
           await loadCurrentUserProfile(user.uid);
           propagateCurrentUserName(getCurrentUserName());
           attachUserProfileListener(user.uid);
+          loadPendingChoices();
         }
         renderAll();
       });
@@ -1655,6 +1860,7 @@
   function renderAll(){
     dom.moviesList.innerHTML = '';
     state.movies.forEach(movie => renderMovie(movie));
+    renderPendingChoices();
     updateWinnerDropdowns();
     updateScoreTracker();
     applyFilters();
@@ -2077,43 +2283,21 @@
 
   dom.addForm.addEventListener('submit', event => {
     event.preventDefault();
-    if(!requireSignedIn('Please sign in with Google before adding a movie.')) return;
+    const added = addMovieRecordFromDraft(getMovieDraftFromForm());
+    if(added) clearAddForm();
+  });
 
-    const title = sanitize(dom.title.value.trim());
-    if(!title) return;
-    const yearVal = dom.year.value.trim();
-    const year = yearVal ? parseInt(yearVal, 10) : undefined;
-    const duplicate = state.movies.find(movie => (
-      movie.title.toLowerCase() === title.toLowerCase() &&
-      (movie.year || '') === (year || '')
-    ));
-    if(duplicate){
-      flashField(dom.title, 'Movie already exists');
+  dom.savePendingMovie?.addEventListener('click', saveDraftToPending);
+
+  dom.pendingList?.addEventListener('click', event => {
+    const button = event.target.closest('button[data-action]');
+    if(!button) return;
+    const { action, id } = button.dataset;
+    if(action === 'add'){
+      promotePendingChoice(id || '');
       return;
     }
-
-    const chooserName = getCurrentUserName();
-    const movie = ensureMovieShape({
-      id: createId(),
-      title: dom.title.value.trim(),
-      year: parseInt(dom.year.value, 10) || null,
-      chooser: chooserName,
-      chooserId: getCurrentUserKey(),
-      chooserName,
-      notes: dom.notes.value.trim(),
-      addedAt: Date.now(),
-      ratings: {},
-      ratingNames: {}
-    });
-
-    state.movies.push(movie);
-    persist();
-    renderMovie(movie, true);
-    updateScoreTracker();
-    updateWinnerDropdowns();
-    dom.addForm.reset();
-    dom.title.focus();
-    applyFilters();
+    if(action === 'remove') removePendingChoice(id || '');
   });
 
   dom.sort?.addEventListener('change', applyFilters);

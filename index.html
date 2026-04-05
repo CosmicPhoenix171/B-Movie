@@ -141,8 +141,21 @@
           <label for="movieNotes">Notes (optional)</label>
           <textarea id="movieNotes" name="notes" rows="3" placeholder="Cheesy tornado full of sharks..."></textarea>
         </div>
-        <button type="submit" class="btn primary btn-block">Add Movie</button>
+        <div class="btn-group add-actions">
+          <button type="submit" class="btn primary">Add Movie</button>
+          <button type="button" class="btn ghost" id="savePendingMovie">Save To Pending</button>
+        </div>
       </form>
+      <section class="pending-panel" id="pendingPanel">
+        <div class="pending-panel-head">
+          <div>
+            <h3>Private Pending Choices</h3>
+            <p>Only visible on this device for the signed-in user. These picks stay out of the shared movie list until you add them.</p>
+          </div>
+        </div>
+        <div class="pending-list" id="pendingList"></div>
+        <p class="pending-empty" id="pendingEmpty">Sign in to save private movie choices ahead of time.</p>
+      </section>
     </section>
 
     <!-- Winner Panel -->

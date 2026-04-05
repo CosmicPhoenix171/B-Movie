@@ -449,6 +449,89 @@ body {
 .btn-group { display: flex; gap: 10px; }
 .btn-group .btn { flex: 1; }
 
+.add-actions {
+  margin-top: 4px;
+}
+
+.pending-panel {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255 255 255 / 8%);
+}
+
+.pending-panel-head h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  color: #8be79f;
+}
+
+.pending-panel-head p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.pending-card {
+  background: linear-gradient(160deg, rgba(139 231 159 / 9%), rgba(255 157 29 / 7%));
+  border: 1px solid rgba(139 231 159 / 18%);
+  border-radius: var(--radius-s);
+  padding: 14px;
+}
+
+.pending-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pending-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pending-year {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  background: rgba(255 255 255 / 8%);
+  padding: 4px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.pending-notes {
+  margin: 0 0 12px;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.pending-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pending-actions .btn {
+  flex: 1;
+}
+
+.pending-empty {
+  margin: 14px 0 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
 .rate-btn { width: 100%; margin-top: 12px; }
 
 /* ====================================
