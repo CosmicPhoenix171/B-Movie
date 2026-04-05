@@ -1858,7 +1858,7 @@
       if(!chooserKey || !chooserLabel) return;
 
       const aggregates = getAggregates(movie);
-      if(aggregates.raterCount === 0) return;
+  if(aggregates.raterCount < 3) return;
 
       let movieBMovieScore = 0;
       let movieMainstreamScore = 0;
@@ -1904,7 +1904,7 @@
     );
 
     if(sortedScores.length === 0){
-      dom.trackerScores.innerHTML = '<span class="no-scores">Add movies to see scores</span>';
+      dom.trackerScores.innerHTML = '<span class="no-scores">Chooser scores appear after a movie gets 3 reviews.</span>';
       return;
     }
 
