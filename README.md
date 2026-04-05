@@ -43,7 +43,7 @@ Total per rater per movie = Sum of all 5 (max 50). Night totals add every rater�
 ### Awards & Winner
 - After both films: compute each movie’s grand total (sum of all category scores from all raters)
 - Higher total = Night’s Champion of Cheese
-- Winner chooses the next B‑movie night theme
+- Winner chooses the next B‑movie night theme and can add custom Rule 1, Rule 2, and Rule 3 for that winner's next round
 
 ## Using the App
 1. Sign in with Google from the Account panel.

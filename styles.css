@@ -990,6 +990,20 @@ body {
 .winner-info { flex: 1; }
 .winner-title { font-size: 1rem; font-weight: 600; color: #8be79f; margin-bottom: 4px; }
 .winner-subtitle { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; }
+.winner-rules {
+  display: none;
+  margin-bottom: 8px;
+}
+.winner-rule-item {
+  font-size: 0.75rem;
+  color: #92d5ff;
+  font-weight: 600;
+  background: rgba(146 213 255 / 10%);
+  padding: 6px 10px;
+  border-radius: var(--radius-s);
+  border: 1px solid rgba(146 213 255 / 22%);
+  margin-bottom: 6px;
+}
 .winner-theme {
   font-size: 0.75rem;
   color: #ffce4f;
@@ -1013,6 +1027,23 @@ body {
 .theme-input-group { display: flex; gap: 8px; }
 .theme-input-group input { flex: 1; }
 .theme-input-group .btn { flex-shrink: 0; }
+.winner-rule-editor {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+.winner-rule-editor label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+.winner-rule-editor input {
+  width: 100%;
+}
 
 /* ====================================
    RULES PANEL

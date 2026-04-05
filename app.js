@@ -214,6 +214,12 @@
     { min: 41, max: 50, label: 'Cheese Tier 5', emoji: '👑', color: '#facc15' }
   ];
 
+  const LEGACY_RULE_OPTIONS = {
+    'rule-1': 'Rule 1 - Movie Selection',
+    'rule-2': 'Rule 2 - Viewing Protocol',
+    'rule-3': 'Rule 3 - Good-Bad Movie Index'
+  };
+
   let state = loadState();
   let activeMovieId = null;
   let currentWinner = null;
@@ -258,6 +264,9 @@
     clearWinner: document.getElementById('clearWinner'),
     clearDisplayedWinner: document.getElementById('clearDisplayedWinner'),
     editTheme: document.getElementById('editTheme'),
+    editRule1: document.getElementById('editRule1'),
+    editRule2: document.getElementById('editRule2'),
+    editRule3: document.getElementById('editRule3'),
     saveTheme: document.getElementById('saveTheme'),
     scoreTracker: document.getElementById('scoreTracker'),
     trackerScores: document.getElementById('trackerScores'),
@@ -325,6 +334,25 @@
   function createId(){
     if(globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
     return Math.random().toString(36).slice(2, 11);
+  }
+
+  function normalizeWinnerRules(winner){
+    if(!winner || typeof winner !== 'object') return ['', '', ''];
+    if(Array.isArray(winner.nextRules)){
+      return [0, 1, 2].map(index => sanitize(winner.nextRules[index] || ''));
+    }
+    if(winner.nextRuleId && LEGACY_RULE_OPTIONS[winner.nextRuleId]){
+      return [LEGACY_RULE_OPTIONS[winner.nextRuleId], '', ''];
+    }
+    return ['', '', ''];
+  }
+
+  function getEditedWinnerRules(){
+    return [
+      sanitize(dom.editRule1?.value.trim() || ''),
+      sanitize(dom.editRule2?.value.trim() || ''),
+      sanitize(dom.editRule3?.value.trim() || '')
+    ];
   }
 
   function ensureMovieShape(movie){
@@ -1386,6 +1414,7 @@
       movieYear: movie.year,
       personKey,
       personName: getKnownName(personKey),
+      nextRules: ['', '', ''],
       nextTheme: previousTheme,
       setAt: Date.now()
     };
@@ -1401,6 +1430,9 @@
     dom.winnerForm.style.display = 'block';
     dom.winnerForm.reset();
     if(dom.editTheme) dom.editTheme.value = '';
+    if(dom.editRule1) dom.editRule1.value = '';
+    if(dom.editRule2) dom.editRule2.value = '';
+    if(dom.editRule3) dom.editRule3.value = '';
     localStorage.removeItem('bmovie:winner');
     if(remote.enabled && firestore) clearWinnerFromFirebase();
   }
@@ -1410,31 +1442,48 @@
 
     const titleEl = dom.winnerDisplay.querySelector('.winner-title');
     const subtitleEl = dom.winnerDisplay.querySelector('.winner-subtitle');
+    const rulesEl = dom.winnerDisplay.querySelector('.winner-rules');
     const themeEl = dom.winnerDisplay.querySelector('.winner-theme');
     const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
+    const ruleValues = normalizeWinnerRules(currentWinner);
+
+    currentWinner.nextRules = ruleValues;
 
     titleEl.textContent = `${currentWinner.movieTitle} (${currentWinner.movieYear || 'Unknown'})`;
     subtitleEl.textContent = `Champion: ${currentWinner.personName}`;
 
+    if(rulesEl){
+      rulesEl.replaceChildren();
+      const filledRules = ruleValues
+        .map((value, index) => ({ value, index: index + 1 }))
+        .filter(item => item.value);
+
+      if(filledRules.length){
+        filledRules.forEach(item => {
+          const ruleItem = document.createElement('div');
+          ruleItem.className = 'winner-rule-item';
+          ruleItem.textContent = `Rule ${item.index}: ${item.value}`;
+          rulesEl.appendChild(ruleItem);
+        });
+        rulesEl.style.display = 'block';
+      } else {
+        rulesEl.style.display = 'none';
+      }
+    }
+
     if(currentWinner.nextTheme){
       themeEl.textContent = `Next Theme: ${currentWinner.nextTheme}`;
-      themeEl.title = 'Click to edit theme';
       themeEl.style.display = 'block';
-      themeEl.onclick = () => {
-        const editor = dom.winnerDisplay.querySelector('.winner-theme-editor');
-        if(editor) {
-          editor.style.display = 'block';
-          dom.editTheme.focus();
-        }
-      };
     } else {
       themeEl.style.display = 'none';
-      themeEl.onclick = null;
     }
 
     if(dom.editTheme && themeEditor){
       dom.editTheme.value = currentWinner.nextTheme || '';
-      themeEditor.style.display = currentWinner.nextTheme ? 'none' : 'block';
+      if(dom.editRule1) dom.editRule1.value = ruleValues[0] || '';
+      if(dom.editRule2) dom.editRule2.value = ruleValues[1] || '';
+      if(dom.editRule3) dom.editRule3.value = ruleValues[2] || '';
+      themeEditor.style.display = 'block';
     }
 
     dom.winnerDisplay.style.display = 'block';
@@ -1446,6 +1495,8 @@
       const stored = localStorage.getItem('bmovie:winner');
       if(stored){
         currentWinner = JSON.parse(stored);
+        currentWinner.nextRules = normalizeWinnerRules(currentWinner);
+        delete currentWinner.nextRuleId;
         displayWinner();
       }
     } catch (error) {
@@ -1481,6 +1532,8 @@
       const docSnap = await remote.getDoc(winnerDoc);
       if(docSnap.exists()){
         currentWinner = docSnap.data();
+        currentWinner.nextRules = normalizeWinnerRules(currentWinner);
+        delete currentWinner.nextRuleId;
         localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
         displayWinner();
       }
@@ -1500,6 +1553,8 @@
         docSnap => {
           if(docSnap.exists()){
             currentWinner = docSnap.data();
+            currentWinner.nextRules = normalizeWinnerRules(currentWinner);
+            delete currentWinner.nextRuleId;
             localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
             displayWinner();
             return;
@@ -1511,6 +1566,9 @@
             dom.winnerForm.style.display = 'block';
             dom.winnerForm.reset();
             if(dom.editTheme) dom.editTheme.value = '';
+            if(dom.editRule1) dom.editRule1.value = '';
+            if(dom.editRule2) dom.editRule2.value = '';
+            if(dom.editRule3) dom.editRule3.value = '';
             localStorage.removeItem('bmovie:winner');
           }
         },
@@ -2076,26 +2134,17 @@
     if(!currentWinner) return;
     const newTheme = dom.editTheme.value.trim();
     currentWinner.nextTheme = newTheme || null;
+    currentWinner.nextRules = getEditedWinnerRules();
 
     const themeEl = dom.winnerDisplay.querySelector('.winner-theme');
     if(currentWinner.nextTheme){
       themeEl.textContent = `Next Theme: ${currentWinner.nextTheme}`;
-      themeEl.title = 'Click to edit theme';
       themeEl.style.display = 'block';
-      themeEl.onclick = () => {
-        const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
-        if(themeEditor){
-          themeEditor.style.display = 'block';
-          dom.editTheme.focus();
-        }
-      };
     } else {
       themeEl.style.display = 'none';
-      themeEl.onclick = null;
     }
 
-    const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
-    if(themeEditor) themeEditor.style.display = 'none';
+    displayWinner();
 
     localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
     if(remote.enabled && firestore) saveWinnerToFirebase(currentWinner);

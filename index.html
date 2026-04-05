@@ -172,6 +172,7 @@
           <div class="winner-info">
             <div class="winner-title"></div>
             <div class="winner-subtitle"></div>
+            <div class="winner-rules"></div>
             <div class="winner-theme"></div>
           </div>
           <button type="button" class="btn ghost small" id="clearDisplayedWinner" title="Clear winner">X</button>
@@ -180,7 +181,15 @@
           <label for="editTheme">Next Session Theme</label>
           <div class="theme-input-group">
             <input id="editTheme" type="text" maxlength="80" placeholder="e.g. 80s Sci-Fi, Zombie Movies..." />
-            <button type="button" class="btn primary" id="saveTheme">Save</button>
+            <button type="button" class="btn primary" id="saveTheme">Save Theme & Rules</button>
+          </div>
+          <div class="winner-rule-editor">
+            <label for="editRule1">Rule 1</label>
+            <input id="editRule1" type="text" maxlength="120" placeholder="Leave blank or add the first rule for this winner's theme" />
+            <label for="editRule2">Rule 2</label>
+            <input id="editRule2" type="text" maxlength="120" placeholder="Leave blank or add the second rule" />
+            <label for="editRule3">Rule 3</label>
+            <input id="editRule3" type="text" maxlength="120" placeholder="Leave blank or add the third rule" />
           </div>
         </div>
       </div>
@@ -282,7 +291,7 @@
         <ul class="rules-list">
           <li>After both films: tally per-movie totals.</li>
           <li>Highest total = Night's Champion of Cheese.</li>
-          <li>Winner chooses next session's theme.</li>
+          <li>Winner chooses next session's theme and can set Rule 1, 2, or 3 for the next round.</li>
         </ul>
       </details>
     </section>
