@@ -719,6 +719,43 @@ body {
   gap: 10px;
 }
 
+.merge-picker-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.merge-select,
+.merge-conflict-select {
+  width: 100%;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: var(--radius-s);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239aa8b9' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.merge-select:focus,
+.merge-conflict-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-glow) / 20%);
+}
+
+.merge-select:disabled,
+.merge-conflict-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .merge-empty {
   margin: 0;
   padding: 12px 14px;
@@ -790,6 +827,10 @@ body {
   gap: 8px;
 }
 
+.merge-selected-list:empty {
+  display: none;
+}
+
 .merge-chip {
   display: inline-flex;
   align-items: center;
@@ -801,6 +842,27 @@ body {
   font-size: 0.78rem;
   color: #ffd27b;
   font-weight: 600;
+}
+
+.merge-chip-button {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.merge-chip-button .merge-chip {
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+
+.merge-chip-button:hover .merge-chip {
+  transform: translateY(-1px);
+  border-color: rgba(255 157 29 / 38%);
+}
+
+.merge-chip-remove {
+  font-size: 0.8rem;
+  color: #ffb6bb;
 }
 
 .merge-conflict-card {

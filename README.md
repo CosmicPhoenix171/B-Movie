@@ -2,19 +2,21 @@
 
 # B‑Movie Ratings
 
-A lightweight, client‑side web app for you and a friend (or group) to catalog and rate gloriously dubious B‑movies.
+A lightweight web app for you and a friend (or group) to catalog and rate gloriously dubious B‑movies.
 
-No backend; everything is stored locally in your browser (`localStorage`). Share by sending the three core files (`index.html`, `styles.css`, `app.js`). Each person’s ratings are tied to the name they enter. Copies are not synced live.
+The app stores data locally for resilience and can also live sync through Firebase Firestore. Identity now uses Firebase Google sign-in, and older typed-name scores can be merged into a signed-in account from the merge dialog.
 
 ## Features
+- Firebase Google sign-in for rating identity
+- Legacy score merge with dropdown selection for old typed names
 - Add movies with title, year, notes
-- Multi‑category scoring (1–10) across 5 award categories
+- Multi-category scoring across the full Good-Bad Movie Index
 - Automatic totals + per‑category averages
 - Sort: Recently Added, Title, Highest Total Score, Most Raters
 - Search filter (title + notes)
 - Duplicate protection (title + year)
 - Delete movies
-- Smooth migration from old single‑star version (if present)
+- Live sync through Firebase Firestore when enabled
 
 ## Official Double Feature Rules
 ### Movie Selection
@@ -44,12 +46,12 @@ Total per rater per movie = Sum of all 5 (max 50). Night totals add every rater�
 - Winner chooses the next B‑movie night theme
 
 ## Using the App
-1. Enter your name (top bar) — required before rating.
-2. Add a movie.
-3. Click “Rate / Edit” to open the dialog and enter 1–10 for each category.
-4. Change your name to simulate another participant’s ratings.
-5. Sort or search to explore.
-6. Delete if a movie was added by mistake.
+1. Sign in with Google from the Account panel.
+2. If you have older scores saved under a typed name, open Merge Old Scores and select that old name from the dropdown.
+3. Add a movie.
+4. Click Rate to score each category.
+5. If the same movie has more than one old score, choose which score to keep from the conflict dropdown before applying the merge.
+6. Sort or search to explore.
 
 ## Data Model
 ```
@@ -59,14 +61,19 @@ movie = {
   year,
   notes,
   addedAt,
+  chooserId,
+  chooserName,
   ratings: {
-    username: {
-      overacting, explosive, plot, creature, dialogue
+    userKey: {
+      overacting, explosions, action, practical, gore, cgi, plot, creature, dialogue, enjoyment
     }
+  },
+  ratingNames: {
+    userKey: displayName
   }
 }
 ```
-Stored under `localStorage['bmovie:data:v2']`.
+New ratings are written under the signed-in Firebase user UID. Older legacy ratings may still exist under typed names until they are merged.
 
 ### Migration
 If a previous v1 single‑star dataset is found, it auto‑converts star ratings into category scores (simple heuristic) so nothing is lost.
@@ -74,7 +81,7 @@ If a previous v1 single‑star dataset is found, it auto‑converts star ratings
 ## Reset / Clear Data
 Open DevTools console:
 ```
-localStorage.removeItem('bmovie:data:v2')
+localStorage.removeItem('bmovie:data:v5')
 ```
 Reload page.
 

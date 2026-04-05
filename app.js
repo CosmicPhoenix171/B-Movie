@@ -232,6 +232,9 @@
     signInWithPopup: null,
     signOut: null
   };
+  let mergeState = {
+    selectedAliases: []
+  };
 
   const dom = {
     addForm: document.getElementById('addMovieForm'),
@@ -267,9 +270,14 @@
     mergeDialog: document.getElementById('mergeDialog'),
     mergeForm: document.getElementById('mergeForm'),
     mergeCandidateList: document.getElementById('mergeCandidateList'),
+    mergeCandidateSelect: document.getElementById('mergeCandidateSelect'),
+    addMergeCandidate: document.getElementById('addMergeCandidate'),
+    selectedMergeAliases: document.getElementById('selectedMergeAliases'),
+    mergeCandidateHint: document.getElementById('mergeCandidateHint'),
     mergePreview: document.getElementById('mergePreview'),
     mergeConflicts: document.getElementById('mergeConflicts'),
-    closeMerge: document.getElementById('closeMerge')
+    closeMerge: document.getElementById('closeMerge'),
+    applyMerge: document.getElementById('applyMerge')
   };
 
   function getTrashTier(score) {
@@ -363,7 +371,7 @@
     dom.authMeta.textContent = metaText || '';
     dom.googleSignIn.hidden = stateName === 'signed-in' || stateName === 'disabled';
     dom.signOutBtn.hidden = stateName !== 'signed-in';
-    dom.openMerge.hidden = true;
+    dom.openMerge.hidden = !(stateName === 'signed-in' && getLegacyMergeCandidates().length > 0);
   }
 
   function updateAuthPanel(){
@@ -450,6 +458,368 @@
       console.warn('[Firebase][Auth] sign-out failed', error);
       alert(message);
     }
+  }
+
+  function isUidLikeKey(key){
+    return /^[A-Za-z0-9_-]{25,}$/.test(String(key || '').trim());
+  }
+
+  function getLegacyMergeCandidates(){
+    const currentKey = getCurrentUserKey();
+    const candidates = new Map();
+
+    function ensureCandidate(rawKey){
+      const key = sanitize(rawKey).trim();
+      if(!key || key === currentKey || isUidLikeKey(key)) return null;
+      if(!candidates.has(key)){
+        candidates.set(key, {
+          key,
+          label: key,
+          ratingMatches: 0,
+          chooserMatches: 0,
+          winnerMatches: 0,
+          movieIds: new Set()
+        });
+      }
+      return candidates.get(key);
+    }
+
+    state.movies.forEach(movie => {
+      ensureMovieShape(movie);
+      Object.keys(movie.ratings || {}).forEach(key => {
+        if(movie.ratingNames?.[key]) return;
+        const candidate = ensureCandidate(key);
+        if(!candidate) return;
+        candidate.ratingMatches += 1;
+        candidate.movieIds.add(movie.id);
+      });
+
+      const chooserAlias = !movie.chooserId
+        ? sanitize(movie.chooserName || movie.chooser || '').trim()
+        : '';
+      const chooserCandidate = ensureCandidate(chooserAlias);
+      if(chooserCandidate) chooserCandidate.chooserMatches += 1;
+    });
+
+    if(currentWinner && !currentWinner.personKey){
+      const winnerCandidate = ensureCandidate(currentWinner.personName || '');
+      if(winnerCandidate) winnerCandidate.winnerMatches += 1;
+    }
+
+    return Array.from(candidates.values())
+      .map(candidate => ({
+        key: candidate.key,
+        label: candidate.label,
+        ratingMatches: candidate.ratingMatches,
+        chooserMatches: candidate.chooserMatches,
+        winnerMatches: candidate.winnerMatches,
+        movieCount: candidate.movieIds.size
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  function describeMergeCandidate(candidate){
+    const parts = [];
+    if(candidate.ratingMatches) parts.push(`${candidate.ratingMatches} rating${candidate.ratingMatches === 1 ? '' : 's'}`);
+    if(candidate.chooserMatches) parts.push(`${candidate.chooserMatches} chooser`);
+    if(candidate.winnerMatches) parts.push(`${candidate.winnerMatches} winner`);
+    return parts.join(' • ') || 'Legacy name';
+  }
+
+  function buildMergeAnalysis(selectedAliases = mergeState.selectedAliases){
+    const currentKey = getCurrentUserKey();
+    const selectedSet = new Set(selectedAliases);
+    const conflicts = [];
+    let ratingMatches = 0;
+    let chooserMatches = 0;
+    let winnerMatches = 0;
+
+    state.movies.forEach(movie => {
+      ensureMovieShape(movie);
+      const aliasKeys = Object.keys(movie.ratings || {}).filter(key => selectedSet.has(key));
+      if(aliasKeys.length){
+        ratingMatches += aliasKeys.length;
+        const sourceKeys = [];
+        if(movie.ratings[currentKey]) sourceKeys.push(currentKey);
+        aliasKeys.forEach(key => {
+          if(!sourceKeys.includes(key)) sourceKeys.push(key);
+        });
+        if(sourceKeys.length > 1){
+          conflicts.push({
+            movieId: movie.id,
+            movieTitle: movie.title,
+            movieYear: movie.year,
+            sourceKeys
+          });
+        }
+      }
+
+      const chooserAlias = !movie.chooserId
+        ? sanitize(movie.chooserName || movie.chooser || '').trim()
+        : '';
+      if(chooserAlias && selectedSet.has(chooserAlias)) chooserMatches += 1;
+    });
+
+    if(currentWinner && !currentWinner.personKey){
+      const winnerAlias = sanitize(currentWinner.personName || '').trim();
+      if(winnerAlias && selectedSet.has(winnerAlias)) winnerMatches += 1;
+    }
+
+    return {
+      selectedAliases: [...selectedSet],
+      ratingMatches,
+      chooserMatches,
+      winnerMatches,
+      conflicts
+    };
+  }
+
+  function formatMergeRatingSummary(entry){
+    const totals = getRatingTotals(entry);
+    return `${totals.pointsTotal} points • ${totals.cheeseTotal > 0 ? '+' : ''}${totals.cheeseTotal} cheese`;
+  }
+
+  function closeMergeDialog(){
+    dom.mergeDialog?.close?.();
+    dom.mergeDialog?.removeAttribute('open');
+  }
+
+  function renderMergeDialog(){
+    const candidates = getLegacyMergeCandidates();
+    const availableCandidates = candidates.filter(candidate => !mergeState.selectedAliases.includes(candidate.key));
+
+    if(dom.mergeCandidateSelect){
+      dom.mergeCandidateSelect.innerHTML = '<option value="">Select old score name...</option>';
+      availableCandidates.forEach(candidate => {
+        const option = document.createElement('option');
+        option.value = candidate.key;
+        option.textContent = `${candidate.label} (${describeMergeCandidate(candidate)})`;
+        dom.mergeCandidateSelect.appendChild(option);
+      });
+      dom.mergeCandidateSelect.disabled = availableCandidates.length === 0;
+    }
+
+    if(dom.addMergeCandidate) dom.addMergeCandidate.disabled = availableCandidates.length === 0;
+
+    if(dom.mergeCandidateHint){
+      if(!currentUser){
+        dom.mergeCandidateHint.textContent = 'Sign in with Google to merge old names.';
+      } else if(candidates.length === 0){
+        dom.mergeCandidateHint.textContent = 'No unclaimed legacy names were found.';
+      } else if(availableCandidates.length === 0){
+        dom.mergeCandidateHint.textContent = 'All available old names are already selected below.';
+      } else {
+        dom.mergeCandidateHint.textContent = 'Choose an old typed name from the dropdown, then add it to this merge.';
+      }
+    }
+
+    if(dom.selectedMergeAliases){
+      dom.selectedMergeAliases.innerHTML = '';
+      mergeState.selectedAliases.forEach(alias => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'merge-chip-button';
+        button.dataset.alias = alias;
+        button.title = 'Remove from merge';
+        button.innerHTML = `<span class="merge-chip">${sanitize(alias)} <span class="merge-chip-remove">×</span></span>`;
+        button.addEventListener('click', () => {
+          mergeState.selectedAliases = mergeState.selectedAliases.filter(item => item !== alias);
+          renderMergeDialog();
+        });
+        dom.selectedMergeAliases.appendChild(button);
+      });
+    }
+
+    const analysis = buildMergeAnalysis();
+
+    if(dom.mergePreview){
+      if(!mergeState.selectedAliases.length){
+        dom.mergePreview.innerHTML = '<p class="merge-empty">Choose at least one old typed name from the dropdown to preview the merge.</p>';
+      } else {
+        const winnerNotice = analysis.winnerMatches
+          ? `<p class="merge-empty">Winner attribution will also move to ${getCurrentUserName()}.</p>`
+          : '';
+        const conflictNotice = analysis.conflicts.length
+          ? '<p class="merge-warning">Some movies have more than one score. Use the dropdowns below to choose which one to keep.</p>'
+          : '';
+
+        dom.mergePreview.innerHTML = `
+          <div class="merge-stat-grid">
+            <div class="merge-stat">
+              <span class="merge-stat-label">Selected Names</span>
+              <span class="merge-stat-value">${analysis.selectedAliases.length}</span>
+            </div>
+            <div class="merge-stat">
+              <span class="merge-stat-label">Ratings Found</span>
+              <span class="merge-stat-value">${analysis.ratingMatches}</span>
+            </div>
+            <div class="merge-stat">
+              <span class="merge-stat-label">Chooser Updates</span>
+              <span class="merge-stat-value">${analysis.chooserMatches}</span>
+            </div>
+            <div class="merge-stat">
+              <span class="merge-stat-label">Conflicts</span>
+              <span class="merge-stat-value">${analysis.conflicts.length}</span>
+            </div>
+          </div>
+          ${winnerNotice}
+          ${conflictNotice}
+        `;
+      }
+    }
+
+    if(dom.mergeConflicts){
+      dom.mergeConflicts.innerHTML = '';
+      if(!mergeState.selectedAliases.length){
+        dom.mergeConflicts.innerHTML = '<p class="merge-empty">Conflict choices will appear here if the same movie has more than one old score.</p>';
+      } else if(!analysis.conflicts.length){
+        dom.mergeConflicts.innerHTML = '<p class="merge-empty">No duplicate movie ratings found. This merge can be applied directly.</p>';
+      } else {
+        analysis.conflicts.forEach(conflict => {
+          const movie = state.movies.find(item => item.id === conflict.movieId);
+          if(!movie) return;
+
+          const card = document.createElement('div');
+          card.className = 'merge-conflict-card';
+
+          const heading = document.createElement('div');
+          heading.className = 'merge-conflict-head';
+          heading.innerHTML = `
+            <div>
+              <div class="merge-conflict-title">${sanitize(conflict.movieTitle)}${conflict.movieYear ? ` (${conflict.movieYear})` : ''}</div>
+              <div class="merge-conflict-note">Choose which score should stay on your Google account for this movie.</div>
+            </div>
+          `;
+
+          const select = document.createElement('select');
+          select.className = 'merge-conflict-select';
+          select.dataset.movieId = conflict.movieId;
+
+          const defaultKey = movie.ratings[getCurrentUserKey()] ? getCurrentUserKey() : conflict.sourceKeys[0];
+          conflict.sourceKeys.forEach(sourceKey => {
+            const option = document.createElement('option');
+            const optionLabel = sourceKey === getCurrentUserKey()
+              ? `${getCurrentUserName()} (current account)`
+              : getRatingLabel(movie, sourceKey);
+            option.value = sourceKey;
+            option.textContent = `${optionLabel} — ${formatMergeRatingSummary(movie.ratings[sourceKey])}`;
+            if(sourceKey === defaultKey) option.selected = true;
+            select.appendChild(option);
+          });
+
+          card.appendChild(heading);
+          card.appendChild(select);
+          dom.mergeConflicts.appendChild(card);
+        });
+      }
+    }
+
+    if(dom.applyMerge) dom.applyMerge.disabled = !mergeState.selectedAliases.length;
+  }
+
+  function collectMergeConflictChoices(analysis){
+    const choices = new Map();
+    for(const conflict of analysis.conflicts){
+      const select = dom.mergeConflicts?.querySelector(`.merge-conflict-select[data-movie-id="${conflict.movieId}"]`);
+      const selectedValue = select?.value;
+      if(!selectedValue){
+        alert(`Choose which score to keep for ${conflict.movieTitle}.`);
+        select?.focus();
+        return null;
+      }
+      choices.set(conflict.movieId, selectedValue);
+    }
+    return choices;
+  }
+
+  function applyMergeSelection(event){
+    event.preventDefault();
+    if(!requireSignedIn('Please sign in with Google before merging old scores.')) return;
+
+    const selectedAliases = [...new Set(mergeState.selectedAliases.filter(Boolean))];
+    if(!selectedAliases.length){
+      alert('Select an old score name first.');
+      dom.mergeCandidateSelect?.focus();
+      return;
+    }
+
+    const analysis = buildMergeAnalysis(selectedAliases);
+    const conflictChoices = collectMergeConflictChoices(analysis);
+    if(!conflictChoices) return;
+
+    const currentKey = getCurrentUserKey();
+    const currentName = getCurrentUserName();
+    const selectedSet = new Set(selectedAliases);
+    let changed = false;
+    let winnerChanged = false;
+
+    state.movies.forEach(movie => {
+      ensureMovieShape(movie);
+      const aliasKeys = Object.keys(movie.ratings || {}).filter(key => selectedSet.has(key));
+      if(aliasKeys.length){
+        const hasCurrentRating = !!movie.ratings[currentKey];
+        const chosenSource = conflictChoices.get(movie.id) || (hasCurrentRating ? currentKey : aliasKeys[0]);
+        const chosenEntry = movie.ratings[chosenSource] || movie.ratings[currentKey] || movie.ratings[aliasKeys[0]];
+
+        aliasKeys.forEach(key => {
+          if(key in movie.ratings){
+            delete movie.ratings[key];
+            changed = true;
+          }
+          if(movie.ratingNames && key in movie.ratingNames){
+            delete movie.ratingNames[key];
+          }
+        });
+
+        if(chosenEntry){
+          if(movie.ratings[currentKey] !== chosenEntry) changed = true;
+          movie.ratings[currentKey] = chosenEntry;
+          movie.ratingNames[currentKey] = currentName;
+        }
+      }
+
+      const chooserAlias = !movie.chooserId
+        ? sanitize(movie.chooserName || movie.chooser || '').trim()
+        : '';
+      if(chooserAlias && selectedSet.has(chooserAlias)){
+        if(movie.chooserId !== currentKey || movie.chooserName !== currentName || movie.chooser !== currentName){
+          movie.chooserId = currentKey;
+          movie.chooserName = currentName;
+          movie.chooser = currentName;
+          changed = true;
+        }
+      }
+    });
+
+    if(currentWinner && !currentWinner.personKey){
+      const winnerAlias = sanitize(currentWinner.personName || '').trim();
+      if(winnerAlias && selectedSet.has(winnerAlias)){
+        currentWinner.personKey = currentKey;
+        currentWinner.personName = currentName;
+        winnerChanged = true;
+        changed = true;
+      }
+    }
+
+    if(!changed){
+      alert('No matching old scores were found for the selected names.');
+      return;
+    }
+
+    persist();
+
+    if(winnerChanged){
+      localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
+      if(remote.enabled && firestore) saveWinnerToFirebase(currentWinner);
+    }
+
+    renderAll();
+    if(currentWinner) displayWinner();
+
+    mergeState.selectedAliases = [];
+    renderMergeDialog();
+    closeMergeDialog();
+    alert(`Merged ${selectedAliases.length} old ${selectedAliases.length === 1 ? 'name' : 'names'} into ${currentName}.`);
   }
 
   function generateCategoryGrid() {
@@ -663,7 +1033,10 @@
 
       onAuthStateChanged(auth, user => {
         currentUser = user;
-        updateAuthPanel();
+        if(!user){
+          mergeState.selectedAliases = [];
+          closeMergeDialog();
+        }
         renderAll();
       });
 
@@ -996,6 +1369,7 @@
     updateWinnerDropdowns();
     updateScoreTracker();
     applyFilters();
+    updateAuthPanel();
   }
 
   function renderMovie(movie, prepend = false){
@@ -1363,18 +1737,28 @@
     dom.rateForm.reset();
   }
 
-  function initializeMergePlaceholder(){
-    const emptyMessage = '<p class="merge-empty">Google sign-in is live. Legacy score merge will be added next.</p>';
-    dom.mergeCandidateList?.replaceChildren();
-    dom.mergePreview?.replaceChildren();
-    dom.mergeConflicts?.replaceChildren();
-    if(dom.mergeCandidateList) dom.mergeCandidateList.innerHTML = emptyMessage;
-    if(dom.mergePreview) dom.mergePreview.innerHTML = emptyMessage;
-    if(dom.mergeConflicts) dom.mergeConflicts.innerHTML = emptyMessage;
+  function initializeMergeDialog(){
+    renderMergeDialog();
+
+    dom.openMerge?.addEventListener('click', () => {
+      if(!requireSignedIn('Please sign in with Google before merging old scores.')) return;
+      renderMergeDialog();
+      if(typeof dom.mergeDialog?.showModal === 'function') dom.mergeDialog.showModal();
+      else dom.mergeDialog?.setAttribute('open', 'true');
+    });
+
+    dom.addMergeCandidate?.addEventListener('click', () => {
+      const alias = dom.mergeCandidateSelect?.value || '';
+      if(!alias) return;
+      if(!mergeState.selectedAliases.includes(alias)){
+        mergeState.selectedAliases = [...mergeState.selectedAliases, alias];
+      }
+      if(dom.mergeCandidateSelect) dom.mergeCandidateSelect.value = '';
+      renderMergeDialog();
+    });
 
     dom.closeMerge?.addEventListener('click', () => {
-      dom.mergeDialog?.close?.();
-      dom.mergeDialog?.removeAttribute('open');
+      closeMergeDialog();
     });
 
     dom.mergeDialog?.addEventListener('click', event => {
@@ -1385,15 +1769,11 @@
         event.clientY < rect.top ||
         event.clientY > rect.bottom
       ){
-        dom.mergeDialog.close?.();
-        dom.mergeDialog.removeAttribute('open');
+        closeMergeDialog();
       }
     });
 
-    dom.mergeForm?.addEventListener('submit', event => {
-      event.preventDefault();
-      alert('Firebase Google sign-in is implemented. Legacy score merge is the next step.');
-    });
+    dom.mergeForm?.addEventListener('submit', applyMergeSelection);
   }
 
   dom.googleSignIn?.addEventListener('click', handleGoogleSignIn);
@@ -1607,7 +1987,7 @@
   }
 
   generateCategoryGrid();
-  initializeMergePlaceholder();
+  initializeMergeDialog();
   loadWinner();
   renderAll();
   updateAuthPanel();

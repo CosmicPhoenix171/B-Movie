@@ -304,7 +304,16 @@
 
       <section class="merge-section">
         <div class="merge-section-title">Legacy Names</div>
-        <div id="mergeCandidateList" class="merge-candidate-list"></div>
+        <div id="mergeCandidateList" class="merge-candidate-list">
+          <div class="merge-picker-row">
+            <select id="mergeCandidateSelect" class="merge-select">
+              <option value="">Select old score name...</option>
+            </select>
+            <button type="button" class="btn ghost" id="addMergeCandidate">Add</button>
+          </div>
+          <div id="selectedMergeAliases" class="merge-selected-list"></div>
+          <p id="mergeCandidateHint" class="merge-empty">Sign in to load old names.</p>
+        </div>
       </section>
 
       <section class="merge-section">
