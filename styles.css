@@ -196,6 +196,47 @@ body {
   gap: 8px;
 }
 
+.auth-name-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-editor-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+.auth-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.auth-editor-row input {
+  width: 100%;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  border-radius: var(--radius-s);
+  font-size: 14px;
+}
+
+.auth-editor-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-glow) / 20%);
+}
+
+.auth-editor-row input:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
 .score-tracker {
   background: rgba(255 157 29 / 8%);
   border: 1px solid rgba(255 157 29 / 15%);

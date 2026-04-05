@@ -218,6 +218,7 @@
   let activeMovieId = null;
   let currentWinner = null;
   let currentUser = null;
+  let currentUserProfile = null;
   let firestore = null;
   let moviesCollection = null;
   let unsubscribeMovies = null;
@@ -264,6 +265,9 @@
     authName: document.getElementById('authName'),
     authHint: document.getElementById('authHint'),
     authMeta: document.getElementById('authMeta'),
+    authNameEditor: document.getElementById('authNameEditor'),
+    authDisplayName: document.getElementById('authDisplayName'),
+    saveDisplayName: document.getElementById('saveDisplayName'),
     googleSignIn: document.getElementById('googleSignIn'),
     signOutBtn: document.getElementById('signOutBtn'),
     openMerge: document.getElementById('openMerge'),
@@ -305,8 +309,16 @@
     return currentUser?.uid || '';
   }
 
-  function getCurrentUserName(){
+  function getProfileStorageKey(uid){
+    return `bmovie:user-profile:${uid}`;
+  }
+
+  function getDefaultCurrentUserName(){
     return sanitize(currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Google User');
+  }
+
+  function getCurrentUserName(){
+    return sanitize(currentUserProfile?.displayName || getDefaultCurrentUserName());
   }
 
   function createId(){
@@ -369,6 +381,8 @@
     dom.authName.textContent = nameText;
     dom.authHint.textContent = hintText;
     dom.authMeta.textContent = metaText || '';
+    if(dom.authNameEditor) dom.authNameEditor.hidden = stateName !== 'signed-in';
+    if(dom.authDisplayName && stateName === 'signed-in') dom.authDisplayName.value = getCurrentUserName();
     dom.googleSignIn.hidden = stateName === 'signed-in' || stateName === 'disabled';
     dom.signOutBtn.hidden = stateName !== 'signed-in';
     dom.openMerge.hidden = !(stateName === 'signed-in' && getLegacyMergeCandidates().length > 0);
@@ -399,7 +413,7 @@
       setAuthPanel(
         'signed-in',
         getCurrentUserName(),
-        'Signed in with Google. New movies and ratings use this account.',
+        'Signed in with Google. You can change how your name appears in the app below.',
         sanitize(currentUser.email || '')
       );
       return;
@@ -457,6 +471,134 @@
       dom.authMeta.textContent = message;
       console.warn('[Firebase][Auth] sign-out failed', error);
       alert(message);
+    }
+  }
+
+  function readStoredUserProfile(uid){
+    try {
+      const raw = localStorage.getItem(getProfileStorageKey(uid));
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function storeUserProfile(uid, profile){
+    try {
+      localStorage.setItem(getProfileStorageKey(uid), JSON.stringify(profile));
+    } catch {}
+  }
+
+  async function loadCurrentUserProfile(uid){
+    const localProfile = readStoredUserProfile(uid);
+    if(localProfile) currentUserProfile = localProfile;
+    else currentUserProfile = { displayName: getDefaultCurrentUserName() };
+
+    if(!remote.enabled || !firestore || !uid) return currentUserProfile;
+
+    try {
+      const usersCollection = remote.collection(firestore, 'bmovie_users');
+      const userDoc = remote.doc(usersCollection, uid);
+      const docSnap = await remote.getDoc(userDoc);
+      if(docSnap.exists()){
+        currentUserProfile = { ...currentUserProfile, ...docSnap.data() };
+        storeUserProfile(uid, currentUserProfile);
+      }
+    } catch (error) {
+      console.warn('[Firebase] Failed to load user profile:', error);
+    }
+
+    return currentUserProfile;
+  }
+
+  async function saveCurrentUserProfile(displayName){
+    const uid = getCurrentUserKey();
+    if(!uid) return;
+    currentUserProfile = {
+      ...currentUserProfile,
+      uid,
+      displayName,
+      email: currentUser?.email || '',
+      updatedAt: Date.now()
+    };
+    storeUserProfile(uid, currentUserProfile);
+
+    if(!remote.enabled || !firestore) return;
+
+    try {
+      const usersCollection = remote.collection(firestore, 'bmovie_users');
+      const userDoc = remote.doc(usersCollection, uid);
+      await remote.setDoc(userDoc, currentUserProfile);
+    } catch (error) {
+      console.warn('[Firebase] Failed to save user profile:', error);
+      throw error;
+    }
+  }
+
+  function propagateCurrentUserName(displayName){
+    const uid = getCurrentUserKey();
+    if(!uid) return;
+
+    let moviesChanged = false;
+    let winnerChanged = false;
+
+    state.movies.forEach(movie => {
+      ensureMovieShape(movie);
+      if(movie.chooserId === uid && movie.chooserName !== displayName){
+        movie.chooserName = displayName;
+        movie.chooser = displayName;
+        moviesChanged = true;
+      }
+      if(movie.ratings?.[uid] && movie.ratingNames?.[uid] !== displayName){
+        movie.ratingNames[uid] = displayName;
+        moviesChanged = true;
+      }
+    });
+
+    if(currentWinner?.personKey === uid && currentWinner.personName !== displayName){
+      currentWinner.personName = displayName;
+      winnerChanged = true;
+    }
+
+    if(moviesChanged) persist();
+    if(winnerChanged){
+      localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
+      if(remote.enabled && firestore) saveWinnerToFirebase(currentWinner);
+    }
+  }
+
+  async function handleDisplayNameSave(){
+    if(!requireSignedIn('Please sign in with Google before changing your username.')) return;
+
+    const proposedName = sanitize(dom.authDisplayName?.value.trim() || '');
+    if(!proposedName){
+      alert('Enter a username first.');
+      dom.authDisplayName?.focus();
+      return;
+    }
+
+    if(proposedName === getCurrentUserName()){
+      dom.authMeta.textContent = 'Username is already up to date.';
+      return;
+    }
+
+    if(dom.authDisplayName) dom.authDisplayName.disabled = true;
+    if(dom.saveDisplayName) dom.saveDisplayName.disabled = true;
+    dom.authMeta.textContent = 'Saving username...';
+
+    try {
+      await saveCurrentUserProfile(proposedName);
+      propagateCurrentUserName(proposedName);
+      renderAll();
+      if(currentWinner) displayWinner();
+      dom.authMeta.textContent = `Username updated to ${proposedName}.`;
+    } catch (error) {
+      const message = error?.message || 'Could not save the username change.';
+      dom.authMeta.textContent = message;
+      alert(message);
+    } finally {
+      if(dom.authDisplayName) dom.authDisplayName.disabled = false;
+      if(dom.saveDisplayName) dom.saveDisplayName.disabled = false;
     }
   }
 
@@ -1031,11 +1173,15 @@
       attachWinnerListener();
       await loadRemoteWinner();
 
-      onAuthStateChanged(auth, user => {
+      onAuthStateChanged(auth, async user => {
         currentUser = user;
         if(!user){
+          currentUserProfile = null;
           mergeState.selectedAliases = [];
           closeMergeDialog();
+        } else {
+          await loadCurrentUserProfile(user.uid);
+          propagateCurrentUserName(getCurrentUserName());
         }
         renderAll();
       });
@@ -1778,6 +1924,13 @@
 
   dom.googleSignIn?.addEventListener('click', handleGoogleSignIn);
   dom.signOutBtn?.addEventListener('click', handleSignOut);
+  dom.saveDisplayName?.addEventListener('click', handleDisplayNameSave);
+  dom.authDisplayName?.addEventListener('keydown', event => {
+    if(event.key === 'Enter'){
+      event.preventDefault();
+      handleDisplayNameSave();
+    }
+  });
 
   dom.addForm.addEventListener('submit', event => {
     event.preventDefault();
