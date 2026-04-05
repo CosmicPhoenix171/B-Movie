@@ -1909,15 +1909,42 @@
     }
 
     const topScore = sortedScores[0]?.totalFinalScore || 0;
+    const topBScore = Math.max(...sortedScores.map(scorer => scorer.totalBMovieScore));
+    const topMainstreamMagnitude = Math.max(...sortedScores.map(scorer => Math.abs(scorer.totalMainstreamScore)));
     dom.trackerScores.innerHTML = '';
 
     sortedScores.forEach((scorer, index) => {
       const scoreItem = document.createElement('div');
-      scoreItem.className = `score-item-tracker ${scorer.totalFinalScore === topScore && topScore !== 0 ? 'top-scorer' : ''}`;
+      const isBChampion = topBScore > 0 && scorer.totalBMovieScore === topBScore;
+      const isMainstreamChampion = topMainstreamMagnitude > 0 && Math.abs(scorer.totalMainstreamScore) === topMainstreamMagnitude;
+      const isDualChampion = isBChampion && isMainstreamChampion;
+      const rankClass = index === 0 ? 'rank-gold' : index === 1 ? 'rank-silver' : index === 2 ? 'rank-bronze' : 'rank-standard';
+      const championClass = isDualChampion
+        ? 'dual-champ'
+        : isBChampion
+          ? 'bmovie-champ'
+          : isMainstreamChampion
+            ? 'mainstream-champ'
+            : '';
+
+      scoreItem.className = `score-item-tracker ${scorer.totalFinalScore === topScore && topScore !== 0 ? 'top-scorer' : ''} ${championClass}`.trim();
+
+      let badgeMarkup = '';
+      if(isDualChampion){
+        badgeMarkup = '<span class="tracker-champ-badge dual-badge">DUAL CHAMP</span>';
+      } else if(isBChampion){
+        badgeMarkup = '<span class="tracker-champ-badge bmovie-badge">B-MOVIE CHAMP</span>';
+      } else if(isMainstreamChampion){
+        badgeMarkup = '<span class="tracker-champ-badge mainstream-badge">MAINSTREAM CHAMP</span>';
+      }
+
       scoreItem.innerHTML = `
         <div class="tracker-card-top">
-          <span class="tracker-rank">#${index + 1}</span>
-          <span class="tracker-movies">${scorer.movieCount} movie${scorer.movieCount === 1 ? '' : 's'}</span>
+          <span class="tracker-rank ${rankClass}">#${index + 1}</span>
+          <div class="tracker-card-status">
+            ${badgeMarkup}
+            <span class="tracker-movies">${scorer.movieCount} movie${scorer.movieCount === 1 ? '' : 's'}</span>
+          </div>
         </div>
         <div class="tracker-player-name">${sanitize(scorer.label)}</div>
         <div class="tracker-score-grid">
