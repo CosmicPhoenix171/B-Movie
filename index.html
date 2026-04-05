@@ -87,7 +87,7 @@
           <select id="sortSelect" title="Sort movies">
             <option value="added-desc">Recent</option>
             <option value="title-asc">A-Z</option>
-            <option value="total-desc">Top Score</option>
+            <option value="total-desc">Top Final Score</option>
             <option value="ratings-count-desc">Most Rated</option>
           </select>
           <input id="searchBox" type="search" placeholder="Search..." />
@@ -104,8 +104,9 @@
           <div class="scores-wrap">
             <div class="score-row categories"></div>
             <div class="total-line">
-              <span class="total-badge" title="Total points">Points: <strong class="total-val">0</strong>/50</span>
-              <span class="total-badge cheese-badge" title="Cheese score">Cheese: <strong class="cheese-val">0</strong></span>
+              <span class="total-badge bmovie-badge" title="B-Movie Score (positive)">B-Movie: <strong class="bmovie-val">0</strong></span>
+              <span class="total-badge mainstream-badge" title="Mainstream Movies Score (negative)">Mainstream: <strong class="mainstream-val">0</strong></span>
+              <span class="total-badge final-badge" title="Final Score = B-Movie Score + Mainstream Movies Score">Final: <strong class="final-val">0</strong></span>
               <span class="rater-count"></span>
             </div>
             <div class="card-tier">

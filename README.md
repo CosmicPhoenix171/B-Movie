@@ -12,8 +12,8 @@ The app stores data locally for resilience and can also live sync through Fireba
 - Private pending movie choices saved per signed-in user on the local device
 - Add movies with title, year, notes
 - Multi-category scoring across the full Good-Bad Movie Index
-- Automatic totals + per‑category averages
-- Sort: Recently Added, Title, Highest Total Score, Most Raters
+- Automatic B-Movie, Mainstream, and Final score totals plus per‑category averages
+- Sort: Recently Added, Title, Highest Final Score, Most Raters
 - Search filter (title + notes)
 - Duplicate protection (title + year)
 - Delete movies
@@ -39,10 +39,13 @@ The app stores data locally for resilience and can also live sync through Fireba
 4. Creature/Monster Quality – Foam, CGI, animatronic ambition, sock puppet spirit
 5. Dialogue Disaster – Best terrible line / script meltdown
 
-Total per rater per movie = Sum of all 5 (max 50). Night totals add every rater’s category scores together.
+Scoring formula:
+- B-Movie Score: positive ratings add points.
+- Mainstream Movies Score: negative ratings subtract points.
+- Final Score = (B-Movie Score) + (Mainstream Movies Score).
 
 ### Awards & Winner
-- After both films: compute each movie’s grand total (sum of all category scores from all raters)
+- After both films: compute each movie’s final score using B-Movie plus Mainstream totals from all raters
 - Higher total = Night’s Champion of Cheese
 - Winner chooses the next B‑movie night theme and can add custom Rule 1, Rule 2, and Rule 3 for that winner's next round
 

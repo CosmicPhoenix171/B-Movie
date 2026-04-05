@@ -666,7 +666,14 @@ body {
   font-size: 0.8rem;
   font-weight: 700;
 }
-.cheese-badge {
+.bmovie-badge {
+  background: linear-gradient(135deg, #ffb347, #ff9d1d);
+}
+.mainstream-badge {
+  background: linear-gradient(135deg, #8bb7ff, #4f7bff);
+  color: #081426;
+}
+.final-badge {
   background: linear-gradient(135deg, #ffd76a, #f59e0b);
 }
 .rater-count { font-size: 0.75rem; color: var(--text-dim); }
@@ -703,7 +710,7 @@ body {
 }
 .reviewer-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
 .reviewer-name { font-size: 0.8rem; font-weight: 600; }
-.reviewer-total { font-size: 0.75rem; color: var(--accent); font-weight: 600; }
+.reviewer-total { font-size: 0.75rem; color: var(--accent); font-weight: 600; line-height: 1.4; }
 .reviewer-scores { display: flex; flex-wrap: wrap; gap: 4px; }
 .score-item {
   background: rgba(255 255 255 / 5%);

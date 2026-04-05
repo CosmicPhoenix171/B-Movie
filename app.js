@@ -632,16 +632,20 @@
   }
 
   function getRatingTotals(entry){
-    let pointsTotal = 0;
-    let cheeseTotal = 0;
+    let bMovieScore = 0;
+    let mainstreamScore = 0;
 
     CATEGORIES.forEach(cat => {
       const score = Number(entry?.[cat.key]) || 0;
-      pointsTotal += Math.abs(score);
-      cheeseTotal += score;
+      if(score > 0) bMovieScore += score;
+      if(score < 0) mainstreamScore += score;
     });
 
-    return { pointsTotal, cheeseTotal };
+    const finalScore = bMovieScore + mainstreamScore;
+    const pointsTotal = bMovieScore + Math.abs(mainstreamScore);
+    const cheeseTotal = finalScore;
+
+    return { bMovieScore, mainstreamScore, finalScore, pointsTotal, cheeseTotal };
   }
 
   function getKnownName(key){
@@ -1083,7 +1087,7 @@
 
   function formatMergeRatingSummary(entry){
     const totals = getRatingTotals(entry);
-    return `${totals.pointsTotal} points • ${totals.cheeseTotal > 0 ? '+' : ''}${totals.cheeseTotal} cheese`;
+    return `B: ${totals.bMovieScore} • M: ${totals.mainstreamScore} • Final: ${totals.finalScore > 0 ? '+' : ''}${totals.finalScore}`;
   }
 
   function closeMergeDialog(){
@@ -1856,39 +1860,47 @@
       const aggregates = getAggregates(movie);
       if(aggregates.raterCount === 0) return;
 
-      let moviePointsTotal = 0;
-      let movieCheeseTotal = 0;
+      let movieBMovieScore = 0;
+      let movieMainstreamScore = 0;
+      let movieFinalScore = 0;
       Object.values(movie.ratings || {}).forEach(userRating => {
         const totals = getRatingTotals(userRating);
-        moviePointsTotal += totals.pointsTotal;
-        movieCheeseTotal += totals.cheeseTotal;
+        movieBMovieScore += totals.bMovieScore;
+        movieMainstreamScore += totals.mainstreamScore;
+        movieFinalScore += totals.finalScore;
       });
 
       if(!chooserScores[chooserKey]){
         chooserScores[chooserKey] = {
           label: chooserLabel,
-          totalPoints: 0,
-          cheeseScore: 0,
+          totalBMovieScore: 0,
+          totalMainstreamScore: 0,
+          totalFinalScore: 0,
           movieCount: 0,
-          avgPoints: 0,
-          avgCheese: 0
+          avgBMovieScore: 0,
+          avgMainstreamScore: 0,
+          avgFinalScore: 0
         };
       }
 
       chooserScores[chooserKey].label = chooserLabel;
-      chooserScores[chooserKey].totalPoints += moviePointsTotal;
-      chooserScores[chooserKey].cheeseScore += movieCheeseTotal;
+      chooserScores[chooserKey].totalBMovieScore += movieBMovieScore;
+      chooserScores[chooserKey].totalMainstreamScore += movieMainstreamScore;
+      chooserScores[chooserKey].totalFinalScore += movieFinalScore;
       chooserScores[chooserKey].movieCount += 1;
-      chooserScores[chooserKey].avgPoints = Math.round(
-        chooserScores[chooserKey].totalPoints / chooserScores[chooserKey].movieCount
+      chooserScores[chooserKey].avgBMovieScore = Math.round(
+        chooserScores[chooserKey].totalBMovieScore / chooserScores[chooserKey].movieCount
       );
-      chooserScores[chooserKey].avgCheese = Math.round(
-        chooserScores[chooserKey].cheeseScore / chooserScores[chooserKey].movieCount
+      chooserScores[chooserKey].avgMainstreamScore = Math.round(
+        chooserScores[chooserKey].totalMainstreamScore / chooserScores[chooserKey].movieCount
+      );
+      chooserScores[chooserKey].avgFinalScore = Math.round(
+        chooserScores[chooserKey].totalFinalScore / chooserScores[chooserKey].movieCount
       );
     });
 
     const sortedScores = Object.values(chooserScores).sort(
-      (a, b) => b.totalPoints - a.totalPoints || b.cheeseScore - a.cheeseScore
+      (a, b) => b.totalFinalScore - a.totalFinalScore || b.totalBMovieScore - a.totalBMovieScore
     );
 
     if(sortedScores.length === 0){
@@ -1896,18 +1908,19 @@
       return;
     }
 
-    const topScore = sortedScores[0]?.totalPoints || 0;
+    const topScore = sortedScores[0]?.totalFinalScore || 0;
     dom.trackerScores.innerHTML = '';
 
     sortedScores.forEach(scorer => {
       const scoreItem = document.createElement('div');
-      scoreItem.className = `score-item-tracker ${scorer.totalPoints === topScore && topScore > 0 ? 'top-scorer' : ''}`;
+      scoreItem.className = `score-item-tracker ${scorer.totalFinalScore === topScore && topScore !== 0 ? 'top-scorer' : ''}`;
       scoreItem.innerHTML = `
         <span class="scorer-name">${sanitize(scorer.label)}</span>
-        <span class="scorer-points">${scorer.totalPoints}pts</span>
-        <span class="scorer-avg">${scorer.cheeseScore > 0 ? '+' : ''}${scorer.cheeseScore} cheese</span>
+        <span class="scorer-points">B ${scorer.totalBMovieScore}</span>
+        <span class="scorer-avg">M ${scorer.totalMainstreamScore}</span>
+        <span class="scorer-final">F ${scorer.totalFinalScore > 0 ? '+' : ''}${scorer.totalFinalScore}</span>
       `;
-      scoreItem.title = `${scorer.label}: ${scorer.totalPoints} total points, ${scorer.cheeseScore > 0 ? '+' : ''}${scorer.cheeseScore} total cheese from ${scorer.movieCount} movie(s), ${scorer.avgPoints} average points and ${scorer.avgCheese > 0 ? '+' : ''}${scorer.avgCheese} average cheese per movie`;
+      scoreItem.title = `${scorer.label}: B-Movie ${scorer.totalBMovieScore}, Mainstream ${scorer.totalMainstreamScore}, Final ${scorer.totalFinalScore > 0 ? '+' : ''}${scorer.totalFinalScore} across ${scorer.movieCount} movie(s). Avg B-Movie ${scorer.avgBMovieScore}, Avg Mainstream ${scorer.avgMainstreamScore}, Avg Final ${scorer.avgFinalScore > 0 ? '+' : ''}${scorer.avgFinalScore}.`;
       dom.trackerScores.appendChild(scoreItem);
     });
   }
@@ -2036,28 +2049,31 @@
       }
     }
 
-    const totalEl = card.querySelector('.total-val');
-    const cheeseEl = card.querySelector('.cheese-val');
+    const bMovieEl = card.querySelector('.bmovie-val');
+    const mainstreamEl = card.querySelector('.mainstream-val');
+    const finalEl = card.querySelector('.final-val');
     const raterEl = card.querySelector('.rater-count');
     const tierEmoji = card.querySelector('.tier-emoji');
     const tierText = card.querySelector('.tier-text');
     const cardTier = card.querySelector('.card-tier');
 
     if(lockNeeded){
-      totalEl.textContent = '?';
-      if(cheeseEl) cheeseEl.textContent = '?';
+      if(bMovieEl) bMovieEl.textContent = '?';
+      if(mainstreamEl) mainstreamEl.textContent = '?';
+      if(finalEl) finalEl.textContent = '?';
       raterEl.textContent = '(hidden)';
       if(cardTier) cardTier.style.display = 'none';
     } else {
-      totalEl.textContent = raterCount ? aggregates.avgPoints.toFixed(1) : '0';
-      if(cheeseEl){
-        const cheeseValue = raterCount ? aggregates.avgCheese.toFixed(1) : '0';
-        cheeseEl.textContent = Number(cheeseValue) > 0 ? `+${cheeseValue}` : cheeseValue;
+      if(bMovieEl) bMovieEl.textContent = raterCount ? aggregates.avgBMovieScore.toFixed(1) : '0';
+      if(mainstreamEl) mainstreamEl.textContent = raterCount ? aggregates.avgMainstreamScore.toFixed(1) : '0';
+      if(finalEl){
+        const finalValue = raterCount ? aggregates.avgFinalScore.toFixed(1) : '0';
+        finalEl.textContent = Number(finalValue) > 0 ? `+${finalValue}` : finalValue;
       }
       raterEl.textContent = raterCount ? `(${raterCount} rater${raterCount === 1 ? '' : 's'})` : '';
 
       if(cardTier && tierEmoji && tierText && raterCount > 0){
-        const tier = getTrashTier(Math.round(aggregates.avgCheese));
+        const tier = getTrashTier(Math.round(aggregates.avgFinalScore));
         tierEmoji.textContent = tier.emoji;
         tierText.textContent = tier.label;
         tierText.style.color = tier.color;
@@ -2131,7 +2147,7 @@
       const userTotals = getRatingTotals(userRating);
       const isOwner = username === actorKey;
       const reviewerName = getRatingLabel(movie, username);
-      let headerHTML = `<div class="reviewer-header">\n        <strong class="reviewer-name">${reviewerName}</strong>\n        <span class="reviewer-total">Points: ${userTotals.pointsTotal} • Cheese: ${userTotals.cheeseTotal > 0 ? '+' : ''}${userTotals.cheeseTotal}</span>`;
+      let headerHTML = `<div class="reviewer-header">\n        <strong class="reviewer-name">${reviewerName}</strong>\n        <span class="reviewer-total">B-Movie: ${userTotals.bMovieScore} • Mainstream: ${userTotals.mainstreamScore} • Final: ${userTotals.finalScore > 0 ? '+' : ''}${userTotals.finalScore}</span>`;
       if(isOwner){
         headerHTML += ` <button type="button" class="del-rating-btn" data-user="${sanitize(username)}" title="Delete your rating">✖</button>`;
       }
@@ -2175,8 +2191,9 @@
     const userEntries = Object.values(movie.ratings || {});
     const raterCount = userEntries.length;
 
-    let totalPointsSum = 0;
-    let totalCheeseSum = 0;
+    let totalBMovieSum = 0;
+    let totalMainstreamSum = 0;
+    let totalFinalSum = 0;
     const sums = {};
     CATEGORIES.forEach(cat => { sums[cat.key] = 0; });
 
@@ -2186,8 +2203,9 @@
         if(!isNaN(value)) sums[cat.key] += value;
       });
       const totals = getRatingTotals(entry);
-      totalPointsSum += totals.pointsTotal;
-      totalCheeseSum += totals.cheeseTotal;
+      totalBMovieSum += totals.bMovieScore;
+      totalMainstreamSum += totals.mainstreamScore;
+      totalFinalSum += totals.finalScore;
     });
 
     const categoryAverages = {};
@@ -2213,8 +2231,11 @@
       raterCount,
       categoryAverages,
       bonusAverages,
-      avgPoints: raterCount ? totalPointsSum / raterCount : 0,
-      avgCheese: raterCount ? totalCheeseSum / raterCount : 0
+      avgBMovieScore: raterCount ? totalBMovieSum / raterCount : 0,
+      avgMainstreamScore: raterCount ? totalMainstreamSum / raterCount : 0,
+      avgFinalScore: raterCount ? totalFinalSum / raterCount : 0,
+      avgPoints: raterCount ? (totalBMovieSum + Math.abs(totalMainstreamSum)) / raterCount : 0,
+      avgCheese: raterCount ? totalFinalSum / raterCount : 0
     };
   }
 
@@ -2244,8 +2265,8 @@
         break;
       case 'total-desc':
         movies.sort((a, b) => (
-          getAggregates(b).avgPoints - getAggregates(a).avgPoints ||
-          getAggregates(b).avgCheese - getAggregates(a).avgCheese
+          getAggregates(b).avgFinalScore - getAggregates(a).avgFinalScore ||
+          getAggregates(b).avgBMovieScore - getAggregates(a).avgBMovieScore
         ));
         break;
       case 'added-desc':
