@@ -240,39 +240,140 @@ body {
 }
 
 .score-tracker {
-  background: rgba(255 157 29 / 8%);
-  border: 1px solid rgba(255 157 29 / 15%);
-  border-radius: var(--radius-s);
-  padding: 12px;
+  background: linear-gradient(155deg, rgba(255 157 29 / 8%), rgba(255 123 79 / 6%));
+  border: 1px solid rgba(255 157 29 / 20%);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: inset 0 1px 0 rgba(255 255 255 / 4%);
 }
 .tracker-title {
-  font-size: 0.7rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-weight: 700;
+  color: #ffb347;
+  margin-bottom: 14px;
+}
+.tracker-scores {
+  display: grid;
+  gap: 12px;
+}
+.score-item-tracker {
+  background: linear-gradient(160deg, rgba(255 177 71 / 10%), rgba(255 157 29 / 06%));
+  border: 1px solid rgba(255 179 71 / 24%);
+  padding: 14px;
+  border-radius: 12px;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.score-item-tracker.top-scorer {
+  background: linear-gradient(160deg, rgba(139 231 159 / 15%), rgba(255 179 71 / 10%));
+  border-color: rgba(139 231 159 / 32%);
+  box-shadow: 0 0 0 1px rgba(139 231 159 / 12%), 0 12px 28px -20px rgba(139 231 159 / 55%);
+}
+.tracker-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.tracker-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255 255 255 / 7%);
+  color: #ffd27b;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.top-scorer .tracker-rank {
+  background: rgba(139 231 159 / 16%);
+  color: #8be79f;
+}
+.tracker-movies {
+  color: var(--text-dim);
+  font-size: 0.74rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   font-weight: 600;
-  color: var(--accent);
-  margin-bottom: 8px;
 }
-.tracker-scores {
+.tracker-player-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #f7fafc;
+}
+.top-scorer .tracker-player-name {
+  color: #baf5c6;
+}
+.tracker-score-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.tracker-stat {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255 255 255 / 9%);
+  background: rgba(10 14 18 / 26%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tracker-stat-bmovie {
+  border-color: rgba(255 179 71 / 20%);
+}
+.tracker-stat-mainstream {
+  border-color: rgba(125 170 252 / 22%);
+}
+.tracker-stat-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+.tracker-stat-value {
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 800;
+  font-family: 'Share Tech Mono', monospace;
+}
+.tracker-stat-bmovie .tracker-stat-value {
+  color: #ffb347;
+}
+.tracker-stat-mainstream .tracker-stat-value {
+  color: #9bc2ff;
+}
+.tracker-meta-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  font-size: 0.75rem;
+  gap: 8px;
 }
-.score-item-tracker {
-  background: rgba(255 157 29 / 12%);
-  border: 1px solid rgba(255 157 29 / 25%);
-  padding: 4px 8px;
-  border-radius: 4px;
-  color: #ffb347;
+.tracker-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255 255 255 / 5%);
+  color: var(--text-dim);
+  font-size: 0.72rem;
   font-weight: 600;
 }
-.score-item-tracker.top-scorer {
-  background: rgba(100 200 120 / 15%);
-  border-color: rgba(139 231 159 / 30%);
-  color: #8be79f;
+.no-scores {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.8rem;
+  padding: 6px 2px;
 }
-.no-scores { color: var(--text-dim); font-style: italic; font-size: 0.7rem; }
 
 /* ====================================
    BOTTOM NAVIGATION

@@ -648,6 +648,13 @@
     return { bMovieScore, mainstreamScore, finalScore, pointsTotal, cheeseTotal };
   }
 
+  function formatSignedScore(value, alwaysShowPlus = false){
+    const numericValue = Number(value) || 0;
+    if(numericValue > 0) return `${alwaysShowPlus ? '+' : ''}${numericValue.toFixed(1).replace(/\.0$/, '')}`;
+    if(numericValue < 0) return numericValue.toFixed(1).replace(/\.0$/, '');
+    return '0';
+  }
+
   function getKnownName(key){
     if(!key) return '';
     if(currentUser?.uid === key) return getCurrentUserName();
@@ -1858,17 +1865,11 @@
       if(!chooserKey || !chooserLabel) return;
 
       const aggregates = getAggregates(movie);
-  if(aggregates.raterCount < 3) return;
+      if(aggregates.raterCount < 3) return;
 
-      let movieBMovieScore = 0;
-      let movieMainstreamScore = 0;
-      let movieFinalScore = 0;
-      Object.values(movie.ratings || {}).forEach(userRating => {
-        const totals = getRatingTotals(userRating);
-        movieBMovieScore += totals.bMovieScore;
-        movieMainstreamScore += totals.mainstreamScore;
-        movieFinalScore += totals.finalScore;
-      });
+      const movieBMovieScore = aggregates.avgBMovieScore;
+      const movieMainstreamScore = aggregates.avgMainstreamScore;
+      const movieFinalScore = aggregates.avgFinalScore;
 
       if(!chooserScores[chooserKey]){
         chooserScores[chooserKey] = {
@@ -1888,13 +1889,13 @@
       chooserScores[chooserKey].totalMainstreamScore += movieMainstreamScore;
       chooserScores[chooserKey].totalFinalScore += movieFinalScore;
       chooserScores[chooserKey].movieCount += 1;
-      chooserScores[chooserKey].avgBMovieScore = Math.round(
+      chooserScores[chooserKey].avgBMovieScore = (
         chooserScores[chooserKey].totalBMovieScore / chooserScores[chooserKey].movieCount
       );
-      chooserScores[chooserKey].avgMainstreamScore = Math.round(
+      chooserScores[chooserKey].avgMainstreamScore = (
         chooserScores[chooserKey].totalMainstreamScore / chooserScores[chooserKey].movieCount
       );
-      chooserScores[chooserKey].avgFinalScore = Math.round(
+      chooserScores[chooserKey].avgFinalScore = (
         chooserScores[chooserKey].totalFinalScore / chooserScores[chooserKey].movieCount
       );
     });
@@ -1904,22 +1905,38 @@
     );
 
     if(sortedScores.length === 0){
-      dom.trackerScores.innerHTML = '<span class="no-scores">Chooser scores appear after a movie gets 3 reviews.</span>';
+      dom.trackerScores.innerHTML = '<span class="no-scores">Total scores appear after a movie gets 3 reviews.</span>';
       return;
     }
 
     const topScore = sortedScores[0]?.totalFinalScore || 0;
     dom.trackerScores.innerHTML = '';
 
-    sortedScores.forEach(scorer => {
+    sortedScores.forEach((scorer, index) => {
       const scoreItem = document.createElement('div');
       scoreItem.className = `score-item-tracker ${scorer.totalFinalScore === topScore && topScore !== 0 ? 'top-scorer' : ''}`;
       scoreItem.innerHTML = `
-        <span class="scorer-name">${sanitize(scorer.label)}</span>
-        <span class="scorer-points">B ${scorer.totalBMovieScore}</span>
-        <span class="scorer-avg">M ${scorer.totalMainstreamScore}</span>
+        <div class="tracker-card-top">
+          <span class="tracker-rank">#${index + 1}</span>
+          <span class="tracker-movies">${scorer.movieCount} movie${scorer.movieCount === 1 ? '' : 's'}</span>
+        </div>
+        <div class="tracker-player-name">${sanitize(scorer.label)}</div>
+        <div class="tracker-score-grid">
+          <div class="tracker-stat tracker-stat-bmovie">
+            <span class="tracker-stat-label">B-Movie</span>
+            <strong class="tracker-stat-value">${formatSignedScore(scorer.totalBMovieScore, true)}</strong>
+          </div>
+          <div class="tracker-stat tracker-stat-mainstream">
+            <span class="tracker-stat-label">Mainstream</span>
+            <strong class="tracker-stat-value">${formatSignedScore(scorer.totalMainstreamScore)}</strong>
+          </div>
+        </div>
+        <div class="tracker-meta-row">
+          <span class="tracker-meta-pill">Avg B ${formatSignedScore(scorer.avgBMovieScore, true)}</span>
+          <span class="tracker-meta-pill">Avg M ${formatSignedScore(scorer.avgMainstreamScore)}</span>
+        </div>
       `;
-      scoreItem.title = `${scorer.label}: B-Movie ${scorer.totalBMovieScore}, Mainstream ${scorer.totalMainstreamScore} across ${scorer.movieCount} movie(s). Avg B-Movie ${scorer.avgBMovieScore}, Avg Mainstream ${scorer.avgMainstreamScore}.`;
+      scoreItem.title = `${scorer.label}: B-Movie ${formatSignedScore(scorer.totalBMovieScore, true)}, Mainstream ${formatSignedScore(scorer.totalMainstreamScore)} across ${scorer.movieCount} qualified movie(s). Avg B-Movie ${formatSignedScore(scorer.avgBMovieScore, true)}, Avg Mainstream ${formatSignedScore(scorer.avgMainstreamScore)}.`;
       dom.trackerScores.appendChild(scoreItem);
     });
   }
