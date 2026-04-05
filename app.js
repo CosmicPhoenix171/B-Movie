@@ -223,6 +223,7 @@
   let moviesCollection = null;
   let unsubscribeMovies = null;
   let unsubscribeWinner = null;
+  let unsubscribeUserProfile = null;
   let remote = { enabled: false };
   let authApi = {
     status: 'loading',
@@ -489,10 +490,32 @@
     } catch {}
   }
 
+  function getProfileUpdatedAt(profile){
+    return Number(profile?.updatedAt) || 0;
+  }
+
+  function pickNewestProfile(primaryProfile, secondaryProfile){
+    const primaryUpdatedAt = getProfileUpdatedAt(primaryProfile);
+    const secondaryUpdatedAt = getProfileUpdatedAt(secondaryProfile);
+    return primaryUpdatedAt >= secondaryUpdatedAt ? primaryProfile : secondaryProfile;
+  }
+
+  async function writeUserProfileToRemote(uid, profile){
+    if(!remote.enabled || !firestore || !uid || !profile) return;
+    const usersCollection = remote.collection(firestore, 'bmovie_users');
+    const userDoc = remote.doc(usersCollection, uid);
+    await remote.setDoc(userDoc, profile);
+  }
+
   async function loadCurrentUserProfile(uid){
     const localProfile = readStoredUserProfile(uid);
     if(localProfile) currentUserProfile = localProfile;
-    else currentUserProfile = { displayName: getDefaultCurrentUserName() };
+    else currentUserProfile = {
+      uid,
+      displayName: getDefaultCurrentUserName(),
+      email: currentUser?.email || '',
+      updatedAt: 0
+    };
 
     if(!remote.enabled || !firestore || !uid) return currentUserProfile;
 
@@ -500,9 +523,20 @@
       const usersCollection = remote.collection(firestore, 'bmovie_users');
       const userDoc = remote.doc(usersCollection, uid);
       const docSnap = await remote.getDoc(userDoc);
-      if(docSnap.exists()){
-        currentUserProfile = { ...currentUserProfile, ...docSnap.data() };
-        storeUserProfile(uid, currentUserProfile);
+      const remoteProfile = docSnap.exists() ? docSnap.data() : null;
+
+      if(remoteProfile || localProfile){
+        currentUserProfile = {
+          ...pickNewestProfile(localProfile || currentUserProfile, remoteProfile || currentUserProfile),
+          uid,
+          email: currentUser?.email || (remoteProfile?.email || localProfile?.email || '')
+        };
+      }
+
+      storeUserProfile(uid, currentUserProfile);
+
+      if(getProfileUpdatedAt(currentUserProfile) > getProfileUpdatedAt(remoteProfile)){
+        await writeUserProfileToRemote(uid, currentUserProfile);
       }
     } catch (error) {
       console.warn('[Firebase] Failed to load user profile:', error);
@@ -526,12 +560,56 @@
     if(!remote.enabled || !firestore) return;
 
     try {
-      const usersCollection = remote.collection(firestore, 'bmovie_users');
-      const userDoc = remote.doc(usersCollection, uid);
-      await remote.setDoc(userDoc, currentUserProfile);
+      await writeUserProfileToRemote(uid, currentUserProfile);
     } catch (error) {
       console.warn('[Firebase] Failed to save user profile:', error);
       throw error;
+    }
+  }
+
+  function attachUserProfileListener(uid){
+    if(!remote.enabled || !firestore || !uid) return;
+    if(unsubscribeUserProfile) unsubscribeUserProfile();
+
+    try {
+      const usersCollection = remote.collection(firestore, 'bmovie_users');
+      const userDoc = remote.doc(usersCollection, uid);
+      unsubscribeUserProfile = remote.onSnapshot(
+        userDoc,
+        async docSnap => {
+          if(!docSnap.exists()) return;
+
+          const remoteProfile = docSnap.data();
+          const activeProfile = currentUserProfile || readStoredUserProfile(uid) || {
+            uid,
+            displayName: getDefaultCurrentUserName(),
+            email: currentUser?.email || '',
+            updatedAt: 0
+          };
+          const activeUpdatedAt = getProfileUpdatedAt(activeProfile);
+          const remoteUpdatedAt = getProfileUpdatedAt(remoteProfile);
+
+          if(activeUpdatedAt > remoteUpdatedAt){
+            await writeUserProfileToRemote(uid, activeProfile);
+            return;
+          }
+
+          if(remoteUpdatedAt > activeUpdatedAt){
+            currentUserProfile = {
+              ...remoteProfile,
+              uid,
+              email: currentUser?.email || remoteProfile?.email || ''
+            };
+            storeUserProfile(uid, currentUserProfile);
+            propagateCurrentUserName(getCurrentUserName());
+            renderAll();
+            if(currentWinner) displayWinner();
+          }
+        },
+        error => console.warn('[Firebase] User profile listener error:', error)
+      );
+    } catch (error) {
+      console.warn('[Firebase] Failed to attach user profile listener:', error);
     }
   }
 
@@ -1176,12 +1254,15 @@
       onAuthStateChanged(auth, async user => {
         currentUser = user;
         if(!user){
+          if(unsubscribeUserProfile) unsubscribeUserProfile();
+          unsubscribeUserProfile = null;
           currentUserProfile = null;
           mergeState.selectedAliases = [];
           closeMergeDialog();
         } else {
           await loadCurrentUserProfile(user.uid);
           propagateCurrentUserName(getCurrentUserName());
+          attachUserProfileListener(user.uid);
         }
         renderAll();
       });
