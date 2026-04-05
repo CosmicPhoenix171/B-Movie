@@ -28,9 +28,18 @@
     <!-- Collapsible menu for mobile -->
     <nav class="mobile-menu" id="mobileMenu">
       <div class="menu-content">
-        <div class="user-box">
-          <label for="username">Your Name</label>
-          <input id="username" type="text" placeholder="Enter your name for ratings" autocomplete="off" />
+        <div class="auth-box" id="authPanel" data-state="loading">
+          <div class="auth-copy">
+            <span class="auth-kicker">Account</span>
+            <strong class="auth-name" id="authName">Checking account...</strong>
+            <p class="auth-hint" id="authHint">Google sign-in is required for adding, rating, and merging scores.</p>
+            <p class="auth-meta" id="authMeta"></p>
+          </div>
+          <div class="auth-actions">
+            <button type="button" class="btn primary btn-block" id="googleSignIn">Sign in with Google</button>
+            <button type="button" class="btn ghost btn-block" id="openMerge" hidden>Merge old scores</button>
+            <button type="button" class="btn ghost btn-block" id="signOutBtn" hidden>Sign out</button>
+          </div>
         </div>
         <div class="score-tracker" id="scoreTracker">
           <div class="tracker-title">Chooser Scores</div>
@@ -150,7 +159,7 @@
           <button type="button" class="btn ghost" id="clearWinner">Clear</button>
         </div>
       </form>
-      <div id="winnerDisplay" class="winner-display" style="display:none;">
+      <div id="winnerDisplay" class="winner-display">
         <div class="winner-badge">
           <span class="winner-icon"></span>
           <div class="winner-info">
@@ -284,6 +293,33 @@
       <div class="dialog-actions">
         <button value="cancel" class="btn ghost" type="reset">Cancel</button>
         <button value="save" class="btn primary" type="submit">Save Ratings</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="mergeDialog">
+    <form id="mergeForm" class="merge-form">
+      <h3 class="dialog-title">Merge Old Scores</h3>
+      <p class="dialog-subtitle">CLAIM LEGACY NAMES <span class="subtitle-hint">Choose the old typed names that belong to your Google account.</span></p>
+
+      <section class="merge-section">
+        <div class="merge-section-title">Legacy Names</div>
+        <div id="mergeCandidateList" class="merge-candidate-list"></div>
+      </section>
+
+      <section class="merge-section">
+        <div class="merge-section-title">Preview</div>
+        <div id="mergePreview" class="merge-preview"></div>
+      </section>
+
+      <section class="merge-section">
+        <div class="merge-section-title">Conflicts</div>
+        <div id="mergeConflicts" class="merge-conflicts"></div>
+      </section>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" id="closeMerge">Close</button>
+        <button type="submit" class="btn primary" id="applyMerge">Apply Merge</button>
       </div>
     </form>
   </dialog>

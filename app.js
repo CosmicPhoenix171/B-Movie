@@ -1,18 +1,13 @@
-/* B-Movie Ratings App Logic (with optional Firebase Firestore sync) */
+/* B-Movie Ratings App Logic (with Firebase Firestore sync and Google sign-in) */
 (async function(){
   const LS_KEY = 'bmovie:data:v5';
   const LS_KEY_V4 = 'bmovie:data:v4';
   const LS_KEY_V3 = 'bmovie:data:v3';
   const LS_KEY_V2 = 'bmovie:data:v2';
-  
-  // =========================================
-  // THE GOOD-BAD MOVIE INDEX - Rating Categories
-  // 10 Categories (range -50 to 50)
-  // -5 = masterpiece side, 0 = none, 5 = maximum cheese
-  // =========================================
+
   const CATEGORIES = [
-    { 
-      key: 'overacting', 
+    {
+      key: 'overacting',
       label: 'Overacting',
       icon: '🎭',
       question: 'How exaggerated and entertaining were the performances?',
@@ -30,8 +25,8 @@
         '5 - Maximum unhinged cheese'
       ]
     },
-    { 
-      key: 'explosions', 
+    {
+      key: 'explosions',
       label: 'Explosions & Destruction',
       icon: '💥',
       question: 'How fun was the large-scale chaos?',
@@ -49,8 +44,8 @@
         '5 - Maximum cheese chaos'
       ]
     },
-    { 
-      key: 'action', 
+    {
+      key: 'action',
       label: 'Action',
       icon: '🎬',
       question: 'How entertaining were the fights, chases, and stunts?',
@@ -68,8 +63,8 @@
         '5 - Maximum cheese action'
       ]
     },
-    { 
-      key: 'practical', 
+    {
+      key: 'practical',
       label: 'Practical Effects',
       icon: '🧟',
       question: 'How fun were the physical effects, props, and makeup?',
@@ -87,8 +82,8 @@
         '5 - Maximum cheese effects'
       ]
     },
-    { 
-      key: 'gore', 
+    {
+      key: 'gore',
       label: 'Gore',
       icon: '🩸',
       question: 'How entertaining was the blood and damage?',
@@ -106,8 +101,8 @@
         '5 - Maximum cheese gore'
       ]
     },
-    { 
-      key: 'cgi', 
+    {
+      key: 'cgi',
       label: 'CGI Crimes',
       icon: '🧬',
       question: 'How funny or distracting was the digital work?',
@@ -125,8 +120,8 @@
         '5 - Maximum cheese CGI crime'
       ]
     },
-    { 
-      key: 'plot', 
+    {
+      key: 'plot',
       label: 'Plot Chaos',
       icon: '🧠',
       question: 'How entertaining was the nonsense?',
@@ -144,8 +139,8 @@
         '5 - Maximum chaos cheese'
       ]
     },
-    { 
-      key: 'creature', 
+    {
+      key: 'creature',
       label: 'Creature',
       icon: '🦖',
       question: 'How fun was the monster?',
@@ -163,8 +158,8 @@
         '5 - Maximum cheese monster'
       ]
     },
-    { 
-      key: 'dialogue', 
+    {
+      key: 'dialogue',
       label: 'Dialogue',
       icon: '🗣',
       question: 'How quotable was the writing?',
@@ -182,8 +177,8 @@
         '5 - Maximum cheese dialogue'
       ]
     },
-    { 
-      key: 'enjoyment', 
+    {
+      key: 'enjoyment',
       label: 'Enjoyment',
       icon: '❤️',
       question: 'How much fun did you have?',
@@ -202,11 +197,9 @@
       ]
     }
   ];
-  
-  // No bonus categories - all 10 count toward the total
+
   const BONUS_CATEGORIES = [];
-  
-  // Cheese tiers (based on signed cheese score, range -50 to 50)
+
   const TRASH_TIERS = [
     { min: -50, max: -41, label: 'Masterpiece Tier 1', emoji: '🏆', color: '#7dd3fc' },
     { min: -40, max: -31, label: 'Great Movie Tier 2', emoji: '⭐', color: '#60a5fa' },
@@ -220,7 +213,65 @@
     { min: 31, max: 40, label: 'Cheese Tier 4', emoji: '💎', color: '#c084fc' },
     { min: 41, max: 50, label: 'Cheese Tier 5', emoji: '👑', color: '#facc15' }
   ];
-  
+
+  let state = loadState();
+  let activeMovieId = null;
+  let currentWinner = null;
+  let currentUser = null;
+  let firestore = null;
+  let moviesCollection = null;
+  let unsubscribeMovies = null;
+  let unsubscribeWinner = null;
+  let remote = { enabled: false };
+  let authApi = {
+    status: 'loading',
+    disabledReason: '',
+    enabled: false,
+    instance: null,
+    provider: null,
+    signInWithPopup: null,
+    signOut: null
+  };
+
+  const dom = {
+    addForm: document.getElementById('addMovieForm'),
+    title: document.getElementById('movieTitle'),
+    year: document.getElementById('movieYear'),
+    notes: document.getElementById('movieNotes'),
+    moviesList: document.getElementById('moviesList'),
+    template: document.getElementById('movieCardTemplate'),
+    sort: document.getElementById('sortSelect'),
+    search: document.getElementById('searchBox'),
+    rateDialog: document.getElementById('rateDialog'),
+    rateForm: document.getElementById('rateForm'),
+    dialogMovieTitle: document.getElementById('dialogMovieTitle'),
+    syncStatus: document.getElementById('syncStatus'),
+    winnerForm: document.getElementById('winnerForm'),
+    winnerMovie: document.getElementById('winnerMovie'),
+    winnerPerson: document.getElementById('winnerPerson'),
+    winnerDisplay: document.getElementById('winnerDisplay'),
+    clearWinner: document.getElementById('clearWinner'),
+    clearDisplayedWinner: document.getElementById('clearDisplayedWinner'),
+    editTheme: document.getElementById('editTheme'),
+    saveTheme: document.getElementById('saveTheme'),
+    scoreTracker: document.getElementById('scoreTracker'),
+    trackerScores: document.getElementById('trackerScores'),
+    categoryGrid: document.getElementById('categoryGrid'),
+    authPanel: document.getElementById('authPanel'),
+    authName: document.getElementById('authName'),
+    authHint: document.getElementById('authHint'),
+    authMeta: document.getElementById('authMeta'),
+    googleSignIn: document.getElementById('googleSignIn'),
+    signOutBtn: document.getElementById('signOutBtn'),
+    openMerge: document.getElementById('openMerge'),
+    mergeDialog: document.getElementById('mergeDialog'),
+    mergeForm: document.getElementById('mergeForm'),
+    mergeCandidateList: document.getElementById('mergeCandidateList'),
+    mergePreview: document.getElementById('mergePreview'),
+    mergeConflicts: document.getElementById('mergeConflicts'),
+    closeMerge: document.getElementById('closeMerge')
+  };
+
   function getTrashTier(score) {
     for (const tier of TRASH_TIERS) {
       if (score >= tier.min && score <= tier.max) return tier;
@@ -228,17 +279,48 @@
     return TRASH_TIERS[0];
   }
 
-  function cloneData(value){
-    return JSON.parse(JSON.stringify(value));
+  function sanitize(str){
+    return String(str ?? '').replace(/[<>]/g, '');
   }
 
-  function normalizeState(state){
-    if(!state?.movies) return { movies: [] };
-    state.movies.forEach(movie => {
+  function flashField(el, msg){
+    if(!el) return;
+    el.classList.add('error');
+    el.setAttribute('title', msg);
+    setTimeout(() => {
+      el.classList.remove('error');
+      el.removeAttribute('title');
+    }, 1600);
+  }
+
+  function getCurrentUserKey(){
+    return currentUser?.uid || '';
+  }
+
+  function getCurrentUserName(){
+    return sanitize(currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Google User');
+  }
+
+  function createId(){
+    if(globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    return Math.random().toString(36).slice(2, 11);
+  }
+
+  function ensureMovieShape(movie){
+    movie.ratings = movie.ratings && typeof movie.ratings === 'object' ? movie.ratings : {};
+    movie.ratingNames = movie.ratingNames && typeof movie.ratingNames === 'object' ? movie.ratingNames : {};
+    if(movie.chooserName && !movie.chooser) movie.chooser = movie.chooserName;
+    return movie;
+  }
+
+  function normalizeState(value){
+    if(!value?.movies) return { movies: [] };
+    value.movies.forEach(movie => {
+      ensureMovieShape(movie);
       delete movie.legacySets;
       delete movie.legacyRatings;
     });
-    return state;
+    return value;
   }
 
   function getRatingTotals(entry){
@@ -254,50 +336,126 @@
     return { pointsTotal, cheeseTotal };
   }
 
-  /** Data shape v2
-   * {
-   *   movies: [{
-   *     id,title,year,notes,addedAt,
-   *     ratings: { username: { overacting, explosions, action, practical, gore, cgi, plot, creature, dialogue, enjoyment } }
-   *   }]
-   * }
-   */
-  let state = loadState();
+  function getKnownName(key){
+    if(!key) return '';
+    if(currentUser?.uid === key) return getCurrentUserName();
+    if(currentWinner?.personKey === key && currentWinner.personName) return currentWinner.personName;
+    for(const movie of state.movies){
+      if(movie.ratingNames?.[key]) return sanitize(movie.ratingNames[key]);
+      if(movie.chooserId === key && movie.chooserName) return sanitize(movie.chooserName);
+    }
+    return sanitize(key);
+  }
 
-  const dom = {
-    addForm: document.getElementById('addMovieForm'),
-    title: document.getElementById('movieTitle'),
-    year: document.getElementById('movieYear'),
-    notes: document.getElementById('movieNotes'),
-    username: document.getElementById('username'),
-    moviesList: document.getElementById('moviesList'),
-    template: document.getElementById('movieCardTemplate'),
-    sort: document.getElementById('sortSelect'),
-    search: document.getElementById('searchBox'),
-    rateDialog: document.getElementById('rateDialog'),
-    rateForm: document.getElementById('rateForm'),
-    dialogMovieTitle: document.getElementById('dialogMovieTitle'),
-    syncStatus: document.getElementById('syncStatus'),
-    winnerForm: document.getElementById('winnerForm'),
-    winnerMovie: document.getElementById('winnerMovie'),
-    winnerPerson: document.getElementById('winnerPerson'),
+  function getRatingLabel(movie, key){
+    return sanitize(movie.ratingNames?.[key] || getKnownName(key));
+  }
 
-    winnerDisplay: document.getElementById('winnerDisplay'),
-    clearWinner: document.getElementById('clearWinner'),
-    clearDisplayedWinner: document.getElementById('clearDisplayedWinner'),
-    editTheme: document.getElementById('editTheme'),
-    saveTheme: document.getElementById('saveTheme'),
-    scoreTracker: document.getElementById('scoreTracker'),
-    trackerScores: document.getElementById('trackerScores'),
-    categoryGrid: document.getElementById('categoryGrid')
-  };
+  function getChooserLabel(movie){
+    return sanitize(movie.chooserName || movie.chooser || (movie.chooserId ? getKnownName(movie.chooserId) : ''));
+  }
 
-  // Generate the rating dialog category dropdowns
+  function setAuthPanel(stateName, nameText, hintText, metaText){
+    if(!dom.authPanel) return;
+    dom.authPanel.dataset.state = stateName;
+    dom.authName.textContent = nameText;
+    dom.authHint.textContent = hintText;
+    dom.authMeta.textContent = metaText || '';
+    dom.googleSignIn.hidden = stateName === 'signed-in' || stateName === 'disabled';
+    dom.signOutBtn.hidden = stateName !== 'signed-in';
+    dom.openMerge.hidden = true;
+  }
+
+  function updateAuthPanel(){
+    if(authApi.status === 'disabled'){
+      setAuthPanel(
+        'disabled',
+        'Firebase unavailable',
+        'Google sign-in is currently unavailable for this app.',
+        authApi.disabledReason
+      );
+      return;
+    }
+
+    if(authApi.status === 'loading'){
+      setAuthPanel(
+        'loading',
+        'Checking account...',
+        'Connecting to Firebase Google sign-in.',
+        ''
+      );
+      return;
+    }
+
+    if(currentUser){
+      setAuthPanel(
+        'signed-in',
+        getCurrentUserName(),
+        'Signed in with Google. New movies and ratings use this account.',
+        sanitize(currentUser.email || '')
+      );
+      return;
+    }
+
+    setAuthPanel(
+      'signed-out',
+      'Not signed in',
+      'Google sign-in is required before you can add movies or submit ratings.',
+      'Browse is available, but creation and rating are locked.'
+    );
+  }
+
+  function requireSignedIn(message){
+    if(currentUser) return true;
+    alert(message);
+    menuToggle?.classList.add('active');
+    mobileMenu?.classList.add('open');
+    dom.googleSignIn?.focus();
+    return false;
+  }
+
+  function humanizeAuthError(error){
+    const code = error?.code || '';
+    if(code === 'auth/popup-closed-by-user') return 'Sign-in was cancelled before it finished.';
+    if(code === 'auth/popup-blocked') return 'The browser blocked the Google sign-in popup. Allow popups and try again.';
+    if(code === 'auth/unauthorized-domain') return 'This site is not listed in Firebase Authentication authorized domains.';
+    if(code === 'auth/operation-not-allowed') return 'Google sign-in is not enabled in the Firebase Authentication console.';
+    return error?.message || 'Google sign-in failed.';
+  }
+
+  async function handleGoogleSignIn(){
+    if(!authApi.enabled || !authApi.signInWithPopup || !authApi.instance || !authApi.provider){
+      alert('Firebase Google sign-in is not ready yet.');
+      return;
+    }
+
+    dom.authMeta.textContent = 'Opening Google sign-in...';
+    try {
+      await authApi.signInWithPopup(authApi.instance, authApi.provider);
+    } catch (error) {
+      const message = humanizeAuthError(error);
+      dom.authMeta.textContent = message;
+      console.warn('[Firebase][Auth] sign-in failed', error);
+      alert(message);
+    }
+  }
+
+  async function handleSignOut(){
+    if(!authApi.enabled || !authApi.signOut || !authApi.instance) return;
+    try {
+      await authApi.signOut(authApi.instance);
+    } catch (error) {
+      const message = humanizeAuthError(error);
+      dom.authMeta.textContent = message;
+      console.warn('[Firebase][Auth] sign-out failed', error);
+      alert(message);
+    }
+  }
+
   function generateCategoryGrid() {
     if (!dom.categoryGrid) return;
     dom.categoryGrid.innerHTML = '';
-    
-    // Main categories
+
     CATEGORIES.forEach(cat => {
       const div = document.createElement('div');
       div.className = 'rating-category';
@@ -314,8 +472,7 @@
       `;
       dom.categoryGrid.appendChild(div);
     });
-    
-    // Bonus categories
+
     BONUS_CATEGORIES.forEach(cat => {
       const div = document.createElement('div');
       div.className = 'rating-category bonus-category';
@@ -333,231 +490,15 @@
       `;
       dom.categoryGrid.appendChild(div);
     });
-    
-    // Add change handler for visual feedback
+
     dom.categoryGrid.querySelectorAll('.rating-select').forEach(sel => {
       sel.addEventListener('change', () => {
         sel.classList.toggle('has-value', sel.value !== '');
       });
     });
   }
-  
-  // Initialize the category grid
-  generateCategoryGrid();
 
-  let activeMovieId = null; // used for dialog context
-
-  dom.username.value = sessionStorage.getItem('bmovie:username') || '';
-  dom.username.addEventListener('input', () => {
-    sessionStorage.setItem('bmovie:username', dom.username.value.trim());
-    refreshVisibleRatings();
-  });
-
-  dom.addForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const title = sanitize(dom.title.value.trim());
-    if(!title) return;
-    
-    // Get current username for chooser
-    const currentUser = dom.username.value.trim();
-    if(!currentUser){
-      alert('Please enter your name first (top right corner).');
-      dom.username.focus();
-      return;
-    }
-    
-    const yearVal = dom.year.value.trim();
-    const year = yearVal ? parseInt(yearVal,10) : undefined;
-    const notes = sanitize(dom.notes.value.trim());
-
-    const dup = state.movies.find(m => m.title.toLowerCase() === title.toLowerCase() && (m.year||'') === (year||''));
-    if(dup){
-      flashField(dom.title, 'Movie already exists');
-      return;
-    }
-
-    const movie = {
-      id: Math.random().toString(36).substr(2,9),
-      title: dom.title.value.trim(),
-      year: parseInt(dom.year.value,10) || null,
-      chooser: currentUser,
-      notes: dom.notes.value.trim(),
-      addedAt: Date.now(),
-      ratings: {}
-    };
-  state.movies.push(movie);
-  persist(); // local + remote (if enabled)
-  renderMovie(movie, true); // optimistic
-    updateScoreTracker();
-    dom.addForm.reset();
-    dom.title.focus();
-    applyFilters();
-  });
-
-  dom.sort?.addEventListener('change', applyFilters);
-  dom.search?.addEventListener('input', applyFilters);
-  
-  // Winner panel events
-  console.log('Winner form element:', dom.winnerForm);
-  if(!dom.winnerForm) {
-    console.error('Winner form not found!');
-  }
-  
-  dom.winnerForm?.addEventListener('submit', e => {
-    e.preventDefault();
-    console.log('Winner form submitted');
-    const movieId = dom.winnerMovie.value;
-    const personName = dom.winnerPerson.value;
-    console.log('Selected movie ID:', movieId, 'Selected person:', personName);
-    
-    if(!movieId || !personName){
-      alert('Please select both a movie and a person.');
-      return;
-    }
-    
-    console.log('Calling setWinner...');
-    setWinner(movieId, personName);
-  });
-  
-  dom.clearWinner?.addEventListener('click', clearWinner);
-  dom.clearDisplayedWinner?.addEventListener('click', clearWinner);
-  
-  // Backup: Direct click event on Crown Winner button
-  const crownButton = document.querySelector('#winnerForm button[type="submit"]');
-  console.log('Crown Winner button found:', crownButton);
-  crownButton?.addEventListener('click', (e) => {
-    console.log('Crown Winner button clicked directly');
-    
-    // If form submission isn't working, handle it manually
-    const movieId = dom.winnerMovie.value;
-    const personName = dom.winnerPerson.value;
-    console.log('Manual check - Movie ID:', movieId, 'Person:', personName);
-    
-    if(movieId && personName) {
-      console.log('Manual crown winner triggered');
-      e.preventDefault();
-      setWinner(movieId, personName);
-    }
-  });
-  
-  // Theme editing after winner is declared
-  dom.saveTheme?.addEventListener('click', () => {
-    if(!currentWinner) return;
-    const newTheme = dom.editTheme.value.trim();
-    currentWinner.nextTheme = newTheme || null;
-    
-    // Update the display immediately
-    const themeEl = dom.winnerDisplay.querySelector('.winner-theme');
-    if(currentWinner.nextTheme){
-      themeEl.textContent = `Next Theme: ${currentWinner.nextTheme}`;
-      themeEl.title = 'Click to edit theme';
-      themeEl.style.display = 'block';
-      
-      // Make theme clickable to edit
-      themeEl.onclick = () => {
-        const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
-        if(themeEditor) {
-          themeEditor.style.display = 'block';
-          dom.editTheme.focus();
-        }
-      };
-    } else {
-      themeEl.style.display = 'none';
-      themeEl.onclick = null;
-    }
-    
-    // Hide theme editor after saving
-    const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
-    if(themeEditor) {
-      themeEditor.style.display = 'none';
-    }
-    
-    // Save to localStorage
-    localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
-    console.log('Theme saved:', currentWinner.nextTheme);
-    
-    // Save to Firebase if enabled
-    if(remote.enabled && firestore){
-      saveWinnerToFirebase(currentWinner);
-    }
-  });
-  
-  // Allow Enter key to save theme
-  dom.editTheme?.addEventListener('keypress', (e) => {
-    if(e.key === 'Enter'){
-      dom.saveTheme?.click();
-    }
-  });
-
-  // Rating dialog events
-  dom.rateForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const username = dom.username.value.trim();
-    if(!username){
-      alert('Enter your name first.');
-      dom.username.focus();
-      return;
-    }
-    if(!activeMovieId) return;
-    const movie = state.movies.find(m => m.id === activeMovieId);
-    if(!movie) return;
-
-    const entry = {};
-    for(const cat of CATEGORIES){
-      const val = parseInt(dom.rateForm.elements[cat.key].value,10);
-      if(isNaN(val) || val < -5 || val > 5){
-        alert('All main categories must be scored -5 to 5.');
-        return;
-      }
-      entry[cat.key] = val;
-    }
-    
-    // Handle bonus categories (optional)
-    for(const cat of BONUS_CATEGORIES){
-      const val = parseInt(dom.rateForm.elements[cat.key].value,10);
-      if(!isNaN(val) && val >= -5 && val <= 5){
-        entry[cat.key] = val;
-      }
-    }
-
-  movie.ratings[username] = entry;
-  persist(); // local + remote (if enabled)
-  updateMovieCard(movie.id); // optimistic UI; remote listener will reconcile if needed
-    updateScoreTracker();
-    closeDialog();
-  });
-
-  dom.rateForm.addEventListener('reset', () => {
-    closeDialog();
-  });
-
-  function openDialog(movie){
-    activeMovieId = movie.id;
-    dom.dialogMovieTitle.textContent = movie.title;
-    const username = dom.username.value.trim();
-    const prior = username ? movie.ratings[username] : null;
-    for(const cat of CATEGORIES){
-      dom.rateForm.elements[cat.key].value = prior ? prior[cat.key] : '';
-    }
-    for(const cat of BONUS_CATEGORIES){
-      dom.rateForm.elements[cat.key].value = prior ? prior[cat.key] : '';
-    }
-    if(typeof dom.rateDialog.showModal === 'function'){
-      dom.rateDialog.showModal();
-    } else {
-      dom.rateDialog.setAttribute('open','true');
-    }
-  }
-  function closeDialog(){
-    activeMovieId = null;
-    dom.rateDialog.close?.();
-    dom.rateDialog.removeAttribute('open');
-    dom.rateForm.reset();
-  }
-
-  // Load / migrate
   function loadState(){
-    // Try v5 (current format)
     try {
       const raw = localStorage.getItem(LS_KEY);
       if(raw){
@@ -566,7 +507,6 @@
       }
     } catch {}
 
-    // Migrate from v4 (old -5 to 5 meaning, 0 = bad) => v5
     try {
       const v4raw = localStorage.getItem(LS_KEY_V4);
       if(v4raw){
@@ -584,7 +524,6 @@
       }
     } catch {}
 
-    // Migrate from v3 (old -5 to 5 meaning, 0 = none) => v4
     try {
       const v3raw = localStorage.getItem(LS_KEY_V3);
       if(v3raw){
@@ -602,7 +541,6 @@
       }
     } catch {}
 
-    // Migrate from v2 (old 1-10 scale) => v4
     try {
       const v2raw = localStorage.getItem(LS_KEY_V2);
       if(v2raw){
@@ -620,7 +558,6 @@
       }
     } catch {}
 
-    // Migrate from v1 (if exists)
     try {
       const v1raw = localStorage.getItem('bmovie:data:v1');
       if(v1raw){
@@ -641,159 +578,223 @@
     return { movies: [] };
   }
 
-  // --- Persistence Layer (local + optional Firestore) ---
-  let remote = { enabled:false };
-  let firestore = null;
-  let moviesCollection = null;
-  let unsubscribeMovies = null;
-  
-  // Winner state
-  let currentWinner = null;
+  function sanitizeForFirestore(movie){
+    ensureMovieShape(movie);
+    return {
+      id: movie.id,
+      title: movie.title,
+      year: movie.year ?? null,
+      notes: movie.notes || '',
+      addedAt: movie.addedAt,
+      ratings: movie.ratings || {},
+      ratingNames: movie.ratingNames || {},
+      chooser: movie.chooser || movie.chooserName || '',
+      chooserId: movie.chooserId || null,
+      chooserName: movie.chooserName || movie.chooser || ''
+    };
+  }
 
-  function updateSyncStatus(mode,label){
+  function updateSyncStatus(mode, label){
     if(!dom.syncStatus) return;
     dom.syncStatus.dataset.mode = mode;
     dom.syncStatus.textContent = label;
   }
 
   async function initFirebase(){
-    if(!window.FIREBASE_ENABLED || !window.FIREBASE_CONFIG) return; // feature flag & config presence
+    if(!window.FIREBASE_ENABLED || !window.FIREBASE_CONFIG){
+      authApi.status = 'disabled';
+      authApi.disabledReason = 'Missing Firebase config or FIREBASE_ENABLED is false.';
+      updateAuthPanel();
+      return;
+    }
+
     try {
-      updateSyncStatus('connecting','Connecting…');
-      const [{ initializeApp }, { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc }] = await Promise.all([
+      authApi.status = 'loading';
+      updateAuthPanel();
+      updateSyncStatus('connecting', 'Connecting…');
+
+      const [
+        { initializeApp },
+        { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc },
+        {
+          getAuth,
+          onAuthStateChanged,
+          GoogleAuthProvider,
+          signInWithPopup,
+          signOut,
+          setPersistence,
+          browserLocalPersistence
+        }
+      ] = await Promise.all([
         import('https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js'),
-        import('https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js')
+        import('https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js'),
+        import('https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js')
       ]);
+
       const app = initializeApp(window.FIREBASE_CONFIG);
       firestore = getFirestore(app);
       moviesCollection = collection(firestore, 'bmovie_movies');
-      remote = { enabled:true, doc, setDoc, deleteDoc, onSnapshot, getDoc, collection };
-      document.getElementById('storageModeNote')?.replaceChildren(document.createTextNode('Shared mode: Live synced via Firestore.'));
-      updateSyncStatus('remote','Live Sync');
+      remote = { enabled: true, doc, setDoc, deleteDoc, onSnapshot, getDoc, collection };
+
+      const auth = getAuth(app);
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await setPersistence(auth, browserLocalPersistence);
+
+      authApi = {
+        status: 'ready',
+        disabledReason: '',
+        enabled: true,
+        instance: auth,
+        provider,
+        signInWithPopup,
+        signOut
+      };
+
+      document.getElementById('storageModeNote')?.replaceChildren(
+        document.createTextNode('Shared mode: Live synced via Firestore. Google sign-in powers new ratings.')
+      );
+
+      updateSyncStatus('remote', 'Live Sync');
+      updateAuthPanel();
       attachRemoteListener();
       attachWinnerListener();
-      loadRemoteWinner(); // Load existing winner on connect
+      await loadRemoteWinner();
 
-      // Optional analytics (only if measurementId provided)
+      onAuthStateChanged(auth, user => {
+        currentUser = user;
+        updateAuthPanel();
+        renderAll();
+      });
+
       if(window.FIREBASE_CONFIG.measurementId){
         try {
           const { getAnalytics } = await import('https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js');
-          getAnalytics(app); // no need to store; side-effect init
-        } catch(aErr){
-          console.warn('[Firebase] analytics init failed (ignored)', aErr);
+          getAnalytics(app);
+        } catch (analyticsError) {
+          console.warn('[Firebase] analytics init failed (ignored)', analyticsError);
         }
       }
-    } catch(err){
-      console.warn('[Firebase] init failed – falling back to local only.', err);
+    } catch (error) {
+      console.warn('[Firebase] init failed – sign-in disabled.', error);
       remote.enabled = false;
-      updateSyncStatus('error','Local (Init Failed)');
+      authApi.status = 'disabled';
+      authApi.disabledReason = humanizeAuthError(error);
+      updateSyncStatus('error', 'Local Only');
+      updateAuthPanel();
     }
-  }
-
-  function sanitizeForFirestore(movie){
-    const { id, title, year=null, notes='', addedAt, ratings={}, chooser } = movie;
-    return { id, title, year, notes, addedAt, ratings, chooser };
   }
 
   function attachRemoteListener(){
     if(!remote.enabled || !moviesCollection) return;
     if(unsubscribeMovies) unsubscribeMovies();
-    unsubscribeMovies = remote.onSnapshot(moviesCollection, snapshot => {
-      const remoteMovies = [];
-      snapshot.forEach(d => { const data = d.data(); if(data && data.id) remoteMovies.push(data); });
-      mergeRemoteState(remoteMovies);
-    }, err => console.warn('[Firebase] listener error', err));
+    unsubscribeMovies = remote.onSnapshot(
+      moviesCollection,
+      snapshot => {
+        const remoteMovies = [];
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          if(data?.id) remoteMovies.push(ensureMovieShape(data));
+        });
+        mergeRemoteState(remoteMovies);
+      },
+      error => console.warn('[Firebase] listener error', error)
+    );
   }
 
   function mergeRemoteState(remoteMovies){
-    const map = new Map(state.movies.map(m => [m.id, m]));
-    remoteMovies.forEach(r => {
-      const existing = map.get(r.id);
+    const map = new Map(state.movies.map(movie => [movie.id, ensureMovieShape(movie)]));
+    remoteMovies.forEach(remoteMovie => {
+      const existing = map.get(remoteMovie.id);
       if(existing){
-        map.set(r.id, { ...existing, ...r });
+        map.set(remoteMovie.id, ensureMovieShape({ ...existing, ...remoteMovie }));
       } else {
-        map.set(r.id, r);
+        map.set(remoteMovie.id, ensureMovieShape(remoteMovie));
       }
     });
-    state.movies = normalizeState({ movies: Array.from(map.values()).sort((a,b)=> b.addedAt - a.addedAt) }).movies;
+
+    state.movies = normalizeState({
+      movies: Array.from(map.values()).sort((a, b) => b.addedAt - a.addedAt)
+    }).movies;
+
     localStorage.setItem(LS_KEY, JSON.stringify(state));
     renderAll();
   }
 
-  function removeUserRating(movieId, uname){
-    const movie = state.movies.find(m => m.id === movieId);
-    if(!movie || !movie.ratings) return;
-    if(!movie.ratings[uname]) return;
-    delete movie.ratings[uname];
+  function persist(){
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    if(!remote.enabled || !moviesCollection) return;
+    state.movies.forEach(movie => {
+      remote
+        .setDoc(remote.doc(moviesCollection, movie.id), sanitizeForFirestore(movie))
+        .catch(error => console.warn('[Firebase] write fail', error));
+    });
+  }
+
+  function removeUserRating(movieId, ratingKey){
+    const movie = state.movies.find(item => item.id === movieId);
+    if(!movie?.ratings?.[ratingKey]) return;
+    delete movie.ratings[ratingKey];
+    delete movie.ratingNames?.[ratingKey];
     persist();
     updateMovieCard(movieId);
     updateScoreTracker();
+    updateWinnerDropdowns();
   }
 
-  // Winner functions
   function updateWinnerDropdowns(){
     if(!dom.winnerMovie || !dom.winnerPerson) return;
-    
-    // Clear existing options (keep first placeholder)
+
     dom.winnerMovie.innerHTML = '<option value="">Select movie...</option>';
     dom.winnerPerson.innerHTML = '<option value="">Select person...</option>';
-    
-    // Populate movies
+
     state.movies.forEach(movie => {
       const option = document.createElement('option');
       option.value = movie.id;
       option.textContent = `${movie.title} (${movie.year || 'Unknown'})`;
       dom.winnerMovie.appendChild(option);
     });
-    
-    // Collect all unique raters
-    const allRaters = new Set();
+
+    const allRaters = new Map();
     state.movies.forEach(movie => {
-      if(movie.ratings){
-        Object.keys(movie.ratings).forEach(username => allRaters.add(username));
-      }
+      Object.keys(movie.ratings || {}).forEach(key => {
+        allRaters.set(key, getRatingLabel(movie, key));
+      });
     });
-    
-    // Populate raters
-    Array.from(allRaters).sort().forEach(username => {
-      const option = document.createElement('option');
-      option.value = username;
-      option.textContent = username;
-      dom.winnerPerson.appendChild(option);
-    });
+
+    Array.from(allRaters.entries())
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .forEach(([key, label]) => {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = label;
+        dom.winnerPerson.appendChild(option);
+      });
   }
-  
-  function setWinner(movieId, personName){
-    console.log('setWinner called with:', movieId, personName);
-    const movie = state.movies.find(m => m.id === movieId);
-    if(!movie) {
-      console.error('Movie not found for ID:', movieId);
-      return;
-    }
-    
-    console.log('Found movie:', movie);
+
+  function setWinner(movieId, personKey){
+    const movie = state.movies.find(item => item.id === movieId);
+    if(!movie) return;
+
+    const previousTheme = currentWinner?.movieId === movieId && currentWinner?.personKey === personKey
+      ? currentWinner.nextTheme || null
+      : null;
+
     currentWinner = {
       movieId,
       movieTitle: movie.title,
       movieYear: movie.year,
-      personName,
-      nextTheme: null,
+      personKey,
+      personName: getKnownName(personKey),
+      nextTheme: previousTheme,
       setAt: Date.now()
     };
-    
-    console.log('Created winner object:', currentWinner);
+
     displayWinner();
-    
-    // Store in localStorage
     localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
-    console.log('Winner saved to localStorage');
-    
-    // Store in Firebase if enabled
-    if(remote.enabled && firestore){
-      saveWinnerToFirebase(currentWinner);
-    }
+    if(remote.enabled && firestore) saveWinnerToFirebase(currentWinner);
   }
-  
+
   function clearWinner(){
     currentWinner = null;
     dom.winnerDisplay.style.display = 'none';
@@ -801,34 +802,28 @@
     dom.winnerForm.reset();
     if(dom.editTheme) dom.editTheme.value = '';
     localStorage.removeItem('bmovie:winner');
-    
-    // Clear from Firebase if enabled
-    if(remote.enabled && firestore){
-      clearWinnerFromFirebase();
-    }
+    if(remote.enabled && firestore) clearWinnerFromFirebase();
   }
-  
+
   function displayWinner(){
     if(!currentWinner) return;
-    
+
     const titleEl = dom.winnerDisplay.querySelector('.winner-title');
     const subtitleEl = dom.winnerDisplay.querySelector('.winner-subtitle');
     const themeEl = dom.winnerDisplay.querySelector('.winner-theme');
     const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
-    
+
     titleEl.textContent = `${currentWinner.movieTitle} (${currentWinner.movieYear || 'Unknown'})`;
     subtitleEl.textContent = `Champion: ${currentWinner.personName}`;
-    
+
     if(currentWinner.nextTheme){
       themeEl.textContent = `Next Theme: ${currentWinner.nextTheme}`;
       themeEl.title = 'Click to edit theme';
       themeEl.style.display = 'block';
-      
-      // Make theme clickable to edit
       themeEl.onclick = () => {
-        const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
-        if(themeEditor) {
-          themeEditor.style.display = 'block';
+        const editor = dom.winnerDisplay.querySelector('.winner-theme-editor');
+        if(editor) {
+          editor.style.display = 'block';
           dom.editTheme.focus();
         }
       };
@@ -836,121 +831,81 @@
       themeEl.style.display = 'none';
       themeEl.onclick = null;
     }
-    
-    // Show theme editor only if no theme is set yet
+
     if(dom.editTheme && themeEditor){
       dom.editTheme.value = currentWinner.nextTheme || '';
-      // Only show editor if no theme is currently set
-      if(!currentWinner.nextTheme) {
-        themeEditor.style.display = 'block';
-      } else {
-        themeEditor.style.display = 'none';
-      }
-      console.log('Theme editor populated with:', currentWinner.nextTheme);
+      themeEditor.style.display = currentWinner.nextTheme ? 'none' : 'block';
     }
-    
+
     dom.winnerDisplay.style.display = 'block';
     dom.winnerForm.style.display = 'none';
   }
-  
+
   function loadWinner(){
     try {
       const stored = localStorage.getItem('bmovie:winner');
       if(stored){
         currentWinner = JSON.parse(stored);
-        console.log('Loaded winner with theme:', currentWinner);
         displayWinner();
       }
-    } catch(e) {
-      console.warn('Failed to load winner:', e);
+    } catch (error) {
+      console.warn('Failed to load winner:', error);
     }
   }
 
-  // Firebase winner functions
   async function saveWinnerToFirebase(winner){
     try {
-      const { collection, doc, setDoc } = remote;
-      const winnersCollection = collection(firestore, 'bmovie_winners');
-      const winnerDoc = doc(winnersCollection, 'current');
-      await setDoc(winnerDoc, {
-        ...winner,
-        updatedAt: Date.now()
-      });
-      console.log('[Firebase] Winner saved to Firestore:', winner);
-    } catch(e) {
-      console.warn('[Firebase] Failed to save winner:', e);
+      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
+      const winnerDoc = remote.doc(winnersCollection, 'current');
+      await remote.setDoc(winnerDoc, { ...winner, updatedAt: Date.now() });
+    } catch (error) {
+      console.warn('[Firebase] Failed to save winner:', error);
     }
   }
 
   async function clearWinnerFromFirebase(){
     try {
-      const { collection, doc, deleteDoc } = remote;
-      const winnersCollection = collection(firestore, 'bmovie_winners');
-      const winnerDoc = doc(winnersCollection, 'current');
-      await deleteDoc(winnerDoc);
-      console.log('[Firebase] Winner cleared from Firestore');
-    } catch(e) {
-      console.warn('[Firebase] Failed to clear winner:', e);
+      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
+      const winnerDoc = remote.doc(winnersCollection, 'current');
+      await remote.deleteDoc(winnerDoc);
+    } catch (error) {
+      console.warn('[Firebase] Failed to clear winner:', error);
     }
   }
 
   async function loadRemoteWinner(){
-    if(!remote.enabled || !firestore) {
-      console.log('[Firebase] Remote not enabled or firestore not ready');
-      return;
-    }
-    
+    if(!remote.enabled || !firestore) return;
     try {
-      const { collection, doc, getDoc } = remote;
-      const winnersCollection = collection(firestore, 'bmovie_winners');
-      const winnerDoc = doc(winnersCollection, 'current');
-      console.log('[Firebase] Attempting to load winner document...');
-      const docSnap = await getDoc(winnerDoc);
-      
+      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
+      const winnerDoc = remote.doc(winnersCollection, 'current');
+      const docSnap = await remote.getDoc(winnerDoc);
       if(docSnap.exists()){
-        const remoteWinner = docSnap.data();
-        console.log('[Firebase] Loading existing winner:', remoteWinner);
-        
-        // Always load remote winner on startup (don't check timestamps)
-        currentWinner = remoteWinner;
+        currentWinner = docSnap.data();
         localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
         displayWinner();
-        console.log('[Firebase] Winner loaded from remote');
-      } else {
-        console.log('[Firebase] No existing winner found in Firestore');
       }
-    } catch(e) {
-      console.warn('[Firebase] Failed to load remote winner:', e);
+    } catch (error) {
+      console.warn('[Firebase] Failed to load remote winner:', error);
     }
   }
 
   function attachWinnerListener(){
-    if(!remote.enabled || !firestore) {
-      console.log('[Firebase] Cannot attach winner listener - remote not enabled');
-      return;
-    }
-    
+    if(!remote.enabled || !firestore) return;
+    if(unsubscribeWinner) unsubscribeWinner();
     try {
-      const { collection, doc, onSnapshot } = remote;
-      const winnersCollection = collection(firestore, 'bmovie_winners');
-      const winnerDoc = doc(winnersCollection, 'current');
-      
-      console.log('[Firebase] Attaching winner listener...');
-      const unsubscribe = onSnapshot(winnerDoc, (doc) => {
-        console.log('[Firebase] Winner document changed, exists:', doc.exists());
-        if(doc.exists()){
-          const remoteWinner = doc.data();
-          console.log('[Firebase] Winner updated from remote:', remoteWinner);
-          
-          // Always update on real-time changes (skip timestamp check for now)
-          currentWinner = remoteWinner;
-          localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
-          displayWinner();
-          console.log('[Firebase] Winner synced from remote listener');
-        } else {
-          // Winner was cleared remotely
-          if(currentWinner) {
-            console.log('[Firebase] Winner cleared remotely via listener');
+      const winnersCollection = remote.collection(firestore, 'bmovie_winners');
+      const winnerDoc = remote.doc(winnersCollection, 'current');
+      unsubscribeWinner = remote.onSnapshot(
+        winnerDoc,
+        docSnap => {
+          if(docSnap.exists()){
+            currentWinner = docSnap.data();
+            localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
+            displayWinner();
+            return;
+          }
+
+          if(currentWinner){
             currentWinner = null;
             dom.winnerDisplay.style.display = 'none';
             dom.winnerForm.style.display = 'block';
@@ -958,32 +913,27 @@
             if(dom.editTheme) dom.editTheme.value = '';
             localStorage.removeItem('bmovie:winner');
           }
-        }
-      }, (error) => {
-        console.error('[Firebase] Winner listener error:', error);
-      });
-      
-      // Store unsubscribe function for cleanup
-      window.unsubscribeWinner = unsubscribe;
-      console.log('[Firebase] Winner listener attached successfully');
-    } catch(e) {
-      console.warn('[Firebase] Failed to attach winner listener:', e);
+        },
+        error => console.warn('[Firebase] Winner listener error:', error)
+      );
+      window.unsubscribeWinner = unsubscribeWinner;
+    } catch (error) {
+      console.warn('[Firebase] Failed to attach winner listener:', error);
     }
   }
 
-  // Score Tracker Functions
   function updateScoreTracker(){
     if(!dom.trackerScores) return;
-    
-    // Calculate scores for each movie chooser
+
     const chooserScores = {};
-    
     state.movies.forEach(movie => {
-      if(!movie.chooser) return;
-      
+      const chooserKey = movie.chooserId || movie.chooserName || movie.chooser;
+      const chooserLabel = getChooserLabel(movie);
+      if(!chooserKey || !chooserLabel) return;
+
       const aggregates = getAggregates(movie);
       if(aggregates.raterCount === 0) return;
-      
+
       let moviePointsTotal = 0;
       let movieCheeseTotal = 0;
       Object.values(movie.ratings || {}).forEach(userRating => {
@@ -991,9 +941,10 @@
         moviePointsTotal += totals.pointsTotal;
         movieCheeseTotal += totals.cheeseTotal;
       });
-      
-      if(!chooserScores[movie.chooser]) {
-        chooserScores[movie.chooser] = {
+
+      if(!chooserScores[chooserKey]){
+        chooserScores[chooserKey] = {
+          label: chooserLabel,
           totalPoints: 0,
           cheeseScore: 0,
           movieCount: 0,
@@ -1001,90 +952,67 @@
           avgCheese: 0
         };
       }
-      
-      chooserScores[movie.chooser].totalPoints += moviePointsTotal;
-      chooserScores[movie.chooser].cheeseScore += movieCheeseTotal;
-      chooserScores[movie.chooser].movieCount += 1;
-      chooserScores[movie.chooser].avgPoints = Math.round(chooserScores[movie.chooser].totalPoints / chooserScores[movie.chooser].movieCount);
-      chooserScores[movie.chooser].avgCheese = Math.round(chooserScores[movie.chooser].cheeseScore / chooserScores[movie.chooser].movieCount);
+
+      chooserScores[chooserKey].label = chooserLabel;
+      chooserScores[chooserKey].totalPoints += moviePointsTotal;
+      chooserScores[chooserKey].cheeseScore += movieCheeseTotal;
+      chooserScores[chooserKey].movieCount += 1;
+      chooserScores[chooserKey].avgPoints = Math.round(
+        chooserScores[chooserKey].totalPoints / chooserScores[chooserKey].movieCount
+      );
+      chooserScores[chooserKey].avgCheese = Math.round(
+        chooserScores[chooserKey].cheeseScore / chooserScores[chooserKey].movieCount
+      );
     });
-    
-    // Convert to sorted array
-    const sortedScores = Object.entries(chooserScores)
-      .map(([name, data]) => ({ name, ...data }))
-      .sort((a, b) => b.totalPoints - a.totalPoints || b.cheeseScore - a.cheeseScore);
-    
-    // Render score tracker
-    if(sortedScores.length === 0) {
+
+    const sortedScores = Object.values(chooserScores).sort(
+      (a, b) => b.totalPoints - a.totalPoints || b.cheeseScore - a.cheeseScore
+    );
+
+    if(sortedScores.length === 0){
       dom.trackerScores.innerHTML = '<span class="no-scores">Add movies to see scores</span>';
       return;
     }
-    
+
     const topScore = sortedScores[0]?.totalPoints || 0;
     dom.trackerScores.innerHTML = '';
-    
+
     sortedScores.forEach(scorer => {
       const scoreItem = document.createElement('div');
       scoreItem.className = `score-item-tracker ${scorer.totalPoints === topScore && topScore > 0 ? 'top-scorer' : ''}`;
       scoreItem.innerHTML = `
-        <span class="scorer-name">${sanitize(scorer.name)}</span>
+        <span class="scorer-name">${sanitize(scorer.label)}</span>
         <span class="scorer-points">${scorer.totalPoints}pts</span>
         <span class="scorer-avg">${scorer.cheeseScore > 0 ? '+' : ''}${scorer.cheeseScore} cheese</span>
       `;
-      scoreItem.title = `${scorer.name}: ${scorer.totalPoints} total points, ${scorer.cheeseScore > 0 ? '+' : ''}${scorer.cheeseScore} total cheese from ${scorer.movieCount} movie(s), ${scorer.avgPoints} average points and ${scorer.avgCheese > 0 ? '+' : ''}${scorer.avgCheese} average cheese per movie`;
+      scoreItem.title = `${scorer.label}: ${scorer.totalPoints} total points, ${scorer.cheeseScore > 0 ? '+' : ''}${scorer.cheeseScore} total cheese from ${scorer.movieCount} movie(s), ${scorer.avgPoints} average points and ${scorer.avgCheese > 0 ? '+' : ''}${scorer.avgCheese} average cheese per movie`;
       dom.trackerScores.appendChild(scoreItem);
     });
   }
 
-  function persist(){
-    // Always save local for offline resilience
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
-    if(!remote.enabled || !moviesCollection) return;
-    // Upsert each movie (simple approach; fine for small scale)
-    state.movies.forEach(m => {
-      // Ensure chooser field exists for existing movies
-      if(!m.chooser) {
-        m.chooser = currentUser;
-      }
-      remote.setDoc(remote.doc(moviesCollection, m.id), sanitizeForFirestore(m)).catch(e=>console.warn('[Firebase] write fail', e));
-    });
-  }
-  // Force re-sync all movies to Firebase (call this in console if needed)
-  function forceResyncMovies(){
-    console.log('Force resyncing all movies to Firebase...');
-    persist();
-    updateScoreTracker();
-    console.log('Resync complete!');
-  }
-  window.forceResyncMovies = forceResyncMovies; // Make available in console
-
-  function sanitize(str){ return str.replace(/[<>]/g,''); }
-  function flashField(el,msg){ el.classList.add('error'); el.setAttribute('title',msg); setTimeout(()=>{ el.classList.remove('error'); el.removeAttribute('title'); },1600); }
-  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
-
   function renderAll(){
     dom.moviesList.innerHTML = '';
-    state.movies.forEach(m => renderMovie(m));
+    state.movies.forEach(movie => renderMovie(movie));
     updateWinnerDropdowns();
     updateScoreTracker();
     applyFilters();
   }
 
-  function renderMovie(movie, prepend=false){
+  function renderMovie(movie, prepend = false){
+    ensureMovieShape(movie);
     const clone = dom.template.content.firstElementChild.cloneNode(true);
     clone.dataset.id = movie.id;
     clone.querySelector('.movie-title').textContent = movie.title;
     clone.querySelector('.year').textContent = movie.year || '';
-    
-    // Add chooser info if available
+
     const notesEl = clone.querySelector('.notes');
+    const chooserLabel = getChooserLabel(movie);
     let notesText = movie.notes || '';
-    if(movie.chooser){
-      notesText = `Chosen by: ${movie.chooser}${movie.notes ? ` • ${movie.notes}` : ''}`;
+    if(chooserLabel){
+      notesText = `Chosen by: ${chooserLabel}${movie.notes ? ` • ${movie.notes}` : ''}`;
     }
     notesEl.textContent = notesText;
 
-    // categories row container
     const catRow = clone.querySelector('.score-row.categories');
     for(const cat of CATEGORIES){
       const span = document.createElement('span');
@@ -1094,96 +1022,103 @@
       span.textContent = `${cat.icon} –`;
       catRow.appendChild(span);
     }
-    
-    // bonus categories (don't count toward total)
+
     for(const cat of BONUS_CATEGORIES){
       const span = document.createElement('span');
       span.className = 'cat-badge bonus';
       span.dataset.cat = cat.key;
-      span.title = cat.label + ' (bonus - not counted in total)';
+      span.title = `${cat.label} (bonus - not counted in total)`;
       span.textContent = `${cat.icon} –`;
       catRow.appendChild(span);
     }
 
     clone.querySelector('.open-rate').addEventListener('click', () => openDialog(movie));
     clone.querySelector('.delete-btn').addEventListener('click', () => {
+      if(!requireSignedIn('Please sign in with Google before deleting a movie.')) return;
       if(!confirm('Delete this movie?')) return;
-      state.movies = state.movies.filter(m => m.id !== movie.id);
+      state.movies = state.movies.filter(item => item.id !== movie.id);
       persist();
       if(remote.enabled && moviesCollection){
-        remote.deleteDoc(remote.doc(moviesCollection, movie.id)).catch(e=>console.warn('[Firebase] delete fail', e));
+        remote.deleteDoc(remote.doc(moviesCollection, movie.id)).catch(error => {
+          console.warn('[Firebase] delete fail', error);
+        });
       }
       clone.remove();
       applyFilters();
+      updateWinnerDropdowns();
+      updateScoreTracker();
     });
 
     updateCardScores(movie, clone);
     updateIndividualReviews(movie, clone);
 
-    if(prepend) dom.moviesList.prepend(clone); else dom.moviesList.appendChild(clone);
+    if(prepend) dom.moviesList.prepend(clone);
+    else dom.moviesList.appendChild(clone);
   }
 
   function updateMovieCard(id){
-    const movie = state.movies.find(m => m.id === id);
+    const movie = state.movies.find(item => item.id === id);
     if(!movie) return;
     const card = dom.moviesList.querySelector(`.movie-card[data-id="${id}"]`);
-    if(card) {
+    if(card){
+      const notesEl = card.querySelector('.notes');
+      const chooserLabel = getChooserLabel(movie);
+      notesEl.textContent = chooserLabel
+        ? `Chosen by: ${chooserLabel}${movie.notes ? ` • ${movie.notes}` : ''}`
+        : (movie.notes || '');
       updateCardScores(movie, card);
       updateIndividualReviews(movie, card);
     }
   }
 
   function updateCardScores(movie, card){
-    const username = dom.username.value.trim();
-    const userHasRated = !!(username && movie.ratings && movie.ratings[username]);
+    const actorKey = getCurrentUserKey();
+    const userHasRated = !!(actorKey && movie.ratings?.[actorKey]);
     const aggregates = getAggregates(movie);
     const raterCount = aggregates.raterCount;
+    const lockNeeded = raterCount > 0 && !userHasRated;
 
-    const lockNeeded = raterCount > 0 && !userHasRated; // hide others until user participates
-
-    // Per-category averages (or masked)
     for(const cat of CATEGORIES){
       const badge = card.querySelector(`.cat-badge[data-cat="${cat.key}"]`);
       if(!badge) continue;
       if(lockNeeded){
         badge.textContent = `${cat.icon} ?`;
-        badge.title = cat.label + ' (locked)';
+        badge.title = `${cat.label} (locked)`;
         badge.dataset.empty = 'true';
         badge.dataset.locked = 'true';
       } else {
         const avg = aggregates.categoryAverages[cat.key];
-        badge.textContent = `${cat.icon} ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
+        badge.textContent = `${cat.icon} ${Number.isFinite(avg) ? avg.toFixed(1) : '–'}`;
         badge.title = cat.label;
-        badge.dataset.empty = Number.isFinite(avg)?'false':'true';
+        badge.dataset.empty = Number.isFinite(avg) ? 'false' : 'true';
         badge.dataset.locked = 'false';
       }
     }
-    // Bonus categories (still shown only if user rated OR we could also hide — follow same rule)
+
     for(const cat of BONUS_CATEGORIES){
       const badge = card.querySelector(`.cat-badge[data-cat="${cat.key}"]`);
       if(!badge) continue;
       if(lockNeeded){
         badge.textContent = `${cat.icon} ?`;
-        badge.title = cat.label + ' (bonus - locked)';
+        badge.title = `${cat.label} (bonus - locked)`;
         badge.dataset.empty = 'true';
         badge.dataset.locked = 'true';
       } else {
         const avg = aggregates.bonusAverages[cat.key];
-        badge.textContent = `${cat.icon} ${Number.isFinite(avg)? avg.toFixed(1):'–'}`;
-        badge.title = cat.label + ' (bonus - not counted in total)';
-        badge.dataset.empty = Number.isFinite(avg)?'false':'true';
+        badge.textContent = `${cat.icon} ${Number.isFinite(avg) ? avg.toFixed(1) : '–'}`;
+        badge.title = `${cat.label} (bonus - not counted in total)`;
+        badge.dataset.empty = Number.isFinite(avg) ? 'false' : 'true';
         badge.dataset.locked = 'false';
       }
     }
 
-    // Total & rater count (masked if locked)
     const totalEl = card.querySelector('.total-val');
     const cheeseEl = card.querySelector('.cheese-val');
     const raterEl = card.querySelector('.rater-count');
     const tierEmoji = card.querySelector('.tier-emoji');
     const tierText = card.querySelector('.tier-text');
     const cardTier = card.querySelector('.card-tier');
-    
+
     if(lockNeeded){
       totalEl.textContent = '?';
       if(cheeseEl) cheeseEl.textContent = '?';
@@ -1191,24 +1126,23 @@
       if(cardTier) cardTier.style.display = 'none';
     } else {
       totalEl.textContent = raterCount ? aggregates.avgPoints.toFixed(1) : '0';
-      if(cheeseEl) {
+      if(cheeseEl){
         const cheeseValue = raterCount ? aggregates.avgCheese.toFixed(1) : '0';
         cheeseEl.textContent = Number(cheeseValue) > 0 ? `+${cheeseValue}` : cheeseValue;
       }
-      raterEl.textContent = raterCount ? `(${raterCount} rater${raterCount===1?'':'s'})` : '';
-      
-      if(cardTier && tierEmoji && tierText && raterCount > 0) {
+      raterEl.textContent = raterCount ? `(${raterCount} rater${raterCount === 1 ? '' : 's'})` : '';
+
+      if(cardTier && tierEmoji && tierText && raterCount > 0){
         const tier = getTrashTier(Math.round(aggregates.avgCheese));
         tierEmoji.textContent = tier.emoji;
         tierText.textContent = tier.label;
         tierText.style.color = tier.color;
         cardTier.style.display = 'flex';
-      } else if(cardTier) {
+      } else if(cardTier){
         cardTier.style.display = 'none';
       }
     }
 
-    // Locked message handling
     const scoresWrap = card.querySelector('.scores-wrap');
     let lockMsg = scoresWrap.querySelector('.locked-msg');
     if(lockNeeded){
@@ -1224,7 +1158,6 @@
   }
 
   function updateIndividualReviews(movie, card){
-    // Ensure the details section exists (older rendered cards before template change won't have it)
     let details = card.querySelector('.individual-reviews');
     if(!details){
       details = document.createElement('details');
@@ -1236,7 +1169,6 @@
       list.className = 'reviews-list';
       details.appendChild(summary);
       details.appendChild(list);
-      // Insert before footer if possible
       const footer = card.querySelector('.card-actions');
       card.insertBefore(details, footer || null);
     }
@@ -1246,10 +1178,10 @@
     if(!reviewsList || !reviewsToggle) return;
 
     reviewsList.innerHTML = '';
-  const ratings = movie.ratings || {};
-  const usernames = Object.keys(ratings);
-  const username = dom.username.value.trim();
-  const userHasRated = !!(username && ratings[username]);
+    const ratings = movie.ratings || {};
+    const usernames = Object.keys(ratings);
+    const actorKey = getCurrentUserKey();
+    const userHasRated = !!(actorKey && ratings[actorKey]);
 
     if(usernames.length === 0){
       reviewsList.innerHTML = '<p class="no-reviews">No reviews yet</p>';
@@ -1257,20 +1189,15 @@
       return;
     }
 
-    // If current user has not rated yet, hide the list content
     if(!userHasRated){
-      reviewsToggle.textContent = `Individual Reviews (locked)`;
+      reviewsToggle.textContent = 'Individual Reviews (locked)';
       reviewsList.innerHTML = '<p class="no-reviews">Rate this movie to reveal other reviewers.</p>';
       details.removeAttribute('open');
       return;
     }
 
     reviewsToggle.textContent = `Individual Reviews (${usernames.length})`;
-
-    // Auto-open if there are ratings (but only first time / if not manually toggled)
-    if(!details.hasAttribute('data-user-toggled')){
-      details.setAttribute('open','');
-    }
+    if(!details.hasAttribute('data-user-toggled')) details.setAttribute('open', '');
 
     usernames.forEach(username => {
       const userRating = ratings[username];
@@ -1278,17 +1205,16 @@
       reviewDiv.className = 'user-review';
 
       const userTotals = getRatingTotals(userRating);
-
-      const isOwner = username === dom.username.value.trim();
-      let headerHTML = `<div class="reviewer-header">\n        <strong class="reviewer-name">${sanitize(username)}</strong>\n        <span class="reviewer-total">Points: ${userTotals.pointsTotal} • Cheese: ${userTotals.cheeseTotal > 0 ? '+' : ''}${userTotals.cheeseTotal}</span>`;
+      const isOwner = username === actorKey;
+      const reviewerName = getRatingLabel(movie, username);
+      let headerHTML = `<div class="reviewer-header">\n        <strong class="reviewer-name">${reviewerName}</strong>\n        <span class="reviewer-total">Points: ${userTotals.pointsTotal} • Cheese: ${userTotals.cheeseTotal > 0 ? '+' : ''}${userTotals.cheeseTotal}</span>`;
       if(isOwner){
         headerHTML += ` <button type="button" class="del-rating-btn" data-user="${sanitize(username)}" title="Delete your rating">✖</button>`;
       }
-      headerHTML += `\n      </div>`;
+      headerHTML += '\n      </div>';
 
-      let reviewHTML = headerHTML + `\n      <div class="reviewer-scores">`;
+      let reviewHTML = `${headerHTML}\n      <div class="reviewer-scores">`;
 
-      // Main categories
       CATEGORIES.forEach(cat => {
         const score = userRating[cat.key];
         if(score !== undefined && score !== null){
@@ -1297,7 +1223,6 @@
         }
       });
 
-      // Bonus categories
       BONUS_CATEGORIES.forEach(cat => {
         const score = userRating[cat.key];
         if(score !== undefined && score !== null){
@@ -1311,170 +1236,385 @@
       if(isOwner){
         const btn = reviewDiv.querySelector('.del-rating-btn');
         btn?.addEventListener('click', () => {
-          if(confirm('Delete your rating for this movie?')){
-            removeUserRating(movie.id, username);
-          }
+          if(confirm('Delete your rating for this movie?')) removeUserRating(movie.id, username);
         });
       }
       reviewsList.appendChild(reviewDiv);
     });
 
-    // Track manual toggle so we don't force open after user closed it
     details.addEventListener('toggle', () => {
-      details.setAttribute('data-user-toggled','true');
+      details.setAttribute('data-user-toggled', 'true');
     }, { once: true });
   }
 
   function getAggregates(movie){
     const userEntries = Object.values(movie.ratings || {});
     const raterCount = userEntries.length;
-    
+
     let totalPointsSum = 0;
     let totalCheeseSum = 0;
+    const sums = {};
+    CATEGORIES.forEach(cat => { sums[cat.key] = 0; });
 
-    // Regular categories (shown as signed averages)
-    const sums = {}; CATEGORIES.forEach(c=> sums[c.key]=0);
     userEntries.forEach(entry => {
-      CATEGORIES.forEach(c => { const v = Number(entry[c.key]); if(!isNaN(v)) sums[c.key]+=v; });
+      CATEGORIES.forEach(cat => {
+        const value = Number(entry[cat.key]);
+        if(!isNaN(value)) sums[cat.key] += value;
+      });
       const totals = getRatingTotals(entry);
       totalPointsSum += totals.pointsTotal;
       totalCheeseSum += totals.cheeseTotal;
     });
-    const categoryAverages = {};
-    CATEGORIES.forEach(c => { categoryAverages[c.key] = raterCount ? sums[c.key]/raterCount : NaN; });
-    
-    // Bonus categories (don't count toward total)
-    const bonusSums = {}; BONUS_CATEGORIES.forEach(c=> bonusSums[c.key]=0);
-    userEntries.forEach(entry => {
-      BONUS_CATEGORIES.forEach(c => { const v = Number(entry[c.key]); if(!isNaN(v)) bonusSums[c.key]+=v; });
-    });
-    const bonusAverages = {};
-    BONUS_CATEGORIES.forEach(c => { bonusAverages[c.key] = raterCount ? bonusSums[c.key]/raterCount : NaN; });
-    
-    const avgPoints = raterCount ? totalPointsSum / raterCount : 0;
-    const avgCheese = raterCount ? totalCheeseSum / raterCount : 0;
-    return { raterCount, categoryAverages, bonusAverages, avgPoints, avgCheese };
-  }
 
-  function shortLabel(label){
-    return label.split(/\s+/)[0].replace(/[^A-Za-z]/g,'').slice(0,8); // first word trimmed
+    const categoryAverages = {};
+    CATEGORIES.forEach(cat => {
+      categoryAverages[cat.key] = raterCount ? sums[cat.key] / raterCount : NaN;
+    });
+
+    const bonusSums = {};
+    BONUS_CATEGORIES.forEach(cat => { bonusSums[cat.key] = 0; });
+    userEntries.forEach(entry => {
+      BONUS_CATEGORIES.forEach(cat => {
+        const value = Number(entry[cat.key]);
+        if(!isNaN(value)) bonusSums[cat.key] += value;
+      });
+    });
+
+    const bonusAverages = {};
+    BONUS_CATEGORIES.forEach(cat => {
+      bonusAverages[cat.key] = raterCount ? bonusSums[cat.key] / raterCount : NaN;
+    });
+
+    return {
+      raterCount,
+      categoryAverages,
+      bonusAverages,
+      avgPoints: raterCount ? totalPointsSum / raterCount : 0,
+      avgCheese: raterCount ? totalCheeseSum / raterCount : 0
+    };
   }
 
   function refreshVisibleRatings(){
-    state.movies.forEach(m => updateMovieCard(m.id));
+    state.movies.forEach(movie => updateMovieCard(movie.id));
+    updateWinnerDropdowns();
   }
 
   function applyFilters(){
     const sortMode = dom.sort.value;
-    const q = dom.search.value.trim().toLowerCase();
-    let arr = [...state.movies];
+    const query = dom.search.value.trim().toLowerCase();
+    let movies = [...state.movies];
 
-    if(q){
-      arr = arr.filter(m => m.title.toLowerCase().includes(q) || (m.notes||'').toLowerCase().includes(q));
+    if(query){
+      movies = movies.filter(movie => (
+        movie.title.toLowerCase().includes(query) ||
+        (movie.notes || '').toLowerCase().includes(query)
+      ));
     }
 
     switch(sortMode){
-      case 'title-asc': arr.sort((a,b)=> a.title.localeCompare(b.title)); break;
-      case 'ratings-count-desc': arr.sort((a,b)=> getAggregates(b).raterCount - getAggregates(a).raterCount); break;
-      case 'total-desc': arr.sort((a,b)=> getAggregates(b).avgPoints - getAggregates(a).avgPoints || getAggregates(b).avgCheese - getAggregates(a).avgCheese); break;
+      case 'title-asc':
+        movies.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'ratings-count-desc':
+        movies.sort((a, b) => getAggregates(b).raterCount - getAggregates(a).raterCount);
+        break;
+      case 'total-desc':
+        movies.sort((a, b) => (
+          getAggregates(b).avgPoints - getAggregates(a).avgPoints ||
+          getAggregates(b).avgCheese - getAggregates(a).avgCheese
+        ));
+        break;
       case 'added-desc':
-      default: arr.sort((a,b)=> b.addedAt - a.addedAt); break;
+      default:
+        movies.sort((a, b) => b.addedAt - a.addedAt);
+        break;
     }
 
-    const frag = document.createDocumentFragment();
-    arr.forEach(m => {
-      const card = dom.moviesList.querySelector(`.movie-card[data-id="${m.id}"]`);
-      if(card) frag.appendChild(card);
+    const fragment = document.createDocumentFragment();
+    movies.forEach(movie => {
+      const card = dom.moviesList.querySelector(`.movie-card[data-id="${movie.id}"]`);
+      if(card) fragment.appendChild(card);
     });
-    dom.moviesList.innerHTML='';
-    dom.moviesList.appendChild(frag);
-    dom.moviesList.classList.toggle('no-results', arr.length === 0);
+    dom.moviesList.innerHTML = '';
+    dom.moviesList.appendChild(fragment);
+    dom.moviesList.classList.toggle('no-results', movies.length === 0);
   }
 
-  // Click outside dialog to close
-  dom.rateDialog?.addEventListener('click', e => {
+  function openDialog(movie){
+    if(!requireSignedIn('Please sign in with Google before rating movies.')) return;
+    activeMovieId = movie.id;
+    dom.dialogMovieTitle.textContent = movie.title;
+    const actorKey = getCurrentUserKey();
+    const prior = actorKey ? movie.ratings[actorKey] : null;
+    for(const cat of CATEGORIES){
+      dom.rateForm.elements[cat.key].value = prior ? prior[cat.key] : '';
+    }
+    for(const cat of BONUS_CATEGORIES){
+      dom.rateForm.elements[cat.key].value = prior ? prior[cat.key] : '';
+    }
+    if(typeof dom.rateDialog.showModal === 'function') dom.rateDialog.showModal();
+    else dom.rateDialog.setAttribute('open', 'true');
+  }
+
+  function closeDialog(){
+    activeMovieId = null;
+    dom.rateDialog.close?.();
+    dom.rateDialog.removeAttribute('open');
+    dom.rateForm.reset();
+  }
+
+  function initializeMergePlaceholder(){
+    const emptyMessage = '<p class="merge-empty">Google sign-in is live. Legacy score merge will be added next.</p>';
+    dom.mergeCandidateList?.replaceChildren();
+    dom.mergePreview?.replaceChildren();
+    dom.mergeConflicts?.replaceChildren();
+    if(dom.mergeCandidateList) dom.mergeCandidateList.innerHTML = emptyMessage;
+    if(dom.mergePreview) dom.mergePreview.innerHTML = emptyMessage;
+    if(dom.mergeConflicts) dom.mergeConflicts.innerHTML = emptyMessage;
+
+    dom.closeMerge?.addEventListener('click', () => {
+      dom.mergeDialog?.close?.();
+      dom.mergeDialog?.removeAttribute('open');
+    });
+
+    dom.mergeDialog?.addEventListener('click', event => {
+      const rect = dom.mergeDialog.getBoundingClientRect();
+      if(
+        event.clientX < rect.left ||
+        event.clientX > rect.right ||
+        event.clientY < rect.top ||
+        event.clientY > rect.bottom
+      ){
+        dom.mergeDialog.close?.();
+        dom.mergeDialog.removeAttribute('open');
+      }
+    });
+
+    dom.mergeForm?.addEventListener('submit', event => {
+      event.preventDefault();
+      alert('Firebase Google sign-in is implemented. Legacy score merge is the next step.');
+    });
+  }
+
+  dom.googleSignIn?.addEventListener('click', handleGoogleSignIn);
+  dom.signOutBtn?.addEventListener('click', handleSignOut);
+
+  dom.addForm.addEventListener('submit', event => {
+    event.preventDefault();
+    if(!requireSignedIn('Please sign in with Google before adding a movie.')) return;
+
+    const title = sanitize(dom.title.value.trim());
+    if(!title) return;
+    const yearVal = dom.year.value.trim();
+    const year = yearVal ? parseInt(yearVal, 10) : undefined;
+    const duplicate = state.movies.find(movie => (
+      movie.title.toLowerCase() === title.toLowerCase() &&
+      (movie.year || '') === (year || '')
+    ));
+    if(duplicate){
+      flashField(dom.title, 'Movie already exists');
+      return;
+    }
+
+    const chooserName = getCurrentUserName();
+    const movie = ensureMovieShape({
+      id: createId(),
+      title: dom.title.value.trim(),
+      year: parseInt(dom.year.value, 10) || null,
+      chooser: chooserName,
+      chooserId: getCurrentUserKey(),
+      chooserName,
+      notes: dom.notes.value.trim(),
+      addedAt: Date.now(),
+      ratings: {},
+      ratingNames: {}
+    });
+
+    state.movies.push(movie);
+    persist();
+    renderMovie(movie, true);
+    updateScoreTracker();
+    updateWinnerDropdowns();
+    dom.addForm.reset();
+    dom.title.focus();
+    applyFilters();
+  });
+
+  dom.sort?.addEventListener('change', applyFilters);
+  dom.search?.addEventListener('input', applyFilters);
+
+  dom.winnerForm?.addEventListener('submit', event => {
+    event.preventDefault();
+    if(!requireSignedIn('Please sign in with Google before crowning the winner.')) return;
+    const movieId = dom.winnerMovie.value;
+    const personKey = dom.winnerPerson.value;
+    if(!movieId || !personKey){
+      alert('Please select both a movie and a person.');
+      return;
+    }
+    setWinner(movieId, personKey);
+  });
+
+  dom.clearWinner?.addEventListener('click', clearWinner);
+  dom.clearDisplayedWinner?.addEventListener('click', clearWinner);
+
+  dom.saveTheme?.addEventListener('click', () => {
+    if(!currentWinner) return;
+    const newTheme = dom.editTheme.value.trim();
+    currentWinner.nextTheme = newTheme || null;
+
+    const themeEl = dom.winnerDisplay.querySelector('.winner-theme');
+    if(currentWinner.nextTheme){
+      themeEl.textContent = `Next Theme: ${currentWinner.nextTheme}`;
+      themeEl.title = 'Click to edit theme';
+      themeEl.style.display = 'block';
+      themeEl.onclick = () => {
+        const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
+        if(themeEditor){
+          themeEditor.style.display = 'block';
+          dom.editTheme.focus();
+        }
+      };
+    } else {
+      themeEl.style.display = 'none';
+      themeEl.onclick = null;
+    }
+
+    const themeEditor = dom.winnerDisplay.querySelector('.winner-theme-editor');
+    if(themeEditor) themeEditor.style.display = 'none';
+
+    localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
+    if(remote.enabled && firestore) saveWinnerToFirebase(currentWinner);
+  });
+
+  dom.editTheme?.addEventListener('keypress', event => {
+    if(event.key === 'Enter') dom.saveTheme?.click();
+  });
+
+  dom.rateForm.addEventListener('submit', event => {
+    event.preventDefault();
+    if(!requireSignedIn('Please sign in with Google before rating a movie.')) return;
+    if(!activeMovieId) return;
+    const movie = state.movies.find(item => item.id === activeMovieId);
+    if(!movie) return;
+
+    const entry = {};
+    for(const cat of CATEGORIES){
+      const value = parseInt(dom.rateForm.elements[cat.key].value, 10);
+      if(isNaN(value) || value < -5 || value > 5){
+        alert('All main categories must be scored -5 to 5.');
+        return;
+      }
+      entry[cat.key] = value;
+    }
+
+    for(const cat of BONUS_CATEGORIES){
+      const value = parseInt(dom.rateForm.elements[cat.key].value, 10);
+      if(!isNaN(value) && value >= -5 && value <= 5){
+        entry[cat.key] = value;
+      }
+    }
+
+    const actorKey = getCurrentUserKey();
+    ensureMovieShape(movie);
+    movie.ratings[actorKey] = entry;
+    movie.ratingNames[actorKey] = getCurrentUserName();
+    persist();
+    updateMovieCard(movie.id);
+    updateScoreTracker();
+    updateWinnerDropdowns();
+    closeDialog();
+  });
+
+  dom.rateForm.addEventListener('reset', () => {
+    closeDialog();
+  });
+
+  dom.rateDialog?.addEventListener('click', event => {
     const rect = dom.rateDialog.getBoundingClientRect();
-    if(e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom){
+    if(
+      event.clientX < rect.left ||
+      event.clientX > rect.right ||
+      event.clientY < rect.top ||
+      event.clientY > rect.bottom
+    ){
       closeDialog();
     }
   });
-  window.addEventListener('keydown', e => { if(e.key==='Escape' && activeMovieId){ closeDialog(); }});
 
-  // =========================================
-  // MOBILE NAVIGATION
-  // =========================================
+  window.addEventListener('keydown', event => {
+    if(event.key === 'Escape' && activeMovieId) closeDialog();
+  });
+
   const menuToggle = document.getElementById('menuToggle');
   const mobileMenu = document.getElementById('mobileMenu');
   const bottomNav = document.getElementById('bottomNav');
   const navItems = bottomNav?.querySelectorAll('.nav-item');
   const mobilePanels = document.querySelectorAll('.mobile-panel');
-  
-  // Hamburger menu toggle
+
   menuToggle?.addEventListener('click', () => {
     menuToggle.classList.toggle('active');
     mobileMenu?.classList.toggle('open');
   });
-  
-  // Close menu when clicking outside
-  document.addEventListener('click', (e) => {
-    if(mobileMenu?.classList.contains('open') && 
-       !mobileMenu.contains(e.target) && 
-       !menuToggle?.contains(e.target)) {
+
+  document.addEventListener('click', event => {
+    if(
+      mobileMenu?.classList.contains('open') &&
+      !mobileMenu.contains(event.target) &&
+      !menuToggle?.contains(event.target)
+    ){
       menuToggle?.classList.remove('active');
       mobileMenu?.classList.remove('open');
     }
   });
-  
-  // Bottom navigation - switch between panels
-  function switchToSection(sectionId) {
-    // Update nav items
+
+  function switchToSection(sectionId){
     navItems?.forEach(item => {
       item.classList.toggle('active', item.dataset.section === sectionId);
     });
-    
-    // Update panels
     mobilePanels?.forEach(panel => {
       panel.classList.toggle('active', panel.id === sectionId);
     });
-    
-    // Scroll to top of content
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-  
+
   navItems?.forEach(item => {
     item.addEventListener('click', () => {
       const sectionId = item.dataset.section;
-      if(sectionId) {
-        switchToSection(sectionId);
-      }
+      if(sectionId) switchToSection(sectionId);
     });
   });
-  
-  // Handle touch feedback
+
   navItems?.forEach(item => {
-    item.addEventListener('touchstart', () => item.style.opacity = '0.7', { passive: true });
-    item.addEventListener('touchend', () => item.style.opacity = '1', { passive: true });
+    item.addEventListener('touchstart', () => {
+      item.style.opacity = '0.7';
+    }, { passive: true });
+    item.addEventListener('touchend', () => {
+      item.style.opacity = '1';
+    }, { passive: true });
   });
 
-  renderAll();
-  updateWinnerDropdowns();
-  loadWinner();
-  await initFirebase();
-  if(!remote.enabled){
-    updateSyncStatus('local','Local Only');
-    debugLocalReason();
-  }
   function debugLocalReason(){
     const reasons = [];
     if(typeof window.FIREBASE_ENABLED === 'undefined') reasons.push('window.FIREBASE_ENABLED undefined (config file not loaded?)');
     else if(!window.FIREBASE_ENABLED) reasons.push('FIREBASE_ENABLED is false');
     if(typeof window.FIREBASE_CONFIG === 'undefined') reasons.push('FIREBASE_CONFIG missing');
-    else {
-      if(!window.FIREBASE_CONFIG.projectId) reasons.push('FIREBASE_CONFIG.projectId missing');
-    }
-    if(reasons.length===0) reasons.push('Firebase init likely failed before enabling remote (see earlier console warnings).');
+    else if(!window.FIREBASE_CONFIG.projectId) reasons.push('FIREBASE_CONFIG.projectId missing');
+    if(reasons.length === 0) reasons.push('Firebase init likely failed before enabling remote (see earlier console warnings).');
     console.info('[B-Movie][Sync Debug] Remote disabled reasons:', reasons.join('; '));
     console.info('[B-Movie][Sync Debug] FIREBASE_ENABLED=', window.FIREBASE_ENABLED, 'FIREBASE_CONFIG=', window.FIREBASE_CONFIG);
-    console.info('[B-Movie][Sync Debug] To enable: ensure firebase-config.js is in same folder & referenced before app.js, set window.FIREBASE_ENABLED=true.');
+    console.info('[B-Movie][Sync Debug] Enable Google sign-in in Firebase Authentication and authorize this domain.');
+  }
+
+  generateCategoryGrid();
+  initializeMergePlaceholder();
+  loadWinner();
+  renderAll();
+  updateAuthPanel();
+  await initFirebase();
+
+  if(!remote.enabled){
+    updateSyncStatus('local', 'Local Only');
+    debugLocalReason();
   }
 })();
