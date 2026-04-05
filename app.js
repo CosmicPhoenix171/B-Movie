@@ -1918,9 +1918,8 @@
         <span class="scorer-name">${sanitize(scorer.label)}</span>
         <span class="scorer-points">B ${scorer.totalBMovieScore}</span>
         <span class="scorer-avg">M ${scorer.totalMainstreamScore}</span>
-        <span class="scorer-final">F ${scorer.totalFinalScore > 0 ? '+' : ''}${scorer.totalFinalScore}</span>
       `;
-      scoreItem.title = `${scorer.label}: B-Movie ${scorer.totalBMovieScore}, Mainstream ${scorer.totalMainstreamScore}, Final ${scorer.totalFinalScore > 0 ? '+' : ''}${scorer.totalFinalScore} across ${scorer.movieCount} movie(s). Avg B-Movie ${scorer.avgBMovieScore}, Avg Mainstream ${scorer.avgMainstreamScore}, Avg Final ${scorer.avgFinalScore > 0 ? '+' : ''}${scorer.avgFinalScore}.`;
+      scoreItem.title = `${scorer.label}: B-Movie ${scorer.totalBMovieScore}, Mainstream ${scorer.totalMainstreamScore} across ${scorer.movieCount} movie(s). Avg B-Movie ${scorer.avgBMovieScore}, Avg Mainstream ${scorer.avgMainstreamScore}.`;
       dom.trackerScores.appendChild(scoreItem);
     });
   }
