@@ -579,6 +579,16 @@
     return true;
   }
 
+  function getTmdbSearchUrl(title, year){
+    const query = sanitize(title || '').trim();
+    if(!query) return 'https://www.themoviedb.org/';
+
+    const params = new URLSearchParams({ query });
+    const parsedYear = Number(year);
+    if(Number.isFinite(parsedYear)) params.set('primary_release_year', String(parsedYear));
+    return `https://www.themoviedb.org/search?${params.toString()}`;
+  }
+
   function renderPendingChoices(){
     if(!dom.pendingList || !dom.pendingEmpty || !dom.pendingPanel) return;
 
@@ -593,16 +603,6 @@
     if(!pendingChoices.length){
       dom.pendingEmpty.textContent = 'No pending choices yet. Save one above to keep it private to your account until you are ready to add it.';
       dom.pendingEmpty.hidden = false;
-
-    function getTmdbSearchUrl(title, year){
-      const query = sanitize(title || '').trim();
-      if(!query) return 'https://www.themoviedb.org/';
-
-      const params = new URLSearchParams({ query });
-      const parsedYear = Number(year);
-      if(Number.isFinite(parsedYear)) params.set('primary_release_year', String(parsedYear));
-      return `https://www.themoviedb.org/search?${params.toString()}`;
-    }
       return;
     }
 
