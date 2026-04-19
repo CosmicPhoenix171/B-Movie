@@ -232,6 +232,7 @@
   let unsubscribeMovies = null;
   let unsubscribeWinner = null;
   let unsubscribeUserProfile = null;
+  let unsubscribePendingChoices = null;
   let remote = { enabled: false };
   let authApi = {
     status: 'loading',
@@ -388,6 +389,32 @@
     } catch {}
   }
 
+  function getPendingChoicesRemoteRecord(value){
+    return normalizePendingChoicesRecord(value);
+  }
+
+  function setCurrentPendingChoices(uid, choices, updatedAt){
+    const normalizedChoices = normalizePendingChoicesList(choices);
+    const normalizedUpdatedAt = Number(updatedAt) || 0;
+    pendingChoices = normalizedChoices;
+    currentUserProfile = {
+      ...normalizeUserProfileRecord(currentUserProfile, uid),
+      pendingChoices: [...normalizedChoices],
+      pendingChoicesUpdatedAt: normalizedUpdatedAt
+    };
+    writePendingChoicesRecord(uid, normalizedChoices, normalizedUpdatedAt);
+    storeUserProfile(uid, currentUserProfile);
+  }
+
+  function shouldUseIncomingPendingRecord(activeRecord, incomingRecord){
+    const activeUpdatedAt = Number(activeRecord?.updatedAt) || 0;
+    const incomingUpdatedAt = Number(incomingRecord?.updatedAt) || 0;
+    if(incomingUpdatedAt > activeUpdatedAt) return true;
+    if(incomingUpdatedAt < activeUpdatedAt) return false;
+    return JSON.stringify(normalizePendingChoicesList(activeRecord?.choices || [])) !==
+      JSON.stringify(normalizePendingChoicesList(incomingRecord?.choices || []));
+  }
+
   function normalizeUserProfileRecord(profile, uid){
     const fallbackUid = uid || profile?.uid || '';
     const fallbackDisplayName = sanitize(currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Google User');
@@ -444,7 +471,7 @@
     if(!uid) return;
     pendingChoices = normalizePendingChoicesList(pendingChoices);
     const updatedAt = Date.now();
-    writePendingChoicesRecord(uid, pendingChoices, updatedAt);
+    setCurrentPendingChoices(uid, pendingChoices, updatedAt);
 
     const baseProfile = normalizeUserProfileRecord(currentUserProfile || {
       uid,
@@ -465,6 +492,9 @@
     if(remote.enabled && firestore){
       writeUserProfileToRemote(uid, currentUserProfile).catch(error => {
         console.warn('[Firebase] Failed to sync pending choices:', error);
+      });
+      writePendingChoicesToRemote(uid, pendingChoices, updatedAt).catch(error => {
+        console.warn('[Firebase] Failed to sync pending choices document:', error);
       });
     }
   }
@@ -495,19 +525,15 @@
     const profileUpdatedAt = getPendingChoicesUpdatedAt(currentUserProfile);
 
     if(profileUpdatedAt >= localUpdatedAt){
-      pendingChoices = profileChoices;
-      writePendingChoicesRecord(uid, pendingChoices, profileUpdatedAt);
+      setCurrentPendingChoices(uid, profileChoices, profileUpdatedAt);
     } else {
-      pendingChoices = localChoices;
-      currentUserProfile = {
-        ...normalizeUserProfileRecord(currentUserProfile, uid),
-        pendingChoices: [...pendingChoices],
-        pendingChoicesUpdatedAt: localUpdatedAt
-      };
-      storeUserProfile(uid, currentUserProfile);
+      setCurrentPendingChoices(uid, localChoices, localUpdatedAt);
       if(remote.enabled && firestore){
         writeUserProfileToRemote(uid, currentUserProfile).catch(error => {
           console.warn('[Firebase] Failed to backfill pending choices:', error);
+        });
+        writePendingChoicesToRemote(uid, pendingChoices, localUpdatedAt).catch(error => {
+          console.warn('[Firebase] Failed to backfill pending choices document:', error);
         });
       }
     }
@@ -1036,7 +1062,9 @@
 
     if(!currentUser){
       if(unsubscribeUserProfile) unsubscribeUserProfile();
+      if(unsubscribePendingChoices) unsubscribePendingChoices();
       unsubscribeUserProfile = null;
+      unsubscribePendingChoices = null;
       currentUserProfile = null;
       pendingChoices = [];
       mergeState.selectedAliases = [];
@@ -1048,6 +1076,7 @@
     await loadCurrentUserProfile(currentUser.uid);
     propagateCurrentUserName(getCurrentUserName());
     attachUserProfileListener(currentUser.uid);
+    attachPendingChoicesListener(currentUser.uid);
     loadPendingChoices();
     renderAll();
   }
@@ -1134,6 +1163,32 @@
     await remote.setDoc(userDoc, profile);
   }
 
+  async function writePendingChoicesToRemote(uid, choices, updatedAt){
+    if(!remote.enabled || !firestore || !uid) return;
+    const pendingCollection = remote.collection(firestore, 'bmovie_pending_choices');
+    const pendingDoc = remote.doc(pendingCollection, uid);
+    await remote.setDoc(pendingDoc, {
+      choices: normalizePendingChoicesList(choices),
+      updatedAt: Number(updatedAt) || 0
+    });
+  }
+
+  async function loadRemotePendingChoices(uid, fallbackRecord){
+    const safeFallback = getPendingChoicesRemoteRecord(fallbackRecord);
+    if(!remote.enabled || !firestore || !uid) return safeFallback;
+
+    try {
+      const pendingCollection = remote.collection(firestore, 'bmovie_pending_choices');
+      const pendingDoc = remote.doc(pendingCollection, uid);
+      const docSnap = await remote.getDoc(pendingDoc);
+      if(docSnap.exists()) return getPendingChoicesRemoteRecord(docSnap.data());
+    } catch (error) {
+      console.warn('[Firebase] Failed to load pending choices document:', error);
+    }
+
+    return safeFallback;
+  }
+
   async function loadCurrentUserProfile(uid){
     const localRecord = normalizeUserProfileRecord(readStoredUserProfile(uid), uid);
     currentUserProfile = localRecord;
@@ -1147,25 +1202,36 @@
     try {
       const usersCollection = remote.collection(firestore, 'bmovie_users');
       const userDoc = remote.doc(usersCollection, uid);
-      const docSnap = await remote.getDoc(userDoc);
+      const [docSnap, remotePendingRecord] = await Promise.all([
+        remote.getDoc(userDoc),
+        loadRemotePendingChoices(uid, {
+          choices: localRecord.pendingChoices,
+          updatedAt: getPendingChoicesUpdatedAt(localRecord)
+        })
+      ]);
       const remoteRecord = normalizeUserProfileRecord(docSnap.exists() ? docSnap.data() : null, uid);
 
       const newestIdentity = pickNewestProfile(localRecord, remoteRecord);
       const localPendingUpdatedAt = getPendingChoicesUpdatedAt(localRecord);
       const remotePendingUpdatedAt = getPendingChoicesUpdatedAt(remoteRecord);
-      const useLocalPending = localPendingUpdatedAt >= remotePendingUpdatedAt;
+      const dedicatedPendingUpdatedAt = Number(remotePendingRecord.updatedAt) || 0;
+      const newestPendingRecord = [
+        { choices: localRecord.pendingChoices, updatedAt: localPendingUpdatedAt },
+        { choices: remoteRecord.pendingChoices, updatedAt: remotePendingUpdatedAt },
+        remotePendingRecord
+      ].reduce((latest, record) => {
+        return shouldUseIncomingPendingRecord(latest, record) ? record : latest;
+      }, { choices: [], updatedAt: 0 });
 
       currentUserProfile = {
         ...newestIdentity,
         uid,
         email: currentUser?.email || newestIdentity.email || '',
-        pendingChoices: useLocalPending ? [...localRecord.pendingChoices] : [...remoteRecord.pendingChoices],
-        pendingChoicesUpdatedAt: useLocalPending ? localPendingUpdatedAt : remotePendingUpdatedAt
+        pendingChoices: [...normalizePendingChoicesList(newestPendingRecord.choices)],
+        pendingChoicesUpdatedAt: Number(newestPendingRecord.updatedAt) || 0
       };
 
-      pendingChoices = normalizePendingChoicesList(currentUserProfile.pendingChoices);
-      writePendingChoicesRecord(uid, pendingChoices, currentUserProfile.pendingChoicesUpdatedAt);
-
+      setCurrentPendingChoices(uid, currentUserProfile.pendingChoices, currentUserProfile.pendingChoicesUpdatedAt);
       storeUserProfile(uid, currentUserProfile);
 
       if(
@@ -1174,12 +1240,15 @@
       ){
         await writeUserProfileToRemote(uid, currentUserProfile);
       }
+
+      if((Number(currentUserProfile.pendingChoicesUpdatedAt) || 0) > dedicatedPendingUpdatedAt){
+        await writePendingChoicesToRemote(uid, currentUserProfile.pendingChoices, currentUserProfile.pendingChoicesUpdatedAt);
+      }
     } catch (error) {
       console.warn('[Firebase] Failed to load user profile:', error);
     }
 
-    pendingChoices = normalizePendingChoicesList(currentUserProfile.pendingChoices);
-    writePendingChoicesRecord(uid, pendingChoices, getPendingChoicesUpdatedAt(currentUserProfile));
+    setCurrentPendingChoices(uid, currentUserProfile.pendingChoices, getPendingChoicesUpdatedAt(currentUserProfile));
 
     return currentUserProfile;
   }
@@ -1253,18 +1322,54 @@
 
           if(shouldApplyLocal){
             currentUserProfile = mergedProfile;
-            pendingChoices = normalizePendingChoicesList(mergedProfile.pendingChoices);
-            writePendingChoicesRecord(uid, pendingChoices, mergedProfile.pendingChoicesUpdatedAt);
+            setCurrentPendingChoices(uid, mergedProfile.pendingChoices, mergedProfile.pendingChoicesUpdatedAt);
             storeUserProfile(uid, currentUserProfile);
             propagateCurrentUserName(getCurrentUserName());
             renderAll();
             if(currentWinner) displayWinner();
+          }
+
+          if(remotePendingUpdatedAt > activePendingUpdatedAt){
+            writePendingChoicesToRemote(uid, remoteProfile.pendingChoices, remotePendingUpdatedAt).catch(error => {
+              console.warn('[Firebase] Failed to backfill pending choices document from profile listener:', error);
+            });
           }
         },
         error => console.warn('[Firebase] User profile listener error:', error)
       );
     } catch (error) {
       console.warn('[Firebase] Failed to attach user profile listener:', error);
+    }
+  }
+
+  function attachPendingChoicesListener(uid){
+    if(!remote.enabled || !firestore || !uid) return;
+    if(unsubscribePendingChoices) unsubscribePendingChoices();
+
+    try {
+      const pendingCollection = remote.collection(firestore, 'bmovie_pending_choices');
+      const pendingDoc = remote.doc(pendingCollection, uid);
+      unsubscribePendingChoices = remote.onSnapshot(
+        pendingDoc,
+        docSnap => {
+          if(!docSnap.exists()) return;
+
+          const remoteRecord = getPendingChoicesRemoteRecord(docSnap.data());
+          const activeRecord = {
+            choices: normalizePendingChoicesList(currentUserProfile?.pendingChoices || readPendingChoicesRecord(uid).choices),
+            updatedAt: getPendingChoicesUpdatedAt(currentUserProfile) || readPendingChoicesRecord(uid).updatedAt
+          };
+
+          if(!shouldUseIncomingPendingRecord(activeRecord, remoteRecord)) return;
+
+          setCurrentPendingChoices(uid, remoteRecord.choices, remoteRecord.updatedAt);
+          renderAll();
+          if(currentWinner) displayWinner();
+        },
+        error => console.warn('[Firebase] Pending choices listener error:', error)
+      );
+    } catch (error) {
+      console.warn('[Firebase] Failed to attach pending choices listener:', error);
     }
   }
 
