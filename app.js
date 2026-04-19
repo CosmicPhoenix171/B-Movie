@@ -245,6 +245,7 @@
   let mergeState = {
     selectedAliases: []
   };
+  const tmdbWatchCache = new Map();
 
   const dom = {
     addForm: document.getElementById('addMovieForm'),
@@ -589,6 +590,152 @@
     return `https://www.themoviedb.org/search?${params.toString()}`;
   }
 
+  function getTmdbWatchUrl(movieId){
+    return `https://www.themoviedb.org/movie/${movieId}/watch`;
+  }
+
+  function getTmdbApiKey(){
+    return sanitize(window.TMDB_API_KEY || '').trim();
+  }
+
+  function getTmdbReadAccessToken(){
+    return sanitize(window.TMDB_READ_ACCESS_TOKEN || '').trim();
+  }
+
+  async function requestTmdbJson(path, params = {}){
+    const apiKey = getTmdbApiKey();
+    const readAccessToken = getTmdbReadAccessToken();
+    if(!apiKey && !readAccessToken){
+      throw new Error('TMDB credentials missing');
+    }
+
+    const url = new URL(`https://api.themoviedb.org/3${path}`);
+    Object.entries(params).forEach(([key, value]) => {
+      if(value === undefined || value === null || value === '') return;
+      url.searchParams.set(key, String(value));
+    });
+
+    const headers = { Accept: 'application/json' };
+    if(readAccessToken){
+      headers.Authorization = `Bearer ${readAccessToken}`;
+    } else {
+      url.searchParams.set('api_key', apiKey);
+    }
+
+    const response = await fetch(url.toString(), { headers });
+    if(!response.ok) throw new Error(`TMDB request failed (${response.status})`);
+    return response.json();
+  }
+
+  function getPreferredWatchRegion(){
+    const locale = (navigator.language || '').toUpperCase();
+    const localeParts = locale.split('-');
+    if(localeParts.length > 1 && /^[A-Z]{2}$/.test(localeParts[1])) return localeParts[1];
+    return 'US';
+  }
+
+  function getPendingWatchCacheKey(choice){
+    return `${sanitize(choice?.title || '').toLowerCase()}::${choice?.year || ''}`;
+  }
+
+  function extractWatchProviders(providerResult){
+    if(!providerResult || typeof providerResult !== 'object') return [];
+    const groups = ['flatrate', 'ads', 'free', 'rent', 'buy'];
+    const unique = new Map();
+    groups.forEach(group => {
+      const list = Array.isArray(providerResult[group]) ? providerResult[group] : [];
+      list.forEach(provider => {
+        const key = String(provider?.provider_id || provider?.provider_name || '').trim();
+        const name = sanitize(provider?.provider_name || '').trim();
+        if(!key || !name || unique.has(key)) return;
+        unique.set(key, name);
+      });
+    });
+    return Array.from(unique.values());
+  }
+
+  async function fetchPendingWatchInfo(choice){
+    const cacheKey = getPendingWatchCacheKey(choice);
+    if(tmdbWatchCache.has(cacheKey)) return tmdbWatchCache.get(cacheKey);
+
+    const fallbackSearchUrl = getTmdbSearchUrl(choice.title, choice.year);
+    const apiKey = getTmdbApiKey();
+    const readAccessToken = getTmdbReadAccessToken();
+    if(!apiKey && !readAccessToken){
+      const noKeyData = {
+        text: 'Add TMDB_API_KEY or TMDB_READ_ACCESS_TOKEN to enable in-app watch providers.',
+        linkLabel: 'TMDB Search',
+        linkUrl: fallbackSearchUrl
+      };
+      tmdbWatchCache.set(cacheKey, noKeyData);
+      return noKeyData;
+    }
+
+    const searchParams = {
+      query: sanitize(choice.title || ''),
+      include_adult: 'false'
+    };
+    const parsedYear = Number(choice.year);
+    if(Number.isFinite(parsedYear)) searchParams.year = String(parsedYear);
+
+    try {
+      const searchPayload = await requestTmdbJson('/search/movie', searchParams);
+      const movie = Array.isArray(searchPayload?.results) ? searchPayload.results[0] : null;
+
+      if(!movie?.id){
+        const noMatchData = {
+          text: 'No TMDB match found yet.',
+          linkLabel: 'TMDB Search',
+          linkUrl: fallbackSearchUrl
+        };
+        tmdbWatchCache.set(cacheKey, noMatchData);
+        return noMatchData;
+      }
+
+      const watchPayload = await requestTmdbJson(`/movie/${movie.id}/watch/providers`);
+      const region = getPreferredWatchRegion();
+      const regionResult = watchPayload?.results?.[region] || watchPayload?.results?.US || null;
+      const providerNames = extractWatchProviders(regionResult);
+
+      const data = {
+        text: providerNames.length
+          ? `Watch now (${region}): ${providerNames.join(', ')}`
+          : `No streaming providers listed for ${region} right now.`,
+        linkLabel: 'Watch Page',
+        linkUrl: getTmdbWatchUrl(movie.id)
+      };
+      tmdbWatchCache.set(cacheKey, data);
+      return data;
+    } catch (error) {
+      console.warn('[TMDB] Watch provider lookup failed:', error);
+      const errorData = {
+        text: 'Could not load watch providers right now.',
+        linkLabel: 'TMDB Search',
+        linkUrl: fallbackSearchUrl
+      };
+      tmdbWatchCache.set(cacheKey, errorData);
+      return errorData;
+    }
+  }
+
+  async function renderPendingWatchInfo(choice, watchRow){
+    if(!watchRow) return;
+    const infoEl = watchRow.querySelector('.pending-watch-info');
+    const linkEl = watchRow.querySelector('.pending-watch-link');
+    if(!infoEl || !linkEl) return;
+
+    infoEl.textContent = 'Checking watch providers...';
+    linkEl.textContent = 'TMDB Search';
+    linkEl.href = getTmdbSearchUrl(choice.title, choice.year);
+
+    const data = await fetchPendingWatchInfo(choice);
+    if(!watchRow.isConnected) return;
+
+    infoEl.textContent = data.text;
+    linkEl.textContent = data.linkLabel;
+    linkEl.href = data.linkUrl;
+  }
+
   function renderPendingChoices(){
     if(!dom.pendingList || !dom.pendingEmpty || !dom.pendingPanel) return;
 
@@ -633,14 +780,18 @@
             <button type="button" class="btn ghost small" data-action="cancel-notes" data-id="${choice.id}">Cancel</button>
           </div>
         </div>
+        <div class="pending-watch" data-watch-id="${choice.id}">
+          <span class="pending-watch-info">Checking watch providers...</span>
+          <a class="pending-watch-link" href="${tmdbUrl}" target="_blank" rel="noopener noreferrer">TMDB Search</a>
+        </div>
         <div class="pending-actions">
           <button type="button" class="btn primary small" data-action="add" data-id="${choice.id}">Add Movie</button>
-          <a class="btn ghost small" href="${tmdbUrl}" target="_blank" rel="noopener noreferrer">TMDB</a>
           <button type="button" class="btn ghost small" data-action="remove" data-id="${choice.id}">Remove</button>
         </div>
       `;
 
       dom.pendingList.appendChild(card);
+      renderPendingWatchInfo(choice, card.querySelector(`.pending-watch[data-watch-id="${choice.id}"]`));
     });
   }
 

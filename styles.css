@@ -906,6 +906,40 @@ body {
   flex: 1;
 }
 
+.pending-watch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255 255 255 / 10%);
+  border-radius: var(--radius-s);
+  background: rgba(12 16 22 / 35%);
+}
+
+.pending-watch-info {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #d9e3f0;
+}
+
+.pending-watch-link {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #ffce4f;
+  text-decoration: none;
+}
+
+.pending-watch-link:hover,
+.pending-watch-link:focus-visible {
+  color: #ffe08f;
+  text-decoration: underline;
+}
+
 .pending-actions {
   display: flex;
   gap: 8px;
