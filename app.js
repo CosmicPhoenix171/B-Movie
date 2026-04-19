@@ -851,6 +851,27 @@
     );
   }
 
+  async function applyAuthUserState(user){
+    currentUser = user || null;
+
+    if(!currentUser){
+      if(unsubscribeUserProfile) unsubscribeUserProfile();
+      unsubscribeUserProfile = null;
+      currentUserProfile = null;
+      pendingChoices = [];
+      mergeState.selectedAliases = [];
+      closeMergeDialog();
+      renderAll();
+      return;
+    }
+
+    await loadCurrentUserProfile(currentUser.uid);
+    propagateCurrentUserName(getCurrentUserName());
+    attachUserProfileListener(currentUser.uid);
+    loadPendingChoices();
+    renderAll();
+  }
+
   function requireSignedIn(message){
     if(currentUser) return true;
     alert(message);
@@ -877,7 +898,10 @@
 
     dom.authMeta.textContent = 'Opening Google sign-in...';
     try {
-      await authApi.signInWithPopup(authApi.instance, authApi.provider);
+      const result = await authApi.signInWithPopup(authApi.instance, authApi.provider);
+      if(result?.user){
+        await applyAuthUserState(result.user);
+      }
     } catch (error) {
       const message = humanizeAuthError(error);
       dom.authMeta.textContent = message;
@@ -1703,21 +1727,7 @@
       await loadRemoteWinner();
 
       onAuthStateChanged(auth, async user => {
-        currentUser = user;
-        if(!user){
-          if(unsubscribeUserProfile) unsubscribeUserProfile();
-          unsubscribeUserProfile = null;
-          currentUserProfile = null;
-          pendingChoices = [];
-          mergeState.selectedAliases = [];
-          closeMergeDialog();
-        } else {
-          await loadCurrentUserProfile(user.uid);
-          propagateCurrentUserName(getCurrentUserName());
-          attachUserProfileListener(user.uid);
-          loadPendingChoices();
-        }
-        renderAll();
+        await applyAuthUserState(user);
       });
 
       if(window.FIREBASE_CONFIG.measurementId){
