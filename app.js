@@ -639,19 +639,30 @@
   }
 
   function extractWatchProviders(providerResult){
-    if(!providerResult || typeof providerResult !== 'object') return [];
-    const groups = ['flatrate', 'ads', 'free', 'rent', 'buy'];
-    const unique = new Map();
-    groups.forEach(group => {
-      const list = Array.isArray(providerResult[group]) ? providerResult[group] : [];
+    if(!providerResult || typeof providerResult !== 'object') return { stream: [], freeAds: [], rent: [], buy: [] };
+    const categoryMap = {
+      flatrate: 'stream',
+      ads: 'freeAds',
+      free: 'freeAds',
+      rent: 'rent',
+      buy: 'buy'
+    };
+    const cats = { stream: new Map(), freeAds: new Map(), rent: new Map(), buy: new Map() };
+    Object.entries(categoryMap).forEach(([apiKey, cat]) => {
+      const list = Array.isArray(providerResult[apiKey]) ? providerResult[apiKey] : [];
       list.forEach(provider => {
         const key = String(provider?.provider_id || provider?.provider_name || '').trim();
         const name = sanitize(provider?.provider_name || '').trim();
-        if(!key || !name || unique.has(key)) return;
-        unique.set(key, name);
+        if(!key || !name || cats[cat].has(key)) return;
+        cats[cat].set(key, name);
       });
     });
-    return Array.from(unique.values());
+    return {
+      stream: Array.from(cats.stream.values()),
+      freeAds: Array.from(cats.freeAds.values()),
+      rent: Array.from(cats.rent.values()),
+      buy: Array.from(cats.buy.values())
+    };
   }
 
   async function fetchPendingWatchInfo(choice){
@@ -695,12 +706,13 @@
       const watchPayload = await requestTmdbJson(`/movie/${movie.id}/watch/providers`);
       const region = getPreferredWatchRegion();
       const regionResult = watchPayload?.results?.[region] || watchPayload?.results?.US || null;
-      const providerNames = extractWatchProviders(regionResult);
+      const cats = extractWatchProviders(regionResult);
+      const hasAny = cats.stream.length || cats.freeAds.length || cats.rent.length || cats.buy.length;
 
       const data = {
-        text: providerNames.length
-          ? `Watch now (${region}): ${providerNames.join(', ')}`
-          : `No streaming providers listed for ${region} right now.`,
+        categories: hasAny ? cats : null,
+        region,
+        text: hasAny ? '' : `No streaming providers listed for ${region} right now.`,
         linkLabel: 'Watch Page',
         linkUrl: getTmdbWatchUrl(movie.id)
       };
@@ -718,6 +730,14 @@
     }
   }
 
+  function buildWatchCategoryHTML(label, names){
+    if(!names || !names.length) return '';
+    return `<div class="pending-watch-category">
+      <span class="pending-watch-cat-label">${label}</span>
+      <span class="pending-watch-cat-list">${names.map(n => sanitize(n)).join(', ')}</span>
+    </div>`;
+  }
+
   async function renderPendingWatchInfo(choice, watchRow){
     if(!watchRow) return;
     const infoEl = watchRow.querySelector('.pending-watch-info');
@@ -731,7 +751,16 @@
     const data = await fetchPendingWatchInfo(choice);
     if(!watchRow.isConnected) return;
 
-    infoEl.textContent = data.text;
+    if(data.categories){
+      let html = '';
+      html += buildWatchCategoryHTML('Stream', data.categories.stream);
+      html += buildWatchCategoryHTML('Free / Ads', data.categories.freeAds);
+      html += buildWatchCategoryHTML('Rent', data.categories.rent);
+      html += buildWatchCategoryHTML('Buy', data.categories.buy);
+      infoEl.innerHTML = html || `No providers listed for ${data.region}.`;
+    } else {
+      infoEl.textContent = data.text;
+    }
     linkEl.textContent = data.linkLabel;
     linkEl.href = data.linkUrl;
   }

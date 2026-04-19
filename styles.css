@@ -908,9 +908,8 @@ body {
 
 .pending-watch {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
   margin: 0 0 12px;
   padding: 10px 12px;
   border: 1px solid rgba(255 255 255 / 10%);
@@ -919,12 +918,43 @@ body {
 }
 
 .pending-watch-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   font-size: 0.78rem;
   line-height: 1.35;
   color: #d9e3f0;
 }
 
+.pending-watch-category {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 0;
+}
+
+.pending-watch-category + .pending-watch-category {
+  border-top: 1px solid rgba(255 255 255 / 6%);
+  padding-top: 5px;
+}
+
+.pending-watch-cat-label {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #ffce4f;
+  min-width: 70px;
+}
+
+.pending-watch-cat-list {
+  font-size: 0.76rem;
+  color: #c8d4e3;
+}
+
 .pending-watch-link {
+  align-self: flex-end;
   flex-shrink: 0;
   font-size: 0.72rem;
   font-weight: 700;
