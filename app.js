@@ -593,6 +593,16 @@
     if(!pendingChoices.length){
       dom.pendingEmpty.textContent = 'No pending choices yet. Save one above to keep it private to your account until you are ready to add it.';
       dom.pendingEmpty.hidden = false;
+
+    function getTmdbSearchUrl(title, year){
+      const query = sanitize(title || '').trim();
+      if(!query) return 'https://www.themoviedb.org/';
+
+      const params = new URLSearchParams({ query });
+      const parsedYear = Number(year);
+      if(Number.isFinite(parsedYear)) params.set('primary_release_year', String(parsedYear));
+      return `https://www.themoviedb.org/search?${params.toString()}`;
+    }
       return;
     }
 
@@ -603,6 +613,7 @@
       card.dataset.id = choice.id;
 
       const safeYear = choice.year || 'Unknown';
+      const tmdbUrl = getTmdbSearchUrl(choice.title, choice.year);
       const noteText = choice.notes || 'No notes yet';
       const notesClassName = choice.notes ? 'pending-notes' : 'pending-notes pending-notes-empty';
 
@@ -624,6 +635,7 @@
         </div>
         <div class="pending-actions">
           <button type="button" class="btn primary small" data-action="add" data-id="${choice.id}">Add Movie</button>
+          <a class="btn ghost small" href="${tmdbUrl}" target="_blank" rel="noopener noreferrer">TMDB</a>
           <button type="button" class="btn ghost small" data-action="remove" data-id="${choice.id}">Remove</button>
         </div>
       `;
