@@ -795,9 +795,9 @@
     dom.authMeta.textContent = metaText || '';
     if(dom.authNameEditor) dom.authNameEditor.hidden = stateName !== 'signed-in';
     if(dom.authDisplayName && stateName === 'signed-in') dom.authDisplayName.value = getCurrentUserName();
-    dom.googleSignIn.hidden = stateName === 'signed-in' || stateName === 'disabled';
+    dom.googleSignIn.hidden = stateName !== 'signed-out';
     dom.signOutBtn.hidden = stateName !== 'signed-in';
-    dom.openMerge.hidden = !(stateName === 'signed-in' && getLegacyMergeCandidates().length > 0);
+    if(dom.openMerge) dom.openMerge.hidden = !(stateName === 'signed-in' && getLegacyMergeCandidates().length > 0);
   }
 
   function updateAuthPanel(){
