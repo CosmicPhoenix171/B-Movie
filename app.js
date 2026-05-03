@@ -2691,7 +2691,7 @@
     }
 
     reviewsToggle.textContent = `Individual Reviews (${usernames.length})`;
-    if(!details.hasAttribute('data-user-toggled')) details.setAttribute('open', '');
+    if(!details.hasAttribute('data-user-toggled')) details.removeAttribute('open');
 
     usernames.forEach(username => {
       const userRating = ratings[username];
