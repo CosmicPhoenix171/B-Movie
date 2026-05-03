@@ -986,7 +986,7 @@ body {
   font-style: italic;
 }
 
-.rate-btn { width: 100%; margin-top: 0; min-height: 52px; }
+.rate-btn { width: 100%; margin-top: 0; min-height: 44px; padding: 11px 16px; font-size: 0.95rem; }
 
 /* ====================================
    MOVIE CARDS - Mobile Optimized
@@ -1001,7 +1001,7 @@ body {
   background: linear-gradient(160deg, #212831, #1a2027);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
+  padding: 14px;
   box-shadow: var(--shadow);
 }
 
@@ -1009,20 +1009,20 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 .movie-title {
   margin: 0;
-  font-size: 1.28rem;
+  font-size: 0.96rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.14;
   letter-spacing: 0.01em;
 }
 .year {
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   background: rgba(255 255 255 / 5%);
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 999px;
   color: #d4dde8;
   border: 1px solid rgba(255 255 255 / 10%);
@@ -1030,17 +1030,17 @@ body {
 }
 
 .notes {
-  margin: 0 0 16px;
-  font-size: 0.88rem;
+  margin: 0 0 12px;
+  font-size: 0.78rem;
   color: var(--text-dim);
-  line-height: 1.55;
+  line-height: 1.35;
 }
 
 
 .scores-wrap {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .score-row {
@@ -1052,17 +1052,18 @@ body {
 .score-row.categories {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  gap: 6px;
 }
 
 .score-chip {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 58px;
-  padding: 10px 12px;
-  border-radius: 14px;
+  gap: 5px;
+  min-height: 56px;
+  padding: 6px 4px;
+  border-radius: 12px;
   border: 1px solid rgba(255 255 255 / 9%);
   background: linear-gradient(180deg, rgba(31 38 46 / 0.96), rgba(22 28 35 / 0.98));
   box-shadow: inset 0 1px 0 rgba(255 255 255 / 4%), 0 8px 18px -16px rgba(0 0 0 / 85%);
@@ -1071,20 +1072,21 @@ body {
 }
 
 .score-chip-icon {
-  font-size: 1.1rem;
+  font-size: 0.92rem;
   line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
   background: rgba(255 255 255 / 6%);
   box-shadow: inset 0 1px 0 rgba(255 255 255 / 8%);
 }
 
 .score-chip-value {
-  font-size: 1rem;
+  font-size: 0.8rem;
+  line-height: 1;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -1145,11 +1147,11 @@ body {
 
 .score-formula-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1.15fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 18px;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 14px;
   border: 1px solid rgba(255 157 29 / 36%);
   background:
     linear-gradient(180deg, rgba(18 23 30 / 0.96), rgba(14 19 25 / 0.98)) padding-box,
@@ -1161,10 +1163,10 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
-  padding: 12px 10px;
-  border-radius: 14px;
+  padding: 8px 6px;
+  border-radius: 10px;
   background: rgba(255 255 255 / 3%);
   border: 1px solid rgba(255 255 255 / 6%);
 }
@@ -1183,15 +1185,15 @@ body {
 }
 
 .formula-label {
-  font-size: 0.66rem;
+  font-size: 0.52rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.75px;
   color: var(--text-dim);
   font-weight: 700;
 }
 
 .formula-value {
-  font-size: 1.28rem;
+  font-size: 1rem;
   line-height: 1;
   font-weight: 800;
   font-family: 'Share Tech Mono', monospace;
@@ -1207,10 +1209,11 @@ body {
 
 .formula-block-final .formula-value {
   color: #ffd884;
-  font-size: 1.55rem;
+  font-size: 1.16rem;
 }
 
 .formula-operator {
+  display: none;
   align-self: center;
   font-size: 0.68rem;
   text-transform: uppercase;
@@ -1222,14 +1225,17 @@ body {
 .formula-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-end;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
-.formula-caption,
+.formula-caption {
+  display: none;
+}
+
 .rater-count {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: var(--text-dim);
 }
 
@@ -1249,7 +1255,7 @@ body {
   font-weight: 600;
   color: var(--text-dim);
   cursor: pointer;
-  padding: 10px 0 4px;
+  padding: 6px 0 4px;
 }
 .reviews-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 
@@ -1263,7 +1269,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 10px;
 }
 .reviewer-summary {
@@ -1276,27 +1282,29 @@ body {
   justify-content: space-between;
   gap: 10px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 .reviewer-name {
   font-size: 0.98rem;
   font-weight: 700;
   color: #f4f7fb;
   min-width: 0;
-  padding-top: 6px;
+  padding-top: 0;
 }
 .reviewer-total {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  width: 100%;
 }
 .review-total-pill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 38px;
-  padding: 7px 10px;
+  min-height: 34px;
+  padding: 6px 8px;
   border-radius: 10px;
   border: 1px solid rgba(255 255 255 / 8%);
   background: rgba(255 255 255 / 4%);
@@ -1315,7 +1323,7 @@ body {
   font-family: 'Share Tech Mono', monospace;
 }
 .review-total-operator {
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: #c8b28f;
@@ -1435,38 +1443,6 @@ body {
   background: rgba(255 77 85 / 12%);
   border-color: rgba(255 77 85 / 26%);
   color: #ffb6bb;
-}
-
-@media (max-width: 560px) {
-  .reviewer-header {
-    gap: 10px;
-  }
-
-  .reviewer-topline {
-    flex-wrap: wrap;
-  }
-
-  .reviewer-name {
-    padding-top: 0;
-  }
-
-  .reviewer-total {
-    justify-content: flex-start;
-    width: 100%;
-  }
-
-  .reviewer-total {
-    gap: 6px;
-  }
-
-  .review-total-pill {
-    min-height: 34px;
-    padding: 6px 8px;
-  }
-
-  .review-total-operator {
-    font-size: 0.58rem;
-  }
 }
 
 .card-actions {
@@ -2192,191 +2168,20 @@ body.theme-bmovie {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 9px 10px;
   background: rgba(255 255 255 / 3%);
   border: 1px solid rgba(255 255 255 / 7%);
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .card-tier .tier-emoji {
-  font-size: 1.2rem;
+  font-size: 1rem;
 }
 
 .card-tier .tier-text {
-  font-size: 0.92rem;
+  font-size: 0.76rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.7px;
-}
-
-@media (max-width: 560px) {
-  .movie-card {
-    padding: 14px;
-  }
-
-  .movie-head {
-    gap: 10px;
-    margin-bottom: 8px;
-  }
-
-  .movie-title {
-    font-size: 0.96rem;
-    line-height: 1.14;
-  }
-
-  .year {
-    padding: 6px 10px;
-    font-size: 0.76rem;
-  }
-
-  .notes {
-    margin: 0 0 12px;
-    font-size: 0.78rem;
-    line-height: 1.35;
-  }
-
-  .scores-wrap {
-    gap: 10px;
-  }
-
-  .score-row.categories {
-    gap: 6px;
-  }
-
-  .score-chip {
-    flex-direction: column;
-    gap: 5px;
-    min-height: 56px;
-    padding: 6px 4px;
-    border-radius: 12px;
-  }
-
-  .score-chip-icon {
-    width: 22px;
-    height: 22px;
-    font-size: 0.92rem;
-  }
-
-  .score-chip-value {
-    font-size: 0.8rem;
-    line-height: 1;
-  }
-
-  .score-formula-panel {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-    padding: 10px;
-    border-radius: 14px;
-  }
-
-  .formula-operator {
-    display: none;
-  }
-
-  .formula-block {
-    gap: 4px;
-    padding: 8px 6px;
-    border-radius: 10px;
-  }
-
-  .formula-label {
-    font-size: 0.52rem;
-    letter-spacing: 0.75px;
-  }
-
-  .formula-value {
-    font-size: 1rem;
-  }
-
-  .formula-block-final .formula-value {
-    font-size: 1.16rem;
-  }
-
-  .formula-meta {
-    gap: 6px;
-    justify-content: flex-end;
-  }
-
-  .formula-caption {
-    display: none;
-  }
-
-  .rater-count {
-    font-size: 0.68rem;
-  }
-
-  .card-tier {
-    gap: 8px;
-    padding: 9px 10px;
-    border-radius: 12px;
-  }
-
-  .card-tier .tier-emoji {
-    font-size: 1rem;
-  }
-
-  .card-tier .tier-text {
-    font-size: 0.76rem;
-    letter-spacing: 0.45px;
-  }
-
-  .rate-btn {
-    min-height: 44px;
-    padding: 11px 16px;
-    font-size: 0.95rem;
-  }
-
-  .reviews-toggle {
-    padding-top: 6px;
-  }
-}
-
-@media (max-width: 390px) {
-  .movie-card {
-    padding: 12px;
-  }
-
-  .movie-title {
-    font-size: 0.9rem;
-  }
-
-  .notes {
-    font-size: 0.74rem;
-  }
-
-  .score-row.categories {
-    gap: 5px;
-  }
-
-  .score-chip {
-    min-height: 52px;
-    padding: 5px 3px;
-  }
-
-  .score-chip-icon {
-    width: 20px;
-    height: 20px;
-    font-size: 0.84rem;
-  }
-
-  .score-chip-value {
-    font-size: 0.74rem;
-  }
-
-  .formula-block {
-    padding: 7px 5px;
-  }
-
-  .formula-value {
-    font-size: 0.92rem;
-  }
-
-  .formula-block-final .formula-value {
-    font-size: 1.05rem;
-  }
-
-  .card-tier .tier-text {
-    font-size: 0.72rem;
-  }
+  letter-spacing: 0.45px;
 }
