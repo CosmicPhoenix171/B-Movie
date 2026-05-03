@@ -197,7 +197,11 @@
         '5 - Peak cheese joy'
       ]
     }
-  ];
+  ].map(category => ({
+    // Neutral is the baseline visual group; live averages switch groups by sign.
+    scoreGroup: 'neutral',
+    ...category
+  }));
 
   const BONUS_CATEGORIES = [];
 
@@ -984,6 +988,47 @@
     const numericValue = Math.abs(Number(value) || 0);
     if(numericValue > 0) return numericValue.toFixed(1).replace(/\.0$/, '');
     return '0';
+  }
+
+  // Movie cards display clean magnitudes while the saved signed values still drive totals.
+  function displayScore(value){
+    return Math.abs(Number(value) || 0).toFixed(1);
+  }
+
+  function getScoreChipGroup(value, fallbackGroup = 'neutral'){
+    const numericValue = Number(value);
+    if(Number.isFinite(numericValue)){
+      if(numericValue > 0) return 'bmovie';
+      if(numericValue < 0) return 'mainstream';
+      return 'neutral';
+    }
+    return fallbackGroup;
+  }
+
+  function getScoreGroupLabel(scoreGroup){
+    if(scoreGroup === 'bmovie') return 'B-Movie';
+    if(scoreGroup === 'mainstream') return 'Mainstream';
+    return 'Neutral';
+  }
+
+  function createScoreChip(cat, isBonus = false){
+    const chip = document.createElement('span');
+    chip.className = `cat-badge score-chip score-chip-neutral${isBonus ? ' bonus' : ''}`;
+    chip.dataset.cat = cat.key;
+    chip.dataset.group = cat.scoreGroup || 'neutral';
+    chip.dataset.empty = 'true';
+
+    const icon = document.createElement('span');
+    icon.className = 'score-chip-icon';
+    icon.textContent = cat.icon;
+    icon.setAttribute('aria-hidden', 'true');
+
+    const value = document.createElement('span');
+    value.className = 'score-chip-value';
+    value.textContent = '–';
+
+    chip.append(icon, value);
+    return chip;
   }
 
   function getKnownName(key){
@@ -2445,21 +2490,17 @@
 
     const catRow = clone.querySelector('.score-row.categories');
     for(const cat of CATEGORIES){
-      const span = document.createElement('span');
-      span.className = 'cat-badge';
-      span.dataset.cat = cat.key;
-      span.title = cat.label;
-      span.textContent = `${cat.icon} –`;
-      catRow.appendChild(span);
+      const chip = createScoreChip(cat);
+      chip.title = `${cat.label} • ${getScoreGroupLabel(cat.scoreGroup)} group`;
+      chip.setAttribute('aria-label', `${cat.label} score`);
+      catRow.appendChild(chip);
     }
 
     for(const cat of BONUS_CATEGORIES){
-      const span = document.createElement('span');
-      span.className = 'cat-badge bonus';
-      span.dataset.cat = cat.key;
-      span.title = `${cat.label} (bonus - not counted in total)`;
-      span.textContent = `${cat.icon} –`;
-      catRow.appendChild(span);
+      const chip = createScoreChip(cat, true);
+      chip.title = `${cat.label} • ${getScoreGroupLabel(cat.scoreGroup)} group (bonus - not counted in total)`;
+      chip.setAttribute('aria-label', `${cat.label} bonus score`);
+      catRow.appendChild(chip);
     }
 
     clone.querySelector('.open-rate').addEventListener('click', () => openDialog(movie));
@@ -2511,34 +2552,53 @@
     for(const cat of CATEGORIES){
       const badge = card.querySelector(`.cat-badge[data-cat="${cat.key}"]`);
       if(!badge) continue;
+      const valueEl = badge.querySelector('.score-chip-value');
       if(lockNeeded){
-        badge.textContent = `${cat.icon} ?`;
+        if(valueEl) valueEl.textContent = '?';
         badge.title = `${cat.label} (locked)`;
         badge.dataset.empty = 'true';
         badge.dataset.locked = 'true';
+        badge.dataset.group = cat.scoreGroup || 'neutral';
+        badge.className = 'cat-badge score-chip score-chip-neutral';
+        badge.setAttribute('aria-label', `${cat.label} score locked until you rate`);
       } else {
         const avg = aggregates.categoryAverages[cat.key];
-        badge.textContent = `${cat.icon} ${Number.isFinite(avg) ? avg.toFixed(1) : '–'}`;
-        badge.title = cat.label;
+        const scoreGroup = getScoreChipGroup(avg, cat.scoreGroup);
+        if(valueEl) valueEl.textContent = Number.isFinite(avg) ? displayScore(avg) : '–';
+        badge.title = `${cat.label} • ${getScoreGroupLabel(scoreGroup)} group`;
         badge.dataset.empty = Number.isFinite(avg) ? 'false' : 'true';
         badge.dataset.locked = 'false';
+        badge.dataset.group = scoreGroup;
+        badge.className = `cat-badge score-chip score-chip-${scoreGroup}`;
+        badge.setAttribute(
+          'aria-label',
+          Number.isFinite(avg)
+            ? `${cat.label} ${displayScore(avg)} in the ${getScoreGroupLabel(scoreGroup)} group`
+            : `${cat.label} score not rated yet`
+        );
       }
     }
 
     for(const cat of BONUS_CATEGORIES){
       const badge = card.querySelector(`.cat-badge[data-cat="${cat.key}"]`);
       if(!badge) continue;
+      const valueEl = badge.querySelector('.score-chip-value');
       if(lockNeeded){
-        badge.textContent = `${cat.icon} ?`;
+        if(valueEl) valueEl.textContent = '?';
         badge.title = `${cat.label} (bonus - locked)`;
         badge.dataset.empty = 'true';
         badge.dataset.locked = 'true';
+        badge.dataset.group = cat.scoreGroup || 'neutral';
+        badge.className = 'cat-badge score-chip score-chip-neutral bonus';
       } else {
         const avg = aggregates.bonusAverages[cat.key];
-        badge.textContent = `${cat.icon} ${Number.isFinite(avg) ? avg.toFixed(1) : '–'}`;
-        badge.title = `${cat.label} (bonus - not counted in total)`;
+        const scoreGroup = getScoreChipGroup(avg, cat.scoreGroup);
+        if(valueEl) valueEl.textContent = Number.isFinite(avg) ? displayScore(avg) : '–';
+        badge.title = `${cat.label} • ${getScoreGroupLabel(scoreGroup)} group (bonus - not counted in total)`;
         badge.dataset.empty = Number.isFinite(avg) ? 'false' : 'true';
         badge.dataset.locked = 'false';
+        badge.dataset.group = scoreGroup;
+        badge.className = `cat-badge score-chip score-chip-${scoreGroup} bonus`;
       }
     }
 
@@ -2557,12 +2617,13 @@
       raterEl.textContent = '(hidden)';
       if(cardTier) cardTier.style.display = 'none';
     } else {
-      if(bMovieEl) bMovieEl.textContent = raterCount ? aggregates.avgBMovieScore.toFixed(1) : '0';
-      if(mainstreamEl) mainstreamEl.textContent = raterCount ? aggregates.avgMainstreamScore.toFixed(1) : '0';
-      if(finalEl){
-        const finalValue = raterCount ? aggregates.avgFinalScore.toFixed(1) : '0';
-        finalEl.textContent = Number(finalValue) > 0 ? `+${finalValue}` : finalValue;
-      }
+      const bMovieTotal = raterCount ? Number(displayScore(aggregates.avgBMovieScore)) : 0;
+      const mainstreamTotal = raterCount ? Number(displayScore(aggregates.avgMainstreamScore)) : 0;
+      const finalScore = mainstreamTotal - bMovieTotal;
+
+      if(bMovieEl) bMovieEl.textContent = bMovieTotal.toFixed(1);
+      if(mainstreamEl) mainstreamEl.textContent = mainstreamTotal.toFixed(1);
+      if(finalEl) finalEl.textContent = finalScore.toFixed(1);
       raterEl.textContent = raterCount ? `(${raterCount} rater${raterCount === 1 ? '' : 's'})` : '';
 
       if(cardTier && tierEmoji && tierText && raterCount > 0){

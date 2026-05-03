@@ -96,10 +96,25 @@
           <p class="notes"></p>
           <div class="scores-wrap">
             <div class="score-row categories"></div>
-            <div class="total-line">
-              <span class="total-badge bmovie-badge" title="B-Movie Score (positive)">B-Movie: <strong class="bmovie-val">0</strong></span>
-              <span class="total-badge mainstream-badge" title="Mainstream Movies Score (negative)">Mainstream: <strong class="mainstream-val">0</strong></span>
-              <span class="total-badge final-badge" title="Final Score = B-Movie Score + Mainstream Movies Score">Final: <strong class="final-val">0</strong></span>
+            <!-- Cleaner formula panel: chips stay signless while the summary shows the relationship. -->
+            <div class="score-formula-panel" aria-label="Final Score equals Mainstream Score minus B-Movie Score">
+              <div class="formula-block formula-block-mainstream">
+                <span class="formula-label">Mainstream Score</span>
+                <strong class="formula-value mainstream-val">0.0</strong>
+              </div>
+              <span class="formula-operator" aria-hidden="true">minus</span>
+              <div class="formula-block formula-block-bmovie">
+                <span class="formula-label">B-Movie Score</span>
+                <strong class="formula-value bmovie-val">0.0</strong>
+              </div>
+              <span class="formula-operator" aria-hidden="true">equals</span>
+              <div class="formula-block formula-block-final">
+                <span class="formula-label">Final Score</span>
+                <strong class="formula-value final-val">0.0</strong>
+              </div>
+            </div>
+            <div class="formula-meta">
+              <span class="formula-caption">Final Score = Mainstream Score minus B-Movie Score</span>
               <span class="rater-count"></span>
             </div>
             <div class="card-tier">
