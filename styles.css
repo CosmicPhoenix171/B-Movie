@@ -1051,7 +1051,7 @@ body {
 
 .score-row.categories {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -2241,7 +2241,6 @@ body.theme-bmovie {
   }
 
   .score-row.categories {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 6px;
   }
 
