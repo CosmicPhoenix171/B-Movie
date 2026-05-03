@@ -2243,16 +2243,174 @@ body.theme-bmovie {
   letter-spacing: 0.7px;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 560px) {
+  .movie-card {
+    padding: 14px;
+  }
+
+  .movie-head {
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .movie-title {
+    font-size: 0.96rem;
+    line-height: 1.14;
+  }
+
+  .year {
+    padding: 6px 10px;
+    font-size: 0.76rem;
+  }
+
+  .notes {
+    margin: 0 0 12px;
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .scores-wrap {
+    gap: 10px;
+  }
+
   .score-row.categories {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .score-chip {
+    flex-direction: column;
+    gap: 5px;
+    min-height: 56px;
+    padding: 6px 4px;
+    border-radius: 12px;
+  }
+
+  .score-chip-icon {
+    width: 22px;
+    height: 22px;
+    font-size: 0.92rem;
+  }
+
+  .score-chip-value {
+    font-size: 0.8rem;
+    line-height: 1;
   }
 
   .score-formula-panel {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 10px;
+    border-radius: 14px;
   }
 
   .formula-operator {
-    justify-self: center;
+    display: none;
+  }
+
+  .formula-block {
+    gap: 4px;
+    padding: 8px 6px;
+    border-radius: 10px;
+  }
+
+  .formula-label {
+    font-size: 0.52rem;
+    letter-spacing: 0.75px;
+  }
+
+  .formula-value {
+    font-size: 1rem;
+  }
+
+  .formula-block-final .formula-value {
+    font-size: 1.16rem;
+  }
+
+  .formula-meta {
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .formula-caption {
+    display: none;
+  }
+
+  .rater-count {
+    font-size: 0.68rem;
+  }
+
+  .card-tier {
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: 12px;
+  }
+
+  .card-tier .tier-emoji {
+    font-size: 1rem;
+  }
+
+  .card-tier .tier-text {
+    font-size: 0.76rem;
+    letter-spacing: 0.45px;
+  }
+
+  .rate-btn {
+    min-height: 44px;
+    padding: 11px 16px;
+    font-size: 0.95rem;
+  }
+
+  .reviews-toggle {
+    padding-top: 6px;
+  }
+}
+
+@media (max-width: 390px) {
+  .movie-card {
+    padding: 12px;
+  }
+
+  .movie-title {
+    font-size: 0.9rem;
+  }
+
+  .notes {
+    font-size: 0.74rem;
+  }
+
+  .score-row.categories {
+    gap: 5px;
+  }
+
+  .score-chip {
+    min-height: 52px;
+    padding: 5px 3px;
+  }
+
+  .score-chip-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 0.84rem;
+  }
+
+  .score-chip-value {
+    font-size: 0.74rem;
+  }
+
+  .formula-block {
+    padding: 7px 5px;
+  }
+
+  .formula-value {
+    font-size: 0.92rem;
+  }
+
+  .formula-block-final .formula-value {
+    font-size: 1.05rem;
+  }
+
+  .card-tier .tier-text {
+    font-size: 0.72rem;
   }
 }
