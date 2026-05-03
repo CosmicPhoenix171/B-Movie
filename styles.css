@@ -1254,23 +1254,189 @@ body {
 .reviews-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 
 .user-review {
-  background: rgba(255 255 255 / 3%);
-  border: 1px solid var(--border);
-  padding: 12px;
-  border-radius: var(--radius-s);
+  background: linear-gradient(180deg, rgba(29 35 43 / 0.96), rgba(23 29 36 / 0.98));
+  border: 1px solid rgba(255 255 255 / 8%);
+  padding: 14px;
+  border-radius: 14px;
 }
-.reviewer-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
-.reviewer-name { font-size: 0.8rem; font-weight: 600; }
-.reviewer-total { font-size: 0.75rem; color: var(--accent); font-weight: 600; line-height: 1.4; }
-.reviewer-scores { display: flex; flex-wrap: wrap; gap: 4px; }
-.score-item {
-  background: rgba(255 255 255 / 5%);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.65rem;
+.reviewer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.reviewer-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+.reviewer-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #f4f7fb;
+}
+.reviewer-total {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.review-total-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255 255 255 / 8%);
+  background: rgba(255 255 255 / 4%);
+}
+.review-total-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
   color: var(--text-dim);
+  font-weight: 700;
 }
-.score-item.bonus { color: #c29dff; }
+.review-total-value {
+  font-size: 0.98rem;
+  line-height: 1;
+  font-weight: 800;
+  font-family: 'Share Tech Mono', monospace;
+}
+.review-total-operator {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #c8b28f;
+  font-weight: 700;
+}
+.review-total-pill-mainstream {
+  border-color: rgba(123 173 255 / 32%);
+  background: linear-gradient(180deg, rgba(22 37 58 / 0.95), rgba(16 29 47 / 0.96));
+}
+.review-total-pill-mainstream .review-total-value {
+  color: #9fd0ff;
+}
+.review-total-pill-bmovie {
+  border-color: rgba(255 179 71 / 34%);
+  background: linear-gradient(180deg, rgba(54 38 20 / 0.95), rgba(39 28 17 / 0.96));
+}
+.review-total-pill-bmovie .review-total-value {
+  color: #ffc761;
+}
+.review-total-pill-final {
+  border-color: rgba(255 179 71 / 34%);
+  background: linear-gradient(135deg, rgba(255 179 71 / 14%), rgba(255 123 79 / 10%));
+}
+.review-total-pill-final .review-total-value {
+  color: #ffd884;
+}
+.reviewer-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.score-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255 255 255 / 8%);
+  background: rgba(255 255 255 / 5%);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+}
+.score-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255 255 255 / 6%);
+  font-size: 0.76rem;
+}
+.score-item-value {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.score-item-bmovie {
+  border-color: rgba(255 179 71 / 42%);
+  background: linear-gradient(180deg, rgba(54 38 20 / 0.95), rgba(39 28 17 / 0.96));
+  box-shadow: inset 0 1px 0 rgba(255 234 184 / 10%), 0 0 0 1px rgba(255 179 71 / 10%);
+}
+.score-item-bmovie .score-item-icon {
+  background: linear-gradient(135deg, rgba(255 201 92 / 0.3), rgba(255 157 29 / 0.2));
+}
+.score-item-bmovie .score-item-value {
+  color: #ffc761;
+}
+.score-item-mainstream {
+  border-color: rgba(123 173 255 / 40%);
+  background: linear-gradient(180deg, rgba(22 37 58 / 0.95), rgba(16 29 47 / 0.96));
+  box-shadow: inset 0 1px 0 rgba(210 232 255 / 10%), 0 0 0 1px rgba(123 173 255 / 10%);
+}
+.score-item-mainstream .score-item-icon {
+  background: linear-gradient(135deg, rgba(143 199 255 / 0.26), rgba(79 123 255 / 0.18));
+}
+.score-item-mainstream .score-item-value {
+  color: #9fd0ff;
+}
+.score-item-neutral {
+  border-color: rgba(196 205 216 / 24%);
+  border-style: dashed;
+  background: linear-gradient(180deg, rgba(38 45 54 / 0.95), rgba(28 34 42 / 0.96));
+}
+.score-item-neutral .score-item-icon {
+  background: linear-gradient(135deg, rgba(188 198 210 / 0.16), rgba(120 134 148 / 0.12));
+}
+.score-item-neutral .score-item-value {
+  color: #d0d7e0;
+}
+.score-item.bonus {
+  opacity: 0.82;
+}
+.del-rating-btn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255 255 255 / 10%);
+  border-radius: 10px;
+  background: rgba(255 255 255 / 4%);
+  color: #f5f7fb;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.del-rating-btn:hover,
+.del-rating-btn:focus-visible {
+  background: rgba(255 77 85 / 12%);
+  border-color: rgba(255 77 85 / 26%);
+  color: #ffb6bb;
+}
+
+@media (max-width: 560px) {
+  .reviewer-total {
+    gap: 6px;
+  }
+
+  .review-total-pill {
+    min-height: 34px;
+    padding: 6px 8px;
+  }
+
+  .review-total-operator {
+    width: 100%;
+    text-align: left;
+  }
+}
 
 .card-actions {
   display: flex;

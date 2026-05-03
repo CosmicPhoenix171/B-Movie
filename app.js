@@ -1011,6 +1011,16 @@
     return 'Neutral';
   }
 
+  function getDisplayedFormulaTotals(totals){
+    const bMovieTotal = Number(displayScore(totals?.bMovieScore));
+    const mainstreamTotal = Number(displayScore(totals?.mainstreamScore));
+    return {
+      bMovieTotal,
+      mainstreamTotal,
+      finalScore: mainstreamTotal - bMovieTotal
+    };
+  }
+
   function createScoreChip(cat, isBonus = false){
     const chip = document.createElement('span');
     chip.className = `cat-badge score-chip score-chip-neutral${isBonus ? ' bonus' : ''}`;
@@ -2699,9 +2709,10 @@
       reviewDiv.className = 'user-review';
 
       const userTotals = getRatingTotals(userRating);
+      const displayTotals = getDisplayedFormulaTotals(userTotals);
       const isOwner = username === actorKey;
       const reviewerName = getRatingLabel(movie, username);
-      let headerHTML = `<div class="reviewer-header">\n        <strong class="reviewer-name">${reviewerName}</strong>\n        <span class="reviewer-total">B-Movie: ${userTotals.bMovieScore} • Mainstream: ${userTotals.mainstreamScore} • Final: ${userTotals.finalScore > 0 ? '+' : ''}${userTotals.finalScore}</span>`;
+      let headerHTML = `<div class="reviewer-header">\n        <div class="reviewer-summary">\n          <strong class="reviewer-name">${reviewerName}</strong>\n          <div class="reviewer-total" aria-label="Final Score equals Mainstream Score minus B-Movie Score">\n            <span class="review-total-pill review-total-pill-mainstream">\n              <span class="review-total-label">Mainstream</span>\n              <strong class="review-total-value">${displayTotals.mainstreamTotal.toFixed(1)}</strong>\n            </span>\n            <span class="review-total-operator">minus</span>\n            <span class="review-total-pill review-total-pill-bmovie">\n              <span class="review-total-label">B-Movie</span>\n              <strong class="review-total-value">${displayTotals.bMovieTotal.toFixed(1)}</strong>\n            </span>\n            <span class="review-total-operator">equals</span>\n            <span class="review-total-pill review-total-pill-final">\n              <span class="review-total-label">Final</span>\n              <strong class="review-total-value">${displayTotals.finalScore.toFixed(1)}</strong>\n            </span>\n          </div>\n        </div>`;
       if(isOwner){
         headerHTML += ` <button type="button" class="del-rating-btn" data-user="${sanitize(username)}" title="Delete your rating">✖</button>`;
       }
@@ -2713,7 +2724,8 @@
         const score = userRating[cat.key];
         if(score !== undefined && score !== null){
           const level = cat.levels[score + 5] || '';
-          reviewHTML += `<span class="score-item" title="${level}">${cat.icon} ${score > 0 ? '+' + score : score}</span>`;
+          const scoreGroup = getScoreChipGroup(score, cat.scoreGroup);
+          reviewHTML += `<span class="score-item score-item-${scoreGroup}" title="${level}" aria-label="${cat.label} ${displayScore(score)} in the ${getScoreGroupLabel(scoreGroup)} group"><span class="score-item-icon" aria-hidden="true">${cat.icon}</span><span class="score-item-value">${displayScore(score)}</span></span>`;
         }
       });
 
@@ -2721,7 +2733,8 @@
         const score = userRating[cat.key];
         if(score !== undefined && score !== null){
           const level = cat.levels[score + 5] || '';
-          reviewHTML += `<span class="score-item bonus" title="${level}">${cat.icon} ${score > 0 ? '+' + score : score}</span>`;
+          const scoreGroup = getScoreChipGroup(score, cat.scoreGroup);
+          reviewHTML += `<span class="score-item score-item-${scoreGroup} bonus" title="${level}" aria-label="${cat.label} ${displayScore(score)} in the ${getScoreGroupLabel(scoreGroup)} group"><span class="score-item-icon" aria-hidden="true">${cat.icon}</span><span class="score-item-value">${displayScore(score)}</span></span>`;
         }
       });
 
