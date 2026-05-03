@@ -1267,29 +1267,29 @@ body {
   margin-bottom: 10px;
 }
 .reviewer-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   min-width: 0;
   flex: 1;
 }
 .reviewer-topline {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
+  min-width: 0;
 }
 .reviewer-name {
   font-size: 0.98rem;
   font-weight: 700;
   color: #f4f7fb;
   min-width: 0;
+  padding-top: 6px;
 }
 .reviewer-total {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
+  justify-content: flex-end;
 }
 .review-total-pill {
   display: inline-flex;
@@ -1443,7 +1443,16 @@ body {
   }
 
   .reviewer-topline {
-    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .reviewer-name {
+    padding-top: 0;
+  }
+
+  .reviewer-total {
+    justify-content: flex-start;
+    width: 100%;
   }
 
   .reviewer-total {
