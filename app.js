@@ -3045,15 +3045,21 @@
     const bMovieEl = card.querySelector('.bmovie-val');
     const mainstreamEl = card.querySelector('.mainstream-val');
     const finalEl = card.querySelector('.final-val');
+    const finalBlock = card.querySelector('.formula-block-final');
     const raterEl = card.querySelector('.rater-count');
     const tierEmoji = card.querySelector('.tier-emoji');
     const tierText = card.querySelector('.tier-text');
     const cardTier = card.querySelector('.card-tier');
 
+    if(finalBlock){
+      finalBlock.classList.remove('is-mainstream', 'is-bmovie', 'is-neutral');
+    }
+
     if(lockNeeded){
       if(bMovieEl) bMovieEl.textContent = '?';
       if(mainstreamEl) mainstreamEl.textContent = '?';
       if(finalEl) finalEl.textContent = '?';
+      if(finalBlock) finalBlock.classList.add('is-neutral');
       raterEl.textContent = '(hidden)';
       if(cardTier) cardTier.style.display = 'none';
     } else {
@@ -3064,6 +3070,11 @@
       if(bMovieEl) bMovieEl.textContent = bMovieTotal.toFixed(1);
       if(mainstreamEl) mainstreamEl.textContent = mainstreamTotal.toFixed(1);
       if(finalEl) finalEl.textContent = finalScore.toFixed(1);
+      if(finalBlock){
+        if(finalScore > 0) finalBlock.classList.add('is-mainstream');
+        else if(finalScore < 0) finalBlock.classList.add('is-bmovie');
+        else finalBlock.classList.add('is-neutral');
+      }
       raterEl.textContent = raterCount ? `(${raterCount} rater${raterCount === 1 ? '' : 's'})` : '';
 
       if(cardTier && tierEmoji && tierText && raterCount > 0){

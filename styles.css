@@ -1258,6 +1258,18 @@ body {
   font-size: 1.5rem;
 }
 
+.formula-block-final.is-mainstream .formula-value {
+  color: #9bc8ff;
+}
+
+.formula-block-final.is-bmovie .formula-value {
+  color: #ffbd59;
+}
+
+.formula-block-final.is-neutral .formula-value {
+  color: #d0d7e0;
+}
+
 .formula-operator {
   display: flex;
   align-items: center;
