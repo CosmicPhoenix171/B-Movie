@@ -3065,7 +3065,7 @@
   const mobileMenu = document.getElementById('mobileMenu');
   const bottomNav = document.getElementById('bottomNav');
   const navItems = bottomNav?.querySelectorAll('.nav-item');
-  const mobilePanels = document.querySelectorAll('.mobile-panel');
+  const appPanels = document.querySelectorAll('.app-panel');
 
   menuToggle?.addEventListener('click', () => {
     menuToggle.classList.toggle('active');
@@ -3087,7 +3087,7 @@
     navItems?.forEach(item => {
       item.classList.toggle('active', item.dataset.section === sectionId);
     });
-    mobilePanels?.forEach(panel => {
+    appPanels?.forEach(panel => {
       panel.classList.toggle('active', panel.id === sectionId);
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });

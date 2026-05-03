@@ -635,19 +635,19 @@ body {
 .nav-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.5px; }
 
 /* ====================================
-   MAIN LAYOUT - Mobile First
+   MAIN LAYOUT
    ==================================== */
-.layout.mobile-layout {
+.layout.app-layout {
   display: block;
   padding: 16px;
   padding-bottom: calc(var(--bottom-nav-height) + 24px + var(--safe-area-bottom));
 }
 
-/* Panels as tabs - only show active one on mobile */
-.mobile-panel {
+/* Panels as tabs */
+.app-panel {
   display: none;
 }
-.mobile-panel.active {
+.app-panel.active {
   display: block;
 }
 
@@ -2072,7 +2072,7 @@ body.theme-bmovie {
   .movie-card { animation: slideUp 0.4s ease; }
   @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } }
   
-  .mobile-panel.active { animation: fadeIn 0.3s ease; }
+  .app-panel.active { animation: fadeIn 0.3s ease; }
   @keyframes fadeIn { from { opacity: 0; } }
 }
 
@@ -2082,39 +2082,6 @@ body.theme-bmovie {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-8px); }
   75% { transform: translateX(8px); }
-}
-
-/* ====================================
-   LARGE SCREEN MOBILE SHELL
-   Keep desktop behaving like the mobile app.
-   ==================================== */
-@media (min-width: 768px) {
-  .app-header,
-  .layout.mobile-layout,
-  .app-footer {
-    width: min(100%, 760px);
-    margin-inline: auto;
-  }
-
-  .layout.mobile-layout {
-    padding: 20px;
-    padding-bottom: calc(var(--bottom-nav-height) + 28px + var(--safe-area-bottom));
-  }
-
-  .bottom-nav {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    width: min(100%, 760px);
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-    border-top-left-radius: 18px;
-    border-top-right-radius: 18px;
-  }
-
-  .mobile-menu.open {
-    max-height: calc(100vh - var(--header-height) - 24px);
-  }
 }
 
 /* ====================================
