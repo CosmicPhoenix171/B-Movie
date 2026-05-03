@@ -1147,10 +1147,10 @@ body {
 
 .score-formula-panel {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1.15fr);
   align-items: stretch;
-  gap: 6px;
-  padding: 10px;
+  gap: 10px;
+  padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid rgba(255 157 29 / 36%);
   background:
@@ -1163,9 +1163,9 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
-  padding: 8px 6px;
+  padding: 10px 12px;
   border-radius: 10px;
   background: rgba(255 255 255 / 3%);
   border: 1px solid rgba(255 255 255 / 6%);
@@ -1185,15 +1185,15 @@ body {
 }
 
 .formula-label {
-  font-size: 0.52rem;
+  font-size: 0.62rem;
   text-transform: uppercase;
-  letter-spacing: 0.75px;
+  letter-spacing: 1px;
   color: var(--text-dim);
   font-weight: 700;
 }
 
 .formula-value {
-  font-size: 1rem;
+  font-size: 1.28rem;
   line-height: 1;
   font-weight: 800;
   font-family: 'Share Tech Mono', monospace;
@@ -1209,13 +1209,15 @@ body {
 
 .formula-block-final .formula-value {
   color: #ffd884;
-  font-size: 1.16rem;
+  font-size: 1.5rem;
 }
 
 .formula-operator {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   align-self: center;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 1.2px;
   color: #c8b28f;
@@ -2184,4 +2186,192 @@ body.theme-bmovie {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.45px;
+}
+
+/* ====================================
+   MOVIE NIGHTS (groups)
+   ==================================== */
+.night-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px;
+  background: linear-gradient(160deg, rgba(28 34 42 / 0.55), rgba(20 25 31 / 0.55));
+  border: 1px solid rgba(255 179 71 / 22%);
+  border-radius: 18px;
+}
+.night-group--ungrouped {
+  border-color: rgba(255 255 255 / 8%);
+  background: rgba(255 255 255 / 1.5%);
+}
+.night-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(255 179 71 / 22%);
+}
+.night-header--ungrouped {
+  border-bottom-color: rgba(255 255 255 / 6%);
+}
+.night-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.night-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #f4f7fb;
+}
+.night-date {
+  font-size: 0.72rem;
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--text-dim);
+  background: rgba(255 255 255 / 4%);
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255 255 255 / 6%);
+  white-space: nowrap;
+}
+.night-winner-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255 215 96 / 0.16), rgba(255 157 29 / 0.06));
+  border: 1px solid rgba(255 215 96 / 32%);
+}
+.night-winner-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.night-winner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.night-winner-label {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #c8b28f;
+  font-weight: 700;
+}
+.night-winner-name {
+  font-size: 0.92rem;
+  color: #ffd884;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.night-winner-final {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+}
+.night-editor {
+  border-top: 1px dashed rgba(255 255 255 / 6%);
+  padding-top: 8px;
+}
+.night-edit-toggle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+  list-style: none;
+}
+.night-edit-toggle::-webkit-details-marker { display: none; }
+.night-edit-toggle::before {
+  content: '\25B8';
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 0.18s ease;
+}
+.night-editor[open] > .night-edit-toggle::before {
+  transform: rotate(90deg);
+}
+.night-edit-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.night-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.night-edit-field label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+}
+.night-edit-field input,
+.night-edit-field select {
+  background: rgba(255 255 255 / 4%);
+  border: 1px solid rgba(255 255 255 / 8%);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+.night-edit-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.night-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.movie-card--night-winner {
+  border-color: rgba(255 215 96 / 65%);
+  box-shadow: 0 0 0 1px rgba(255 215 96 / 35%), 0 12px 30px -16px rgba(255 157 29 / 50%);
+  position: relative;
+  margin-top: 14px;
+}
+.movie-card--night-winner::before {
+  content: "\1F451 Night Winner";
+  position: absolute;
+  top: -12px;
+  left: 12px;
+  background: linear-gradient(135deg, #ffd884, #ff9d1d);
+  color: #2a1900;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px -6px rgba(255 157 29 / 60%);
+  white-space: nowrap;
+}
+.move-night-select {
+  margin-right: auto;
+  background: rgba(255 255 255 / 4%);
+  border: 1px solid rgba(255 255 255 / 12%);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-family: inherit;
+  max-width: 180px;
+  cursor: pointer;
+}
+.move-night-select:hover {
+  border-color: rgba(255 179 71 / 38%);
 }

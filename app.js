@@ -1,6 +1,7 @@
 /* B-Movie Ratings App Logic (with Firebase Firestore sync and Google sign-in) */
 (async function(){
-  const LS_KEY = 'bmovie:data:v5';
+  const LS_KEY = 'bmovie:data:v6';
+  const LS_KEY_V5 = 'bmovie:data:v5';
   const LS_KEY_V4 = 'bmovie:data:v4';
   const LS_KEY_V3 = 'bmovie:data:v3';
   const LS_KEY_V2 = 'bmovie:data:v2';
@@ -233,7 +234,9 @@
   let currentUserProfile = null;
   let firestore = null;
   let moviesCollection = null;
+  let nightsCollection = null;
   let unsubscribeMovies = null;
+  let unsubscribeNights = null;
   let unsubscribeWinner = null;
   let unsubscribeUserProfile = null;
   let unsubscribePendingChoices = null;
@@ -602,8 +605,17 @@
 
     const movie = buildMovieRecord(draft);
     state.movies.push(movie);
+
+    // Auto-group: attach to today's night, creating it if needed.
+    const today = todayDateKey();
+    let night = findNightByDate(today);
+    if(!night){
+      night = createNight({ date: today });
+    }
+    addMovieToNight(movie.id, night.id);
+
     persist();
-    renderMovie(movie, true);
+    persistNights();
     updateScoreTracker();
     updateWinnerDropdowns();
     applyFilters();
@@ -954,15 +966,66 @@
     movie.ratings = movie.ratings && typeof movie.ratings === 'object' ? movie.ratings : {};
     movie.ratingNames = movie.ratingNames && typeof movie.ratingNames === 'object' ? movie.ratingNames : {};
     if(movie.chooserName && !movie.chooser) movie.chooser = movie.chooserName;
+    if(!('nightId' in movie)) movie.nightId = null;
+    if(movie.nightId && typeof movie.nightId !== 'string') movie.nightId = null;
     return movie;
   }
 
+  function ensureNightShape(night){
+    if(!night || typeof night !== 'object') return null;
+    const id = sanitize(night.id || createId());
+    const name = sanitize(night.name || '').trim();
+    const date = sanitize(night.date || '').trim();
+    const movieIds = Array.isArray(night.movieIds)
+      ? night.movieIds.filter(Boolean).map(value => sanitize(String(value)))
+      : [];
+    const winnerOverride = night.winnerOverride ? sanitize(String(night.winnerOverride)) : null;
+    const createdAt = Number(night.createdAt) || Date.now();
+    const updatedAt = Number(night.updatedAt) || createdAt;
+    return { id, name, date, movieIds, winnerOverride, createdAt, updatedAt };
+  }
+
+  function todayDateKey(){
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function defaultNightName(date){
+    return `Movie Night ${date || todayDateKey()}`;
+  }
+
   function normalizeState(value){
-    if(!value?.movies) return { movies: [] };
+    if(!value?.movies) return { movies: [], nights: [] };
     value.movies.forEach(movie => {
       ensureMovieShape(movie);
       delete movie.legacySets;
       delete movie.legacyRatings;
+    });
+    if(!Array.isArray(value.nights)) value.nights = [];
+    value.nights = value.nights.map(ensureNightShape).filter(Boolean);
+
+    // Reconcile cross-references so the two structures cannot drift apart.
+    const movieIdSet = new Set(value.movies.map(m => m.id));
+    const nightIdSet = new Set(value.nights.map(n => n.id));
+    value.nights.forEach(night => {
+      night.movieIds = Array.from(new Set(night.movieIds.filter(id => movieIdSet.has(id))));
+      if(night.winnerOverride && !night.movieIds.includes(night.winnerOverride)){
+        night.winnerOverride = null;
+      }
+    });
+    value.movies.forEach(movie => {
+      if(movie.nightId && !nightIdSet.has(movie.nightId)) movie.nightId = null;
+      if(movie.nightId){
+        const night = value.nights.find(n => n.id === movie.nightId);
+        if(night && !night.movieIds.includes(movie.id)) night.movieIds.push(movie.id);
+      }
+    });
+    // Movies referenced by nights but missing nightId get one assigned (first night wins).
+    value.nights.forEach(night => {
+      night.movieIds.forEach(id => {
+        const movie = value.movies.find(m => m.id === id);
+        if(movie && movie.nightId !== night.id) movie.nightId = night.id;
+      });
     });
     return value;
   }
@@ -1913,6 +1976,18 @@
     } catch {}
 
     try {
+      const v5raw = localStorage.getItem(LS_KEY_V5);
+      if(v5raw){
+        const v5 = JSON.parse(v5raw);
+        if(v5.movies){
+          const migrated = normalizeState({ movies: v5.movies, nights: [] });
+          localStorage.setItem(LS_KEY, JSON.stringify(migrated));
+          return migrated;
+        }
+      }
+    } catch {}
+
+    try {
       const v4raw = localStorage.getItem(LS_KEY_V4);
       if(v4raw){
         const v4 = JSON.parse(v4raw);
@@ -1980,7 +2055,7 @@
       }
     } catch {}
 
-    return { movies: [] };
+    return { movies: [], nights: [] };
   }
 
   function sanitizeForFirestore(movie){
@@ -1995,8 +2070,207 @@
       ratingNames: movie.ratingNames || {},
       chooser: movie.chooser || movie.chooserName || '',
       chooserId: movie.chooserId || null,
-      chooserName: movie.chooserName || movie.chooser || ''
+      chooserName: movie.chooserName || movie.chooser || '',
+      nightId: movie.nightId || null
     };
+  }
+
+  function sanitizeNightForFirestore(night){
+    return {
+      id: night.id,
+      name: night.name || '',
+      date: night.date || '',
+      movieIds: Array.isArray(night.movieIds) ? [...night.movieIds] : [],
+      winnerOverride: night.winnerOverride || null,
+      createdAt: Number(night.createdAt) || Date.now(),
+      updatedAt: Number(night.updatedAt) || Date.now()
+    };
+  }
+
+  // ====== Movie Night CRUD =====================================================
+  function findNightById(id){
+    if(!id) return null;
+    return state.nights.find(n => n.id === id) || null;
+  }
+
+  function findNightByDate(date){
+    if(!date) return null;
+    return state.nights.find(n => n.date === date) || null;
+  }
+
+  function createNight({ date, name, movieIds = [], winnerOverride = null } = {}){
+    const safeDate = (date || todayDateKey()).trim();
+    const safeName = (name || '').trim() || defaultNightName(safeDate);
+    const now = Date.now();
+    const night = ensureNightShape({
+      id: createId(),
+      name: safeName,
+      date: safeDate,
+      movieIds: [...movieIds],
+      winnerOverride,
+      createdAt: now,
+      updatedAt: now
+    });
+    state.nights.push(night);
+    movieIds.forEach(mid => {
+      const m = state.movies.find(item => item.id === mid);
+      if(m) m.nightId = night.id;
+    });
+    return night;
+  }
+
+  function addMovieToNight(movieId, nightId){
+    const movie = state.movies.find(m => m.id === movieId);
+    if(!movie) return;
+    if(movie.nightId && movie.nightId !== nightId){
+      const oldNight = findNightById(movie.nightId);
+      if(oldNight){
+        oldNight.movieIds = oldNight.movieIds.filter(id => id !== movieId);
+        if(oldNight.winnerOverride === movieId) oldNight.winnerOverride = null;
+        oldNight.updatedAt = Date.now();
+      }
+    }
+    movie.nightId = nightId || null;
+    if(nightId){
+      const night = findNightById(nightId);
+      if(night && !night.movieIds.includes(movieId)){
+        night.movieIds.push(movieId);
+        night.updatedAt = Date.now();
+      }
+    }
+  }
+
+  function removeMovieFromNight(movieId){
+    addMovieToNight(movieId, null);
+  }
+
+  function renameNight(nightId, name){
+    const night = findNightById(nightId);
+    if(!night) return;
+    night.name = sanitize(name).trim() || defaultNightName(night.date);
+    night.updatedAt = Date.now();
+  }
+
+  function setNightDate(nightId, date){
+    const night = findNightById(nightId);
+    if(!night) return;
+    const safeDate = sanitize(date).trim();
+    const wasDefaultName = night.name === defaultNightName(night.date);
+    night.date = safeDate;
+    if(wasDefaultName) night.name = defaultNightName(night.date);
+    night.updatedAt = Date.now();
+  }
+
+  function setNightWinnerOverride(nightId, movieId){
+    const night = findNightById(nightId);
+    if(!night) return;
+    night.winnerOverride = movieId && night.movieIds.includes(movieId) ? movieId : null;
+    night.updatedAt = Date.now();
+  }
+
+  function deleteNight(nightId){
+    const night = findNightById(nightId);
+    if(!night) return null;
+    night.movieIds.forEach(mid => {
+      const m = state.movies.find(item => item.id === mid);
+      if(m) m.nightId = null;
+    });
+    state.nights = state.nights.filter(n => n.id !== nightId);
+    return night;
+  }
+
+  function getNightWinner(night){
+    if(!night) return null;
+    const movies = night.movieIds
+      .map(id => state.movies.find(m => m.id === id))
+      .filter(Boolean);
+    if(night.winnerOverride){
+      const overrideMovie = movies.find(m => m.id === night.winnerOverride);
+      if(overrideMovie) return overrideMovie;
+    }
+    let best = null;
+    let bestAbs = -1;
+    let bestRaters = -1;
+    let bestAdded = Infinity;
+    for(const m of movies){
+      const agg = getAggregates(m);
+      if(!agg.raterCount) continue;
+      const abs = Math.abs(agg.avgFinalScore);
+      const raters = agg.raterCount;
+      const added = m.addedAt || 0;
+      const better = (
+        abs > bestAbs ||
+        (abs === bestAbs && raters > bestRaters) ||
+        (abs === bestAbs && raters === bestRaters && added < bestAdded)
+      );
+      if(better){
+        best = m;
+        bestAbs = abs;
+        bestRaters = raters;
+        bestAdded = added;
+      }
+    }
+    return best;
+  }
+
+  function persistNights(){
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    if(!remote.enabled || !nightsCollection) return;
+    state.nights.forEach(night => {
+      remote
+        .setDoc(remote.doc(nightsCollection, night.id), sanitizeNightForFirestore(night))
+        .catch(error => console.warn('[Firebase] night write fail', error));
+    });
+  }
+
+  function deleteNightFromRemote(nightId){
+    if(!remote.enabled || !nightsCollection || !nightId) return;
+    remote.deleteDoc(remote.doc(nightsCollection, nightId)).catch(error => {
+      console.warn('[Firebase] night delete fail', error);
+    });
+  }
+
+  function attachNightsListener(){
+    if(!remote.enabled || !nightsCollection) return;
+    if(unsubscribeNights) unsubscribeNights();
+    unsubscribeNights = remote.onSnapshot(
+      nightsCollection,
+      snapshot => {
+        const remoteNights = [];
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const shaped = ensureNightShape(data);
+          if(shaped) remoteNights.push(shaped);
+        });
+        mergeRemoteNights(remoteNights);
+      },
+      error => console.warn('[Firebase] nights listener error', error)
+    );
+  }
+
+  function mergeRemoteNights(remoteNights){
+    const map = new Map(state.nights.map(n => [n.id, n]));
+    remoteNights.forEach(remoteNight => {
+      const existing = map.get(remoteNight.id);
+      if(!existing || (remoteNight.updatedAt || 0) >= (existing.updatedAt || 0)){
+        map.set(remoteNight.id, remoteNight);
+      }
+    });
+    const remoteIds = new Set(remoteNights.map(n => n.id));
+    // Drop nights that exist locally but the remote no longer reports (only if remote is authoritative).
+    Array.from(map.keys()).forEach(id => {
+      if(!remoteIds.has(id) && remoteNights.length > 0){
+        const local = map.get(id);
+        // Keep local-only nights that were just created (no remote echo yet).
+        if(local && (Date.now() - (local.updatedAt || 0)) > 5000){
+          map.delete(id);
+        }
+      }
+    });
+    state.nights = Array.from(map.values());
+    state = normalizeState(state); // re-reconciles movie.nightId <-> night.movieIds
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    renderAll();
   }
 
   function updateSyncStatus(mode, label){
@@ -2039,6 +2313,7 @@
       const app = initializeApp(window.FIREBASE_CONFIG);
       firestore = getFirestore(app);
       moviesCollection = collection(firestore, 'bmovie_movies');
+      nightsCollection = collection(firestore, 'bmovie_nights');
       remote = { enabled: true, doc, setDoc, deleteDoc, onSnapshot, getDoc, collection };
 
       const auth = getAuth(app);
@@ -2063,6 +2338,7 @@
       updateSyncStatus('remote', 'Live Sync');
       updateAuthPanel();
       attachRemoteListener();
+      attachNightsListener();
       attachWinnerListener();
       await loadRemoteWinner();
 
@@ -2116,9 +2392,8 @@
       }
     });
 
-    state.movies = normalizeState({
-      movies: Array.from(map.values()).sort((a, b) => b.addedAt - a.addedAt)
-    }).movies;
+    state.movies = Array.from(map.values()).sort((a, b) => b.addedAt - a.addedAt);
+    state = normalizeState(state); // reconcile movie.nightId <-> night.movieIds
 
     localStorage.setItem(LS_KEY, JSON.stringify(state));
     renderAll();
@@ -2474,8 +2749,6 @@
   }
 
   function renderAll(){
-    dom.moviesList.innerHTML = '';
-    state.movies.forEach(movie => renderMovie(movie));
     renderPendingChoices();
     updateWinnerDropdowns();
     updateScoreTracker();
@@ -2483,7 +2756,7 @@
     updateAuthPanel();
   }
 
-  function renderMovie(movie, prepend = false){
+  function renderMovie(movie){
     ensureMovieShape(movie);
     const clone = dom.template.content.firstElementChild.cloneNode(true);
     clone.dataset.id = movie.id;
@@ -2514,17 +2787,59 @@
     }
 
     clone.querySelector('.open-rate').addEventListener('click', () => openDialog(movie));
+
+    // Move-to-night control on the card footer.
+    const cardActions = clone.querySelector('.card-actions');
+    if(cardActions){
+      const moveSelect = document.createElement('select');
+      moveSelect.className = 'move-night-select';
+      moveSelect.title = 'Move to night';
+      moveSelect.setAttribute('aria-label', 'Move this movie to a different night');
+      const refreshMoveOptions = () => {
+        const currentNightId = movie.nightId || '';
+        const sortedNights = [...state.nights].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        moveSelect.innerHTML = `
+          <option value="" disabled selected>Move to…</option>
+          <option value="__new__">+ New night (${todayDateKey()})</option>
+          <option value="__none__">— Ungrouped —</option>
+          ${sortedNights.map(n => `<option value="${n.id}"${n.id === currentNightId ? ' disabled' : ''}>${sanitize(n.name)} (${sanitize(n.date)})</option>`).join('')}
+        `;
+      };
+      refreshMoveOptions();
+      moveSelect.addEventListener('change', () => {
+        const val = moveSelect.value;
+        moveSelect.value = '';
+        if(!val) return;
+        if(!requireSignedIn('Please sign in with Google before moving movies.')) return;
+        if(val === '__new__'){
+          const today = todayDateKey();
+          let night = findNightByDate(today);
+          if(!night) night = createNight({ date: today });
+          addMovieToNight(movie.id, night.id);
+        } else if(val === '__none__'){
+          removeMovieFromNight(movie.id);
+        } else {
+          addMovieToNight(movie.id, val);
+        }
+        persist();
+        persistNights();
+        applyFilters();
+      });
+      cardActions.insertBefore(moveSelect, cardActions.firstChild);
+    }
+
     clone.querySelector('.delete-btn').addEventListener('click', () => {
       if(!requireSignedIn('Please sign in with Google before deleting a movie.')) return;
       if(!confirm('Delete this movie?')) return;
+      removeMovieFromNight(movie.id);
       state.movies = state.movies.filter(item => item.id !== movie.id);
       persist();
+      persistNights();
       if(remote.enabled && moviesCollection){
         remote.deleteDoc(remote.doc(moviesCollection, movie.id)).catch(error => {
           console.warn('[Firebase] delete fail', error);
         });
       }
-      clone.remove();
       applyFilters();
       updateWinnerDropdowns();
       updateScoreTracker();
@@ -2533,8 +2848,7 @@
     updateCardScores(movie, clone);
     updateIndividualReviews(movie, clone);
 
-    if(prepend) dom.moviesList.prepend(clone);
-    else dom.moviesList.appendChild(clone);
+    return clone;
   }
 
   function updateMovieCard(id){
@@ -2812,7 +3126,7 @@
   }
 
   function applyFilters(){
-    const sortMode = dom.sort.value;
+    const sortMode = dom.sort.value || 'night-grouped';
     const query = dom.search.value.trim().toLowerCase();
     let movies = [...state.movies];
 
@@ -2823,33 +3137,195 @@
       ));
     }
 
+    let sortFn;
     switch(sortMode){
       case 'title-asc':
-        movies.sort((a, b) => a.title.localeCompare(b.title));
+        sortFn = (a, b) => a.title.localeCompare(b.title);
         break;
       case 'ratings-count-desc':
-        movies.sort((a, b) => getAggregates(b).raterCount - getAggregates(a).raterCount);
+        sortFn = (a, b) => getAggregates(b).raterCount - getAggregates(a).raterCount;
         break;
       case 'total-desc':
-        movies.sort((a, b) => (
+        sortFn = (a, b) => (
           getAggregates(b).avgFinalScore - getAggregates(a).avgFinalScore ||
           getAggregates(b).avgBMovieScore - getAggregates(a).avgBMovieScore
-        ));
+        );
         break;
       case 'added-desc':
+        sortFn = (a, b) => b.addedAt - a.addedAt;
+        break;
+      case 'night-grouped':
       default:
-        movies.sort((a, b) => b.addedAt - a.addedAt);
+        sortFn = (a, b) => b.addedAt - a.addedAt;
         break;
     }
+    movies.sort(sortFn);
 
-    const fragment = document.createDocumentFragment();
-    movies.forEach(movie => {
-      const card = dom.moviesList.querySelector(`.movie-card[data-id="${movie.id}"]`);
-      if(card) fragment.appendChild(card);
-    });
     dom.moviesList.innerHTML = '';
-    dom.moviesList.appendChild(fragment);
+
+    if(sortMode === 'night-grouped'){
+      const byNight = new Map();
+      const ungrouped = [];
+      movies.forEach(movie => {
+        if(movie.nightId && findNightById(movie.nightId)){
+          if(!byNight.has(movie.nightId)) byNight.set(movie.nightId, []);
+          byNight.get(movie.nightId).push(movie);
+        } else {
+          ungrouped.push(movie);
+        }
+      });
+
+      const orderedNights = state.nights
+        .filter(n => byNight.has(n.id))
+        .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt - a.createdAt));
+
+      orderedNights.forEach(night => {
+        dom.moviesList.appendChild(renderNightGroup(night, byNight.get(night.id)));
+      });
+
+      if(ungrouped.length){
+        dom.moviesList.appendChild(renderUngroupedGroup(ungrouped));
+      }
+    } else {
+      movies.forEach(movie => {
+        dom.moviesList.appendChild(renderMovie(movie));
+      });
+    }
+
     dom.moviesList.classList.toggle('no-results', movies.length === 0);
+  }
+
+  function renderNightGroup(night, movies){
+    const wrapper = document.createElement('section');
+    wrapper.className = 'night-group';
+    wrapper.dataset.nightId = night.id;
+
+    const winner = getNightWinner(night);
+    const ratedMovies = movies.filter(m => getAggregates(m).raterCount > 0);
+
+    const header = document.createElement('header');
+    header.className = 'night-header';
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'night-title-row';
+    titleRow.innerHTML = `
+      <h3 class="night-title">${sanitize(night.name)}</h3>
+      <span class="night-date">${sanitize(night.date) || '—'}</span>
+    `;
+    header.appendChild(titleRow);
+
+    const winnerBadge = document.createElement('div');
+    winnerBadge.className = 'night-winner-badge';
+    if(winner){
+      const agg = getAggregates(winner);
+      const finalDisp = Number(displayScore(agg.avgMainstreamScore)) - Number(displayScore(agg.avgBMovieScore));
+      const labelText = night.winnerOverride ? 'Winner (you crowned)' : 'Winner — biggest |Final|';
+      winnerBadge.innerHTML = `
+        <span class="night-winner-icon" aria-hidden="true">👑</span>
+        <span class="night-winner-text">
+          <span class="night-winner-label">${labelText}</span>
+          <strong class="night-winner-name">${sanitize(winner.title)}</strong>
+          <span class="night-winner-final">Final ${finalDisp.toFixed(1)}</span>
+        </span>
+      `;
+    } else {
+      winnerBadge.innerHTML = `
+        <span class="night-winner-icon" aria-hidden="true">⏳</span>
+        <span class="night-winner-text">
+          <span class="night-winner-label">Winner pending</span>
+          <span class="night-winner-final">${ratedMovies.length}/${movies.length} rated</span>
+        </span>
+      `;
+    }
+    header.appendChild(winnerBadge);
+
+    const editor = document.createElement('details');
+    editor.className = 'night-editor';
+    editor.innerHTML = `
+      <summary class="night-edit-toggle">Edit night</summary>
+      <div class="night-edit-body">
+        <div class="night-edit-field">
+          <label>Name</label>
+          <input type="text" class="night-name-input" value="${sanitize(night.name)}" maxlength="80" />
+        </div>
+        <div class="night-edit-field">
+          <label>Date</label>
+          <input type="date" class="night-date-input" value="${sanitize(night.date)}" />
+        </div>
+        <div class="night-edit-field">
+          <label>Crown winner</label>
+          <select class="night-winner-select">
+            <option value="">Auto (largest |Final|)</option>
+            ${movies.map(m => `<option value="${m.id}"${night.winnerOverride === m.id ? ' selected' : ''}>${sanitize(m.title)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="night-edit-actions">
+          <button type="button" class="btn primary small night-save-btn">Save</button>
+          <button type="button" class="btn ghost small night-delete-btn">Delete Night</button>
+        </div>
+      </div>
+    `;
+    header.appendChild(editor);
+
+    editor.querySelector('.night-save-btn')?.addEventListener('click', () => {
+      if(!requireSignedIn('Please sign in with Google before editing nights.')) return;
+      const nameInput = editor.querySelector('.night-name-input');
+      const dateInput = editor.querySelector('.night-date-input');
+      const winnerSelect = editor.querySelector('.night-winner-select');
+      renameNight(night.id, nameInput?.value || '');
+      setNightDate(night.id, dateInput?.value || '');
+      setNightWinnerOverride(night.id, winnerSelect?.value || null);
+      persistNights();
+      applyFilters();
+    });
+    editor.querySelector('.night-delete-btn')?.addEventListener('click', () => {
+      if(!requireSignedIn('Please sign in with Google before deleting nights.')) return;
+      if(!confirm(`Delete "${night.name}"? Movies in it will become ungrouped.`)) return;
+      deleteNight(night.id);
+      persist();
+      persistNights();
+      deleteNightFromRemote(night.id);
+      applyFilters();
+    });
+
+    wrapper.appendChild(header);
+
+    const cards = document.createElement('div');
+    cards.className = 'night-cards';
+    movies.forEach(movie => {
+      const card = renderMovie(movie);
+      if(winner && movie.id === winner.id){
+        card.classList.add('movie-card--night-winner');
+      }
+      cards.appendChild(card);
+    });
+    wrapper.appendChild(cards);
+
+    return wrapper;
+  }
+
+  function renderUngroupedGroup(movies){
+    const wrapper = document.createElement('section');
+    wrapper.className = 'night-group night-group--ungrouped';
+
+    const header = document.createElement('header');
+    header.className = 'night-header night-header--ungrouped';
+    header.innerHTML = `
+      <div class="night-title-row">
+        <h3 class="night-title">Ungrouped</h3>
+        <span class="night-date">No night assigned</span>
+      </div>
+    `;
+    wrapper.appendChild(header);
+
+    const cards = document.createElement('div');
+    cards.className = 'night-cards';
+    movies.forEach(movie => {
+      cards.appendChild(renderMovie(movie));
+    });
+    wrapper.appendChild(cards);
+
+    return wrapper;
   }
 
   function openDialog(movie){
@@ -3038,6 +3514,10 @@
     updateMovieCard(movie.id);
     updateScoreTracker();
     updateWinnerDropdowns();
+    // Refresh night header so the winner badge reflects the new rating.
+    if(movie.nightId && (dom.sort?.value || 'night-grouped') === 'night-grouped'){
+      applyFilters();
+    }
     closeDialog();
   });
 
