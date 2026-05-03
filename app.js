@@ -1123,14 +1123,25 @@
       });
     });
 
-    // Auto-group ungrouped movies to the nearest night within 1 day.
+    // Auto-group ungrouped movies by nearest night within 1 day.
+    // If no night exists yet for that date window, create one on the fly.
     value.movies.forEach(movie => {
       if(movie.nightId) return;
       const movieDate = todayDateKeyFromTime(movie.addedAt);
       const nearbyNight = findNightByNearestDate(movieDate, 1, value.nights);
-      if(!nearbyNight) return;
-      movie.nightId = nearbyNight.id;
-      if(!nearbyNight.movieIds.includes(movie.id)) nearbyNight.movieIds.push(movie.id);
+      const targetNight = nearbyNight || ensureNightShape({
+        id: createId(),
+        name: defaultNightName(movieDate),
+        date: movieDate,
+        theme: '',
+        movieIds: [],
+        winnerOverride: null,
+        createdAt: Number(movie.addedAt) || Date.now(),
+        updatedAt: Number(movie.addedAt) || Date.now()
+      });
+      if(!nearbyNight) value.nights.push(targetNight);
+      movie.nightId = targetNight.id;
+      if(!targetNight.movieIds.includes(movie.id)) targetNight.movieIds.push(movie.id);
     });
 
     return value;
