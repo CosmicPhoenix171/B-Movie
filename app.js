@@ -606,9 +606,9 @@
     const movie = buildMovieRecord(draft);
     state.movies.push(movie);
 
-    // Auto-group: attach to today's night, creating it if needed.
+    // Auto-group: attach to nearest night within 1 day, creating one if needed.
     const today = todayDateKey();
-    let night = findNightByDate(today);
+    let night = findNightByNearestDate(today, 1) || findNightByDate(today);
     if(!night){
       night = createNight({ date: today });
     }
@@ -976,13 +976,14 @@
     const id = sanitize(night.id || createId());
     const name = sanitize(night.name || '').trim();
     const date = sanitize(night.date || '').trim();
+    const theme = sanitize(night.theme || '').trim();
     const movieIds = Array.isArray(night.movieIds)
       ? night.movieIds.filter(Boolean).map(value => sanitize(String(value)))
       : [];
     const winnerOverride = night.winnerOverride ? sanitize(String(night.winnerOverride)) : null;
     const createdAt = Number(night.createdAt) || Date.now();
     const updatedAt = Number(night.updatedAt) || createdAt;
-    return { id, name, date, movieIds, winnerOverride, createdAt, updatedAt };
+    return { id, name, date, theme, movieIds, winnerOverride, createdAt, updatedAt };
   }
 
   function todayDateKey(){
@@ -990,8 +991,102 @@
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
+  function isValidDateKey(value){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const [y, m, d] = value.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.getFullYear() === y && dt.getMonth() === (m - 1) && dt.getDate() === d;
+  }
+
+  function normalizeDateKeyInput(value){
+    const safe = sanitize(value).trim();
+    if(isValidDateKey(safe)) return safe;
+    if(/^\d{2}-\d{2}-\d{2}$/.test(safe)){
+      const [yy, mm, dd] = safe.split('-');
+      const expanded = `20${yy}-${mm}-${dd}`;
+      if(isValidDateKey(expanded)) return expanded;
+    }
+    return null;
+  }
+
+  function formatDateKeyShort(value){
+    if(!isValidDateKey(value)) return sanitize(value || '');
+    return value.slice(2);
+  }
+
+  function promptForNightDate(initialDate = todayDateKey()){
+    const input = prompt(
+      'Pick a date for this movie night (YY-MM-DD or YYYY-MM-DD)',
+      formatDateKeyShort(initialDate)
+    );
+    if(input === null) return null;
+    const safe = normalizeDateKeyInput(input);
+    if(!safe){
+      alert('Please enter a valid date in YY-MM-DD or YYYY-MM-DD format.');
+      return null;
+    }
+    return safe;
+  }
+
   function defaultNightName(date){
     return `Movie Night ${date || todayDateKey()}`;
+  }
+
+  function getMovieNightDate(movie){
+    const night = movie?.nightId ? findNightById(movie.nightId) : null;
+    if(night?.date && isValidDateKey(night.date)) return night.date;
+    if(Number.isFinite(movie?.addedAt)) return todayDateKeyFromTime(movie.addedAt);
+    return '';
+  }
+
+  function todayDateKeyFromTime(ms){
+    const d = new Date(Number(ms) || Date.now());
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function dateKeyToEpochDay(dateKey){
+    if(!isValidDateKey(dateKey)) return null;
+    const [y, m, d] = dateKey.split('-').map(Number);
+    return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+  }
+
+  function findNightByNearestDate(date, dayWindow = 1, nights = state.nights){
+    const targetDay = dateKeyToEpochDay(date);
+    if(targetDay === null) return null;
+    let bestNight = null;
+    let bestDistance = Infinity;
+    nights.forEach(night => {
+      const nightDay = dateKeyToEpochDay(night.date);
+      if(nightDay === null) return;
+      const distance = Math.abs(nightDay - targetDay);
+      if(distance > dayWindow) return;
+      if(distance < bestDistance){
+        bestDistance = distance;
+        bestNight = night;
+      }
+    });
+    return bestNight;
+  }
+
+  function getMovieTheme(movie){
+    const night = movie?.nightId ? findNightById(movie.nightId) : null;
+    if(night?.theme) return night.theme;
+    return '';
+  }
+
+  function buildCardNotesText(movie){
+    const chooserLabel = getChooserLabel(movie);
+    const segments = [];
+    if(chooserLabel) segments.push(`Chosen by: ${chooserLabel}`);
+    if(movie.notes) segments.push(movie.notes);
+
+    const dateKey = getMovieNightDate(movie);
+    if(dateKey) segments.push(`Date: ${formatDateKeyShort(dateKey)}`);
+
+    const theme = getMovieTheme(movie);
+    if(theme) segments.push(`Theme: ${theme}`);
+
+    return segments.join(' • ');
   }
 
   function normalizeState(value){
@@ -1027,6 +1122,17 @@
         if(movie && movie.nightId !== night.id) movie.nightId = night.id;
       });
     });
+
+    // Auto-group ungrouped movies to the nearest night within 1 day.
+    value.movies.forEach(movie => {
+      if(movie.nightId) return;
+      const movieDate = todayDateKeyFromTime(movie.addedAt);
+      const nearbyNight = findNightByNearestDate(movieDate, 1, value.nights);
+      if(!nearbyNight) return;
+      movie.nightId = nearbyNight.id;
+      if(!nearbyNight.movieIds.includes(movie.id)) nearbyNight.movieIds.push(movie.id);
+    });
+
     return value;
   }
 
@@ -2080,6 +2186,7 @@
       id: night.id,
       name: night.name || '',
       date: night.date || '',
+      theme: night.theme || '',
       movieIds: Array.isArray(night.movieIds) ? [...night.movieIds] : [],
       winnerOverride: night.winnerOverride || null,
       createdAt: Number(night.createdAt) || Date.now(),
@@ -2098,14 +2205,16 @@
     return state.nights.find(n => n.date === date) || null;
   }
 
-  function createNight({ date, name, movieIds = [], winnerOverride = null } = {}){
+  function createNight({ date, name, theme, movieIds = [], winnerOverride = null } = {}){
     const safeDate = (date || todayDateKey()).trim();
     const safeName = (name || '').trim() || defaultNightName(safeDate);
+    const safeTheme = sanitize(theme || currentWinner?.nextTheme || '').trim();
     const now = Date.now();
     const night = ensureNightShape({
       id: createId(),
       name: safeName,
       date: safeDate,
+      theme: safeTheme,
       movieIds: [...movieIds],
       winnerOverride,
       createdAt: now,
@@ -2155,6 +2264,7 @@
     const night = findNightById(nightId);
     if(!night) return;
     const safeDate = sanitize(date).trim();
+    if(!isValidDateKey(safeDate)) return;
     const wasDefaultName = night.name === defaultNightName(night.date);
     night.date = safeDate;
     if(wasDefaultName) night.name = defaultNightName(night.date);
@@ -2165,6 +2275,13 @@
     const night = findNightById(nightId);
     if(!night) return;
     night.winnerOverride = movieId && night.movieIds.includes(movieId) ? movieId : null;
+    night.updatedAt = Date.now();
+  }
+
+  function setNightTheme(nightId, theme){
+    const night = findNightById(nightId);
+    if(!night) return;
+    night.theme = sanitize(theme || '').trim();
     night.updatedAt = Date.now();
   }
 
@@ -2756,6 +2873,40 @@
     updateAuthPanel();
   }
 
+  function editNightFromMovie(movie){
+    if(!requireSignedIn('Please sign in with Google before editing nights.')) return;
+    ensureMovieShape(movie);
+
+    const currentNight = movie.nightId ? findNightById(movie.nightId) : null;
+    const baseDate = currentNight?.date || todayDateKeyFromTime(movie.addedAt);
+    const pickedDate = promptForNightDate(baseDate || todayDateKey());
+    if(!pickedDate) return;
+
+    let targetNight = findNightByNearestDate(pickedDate, 1) || findNightByDate(pickedDate);
+    if(!targetNight){
+      targetNight = createNight({
+        date: pickedDate,
+        theme: currentNight?.theme || ''
+      });
+    }
+
+    addMovieToNight(movie.id, targetNight.id);
+
+    const nextTheme = prompt(
+      'Theme for this night (optional). Press Cancel to keep unchanged.',
+      targetNight.theme || ''
+    );
+    if(nextTheme !== null){
+      setNightTheme(targetNight.id, nextTheme);
+    }
+
+    persist();
+    persistNights();
+    applyFilters();
+    updateWinnerDropdowns();
+    updateScoreTracker();
+  }
+
   function renderMovie(movie){
     ensureMovieShape(movie);
     const clone = dom.template.content.firstElementChild.cloneNode(true);
@@ -2764,12 +2915,7 @@
     clone.querySelector('.year').textContent = movie.year || '';
 
     const notesEl = clone.querySelector('.notes');
-    const chooserLabel = getChooserLabel(movie);
-    let notesText = movie.notes || '';
-    if(chooserLabel){
-      notesText = `Chosen by: ${chooserLabel}${movie.notes ? ` • ${movie.notes}` : ''}`;
-    }
-    notesEl.textContent = notesText;
+    notesEl.textContent = buildCardNotesText(movie);
 
     const catRow = clone.querySelector('.score-row.categories');
     for(const cat of CATEGORIES){
@@ -2788,44 +2934,17 @@
 
     clone.querySelector('.open-rate').addEventListener('click', () => openDialog(movie));
 
-    // Move-to-night control on the card footer.
+    // Night edit control on the card footer.
     const cardActions = clone.querySelector('.card-actions');
     if(cardActions){
-      const moveSelect = document.createElement('select');
-      moveSelect.className = 'move-night-select';
-      moveSelect.title = 'Move to night';
-      moveSelect.setAttribute('aria-label', 'Move this movie to a different night');
-      const refreshMoveOptions = () => {
-        const currentNightId = movie.nightId || '';
-        const sortedNights = [...state.nights].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-        moveSelect.innerHTML = `
-          <option value="" disabled selected>Move to…</option>
-          <option value="__new__">+ New night (${todayDateKey()})</option>
-          <option value="__none__">— Ungrouped —</option>
-          ${sortedNights.map(n => `<option value="${n.id}"${n.id === currentNightId ? ' disabled' : ''}>${sanitize(n.name)} (${sanitize(n.date)})</option>`).join('')}
-        `;
-      };
-      refreshMoveOptions();
-      moveSelect.addEventListener('change', () => {
-        const val = moveSelect.value;
-        moveSelect.value = '';
-        if(!val) return;
-        if(!requireSignedIn('Please sign in with Google before moving movies.')) return;
-        if(val === '__new__'){
-          const today = todayDateKey();
-          let night = findNightByDate(today);
-          if(!night) night = createNight({ date: today });
-          addMovieToNight(movie.id, night.id);
-        } else if(val === '__none__'){
-          removeMovieFromNight(movie.id);
-        } else {
-          addMovieToNight(movie.id, val);
-        }
-        persist();
-        persistNights();
-        applyFilters();
-      });
-      cardActions.insertBefore(moveSelect, cardActions.firstChild);
+      const editNightBtn = document.createElement('button');
+      editNightBtn.type = 'button';
+      editNightBtn.className = 'btn ghost small edit-night-btn';
+      editNightBtn.title = 'Edit night date and theme';
+      editNightBtn.setAttribute('aria-label', 'Edit this movie night date and theme');
+      editNightBtn.textContent = 'Edit';
+      editNightBtn.addEventListener('click', () => editNightFromMovie(movie));
+      cardActions.insertBefore(editNightBtn, cardActions.firstChild);
     }
 
     clone.querySelector('.delete-btn').addEventListener('click', () => {
@@ -2857,10 +2976,7 @@
     const card = dom.moviesList.querySelector(`.movie-card[data-id="${id}"]`);
     if(card){
       const notesEl = card.querySelector('.notes');
-      const chooserLabel = getChooserLabel(movie);
-      notesEl.textContent = chooserLabel
-        ? `Chosen by: ${chooserLabel}${movie.notes ? ` • ${movie.notes}` : ''}`
-        : (movie.notes || '');
+      notesEl.textContent = buildCardNotesText(movie);
       updateCardScores(movie, card);
       updateIndividualReviews(movie, card);
     }
@@ -3210,7 +3326,7 @@
     titleRow.className = 'night-title-row';
     titleRow.innerHTML = `
       <h3 class="night-title">${sanitize(night.name)}</h3>
-      <span class="night-date">${sanitize(night.date) || '—'}</span>
+      <span class="night-date">${formatDateKeyShort(night.date) || '—'}</span>
     `;
     header.appendChild(titleRow);
 
@@ -3253,6 +3369,10 @@
           <input type="date" class="night-date-input" value="${sanitize(night.date)}" />
         </div>
         <div class="night-edit-field">
+          <label>Theme</label>
+          <input type="text" class="night-theme-input" value="${sanitize(night.theme || '')}" maxlength="80" placeholder="Optional night theme" />
+        </div>
+        <div class="night-edit-field">
           <label>Crown winner</label>
           <select class="night-winner-select">
             <option value="">Auto (largest |Final|)</option>
@@ -3271,9 +3391,11 @@
       if(!requireSignedIn('Please sign in with Google before editing nights.')) return;
       const nameInput = editor.querySelector('.night-name-input');
       const dateInput = editor.querySelector('.night-date-input');
+      const themeInput = editor.querySelector('.night-theme-input');
       const winnerSelect = editor.querySelector('.night-winner-select');
       renameNight(night.id, nameInput?.value || '');
       setNightDate(night.id, dateInput?.value || '');
+      setNightTheme(night.id, themeInput?.value || '');
       setNightWinnerOverride(night.id, winnerSelect?.value || null);
       persistNights();
       applyFilters();

@@ -1157,6 +1157,52 @@ body {
     linear-gradient(180deg, rgba(18 23 30 / 0.96), rgba(14 19 25 / 0.98)) padding-box,
     linear-gradient(135deg, rgba(255 179 71 / 0.34), rgba(143 193 255 / 0.12), rgba(255 179 71 / 0.24)) border-box;
   box-shadow: inset 0 1px 0 rgba(255 255 255 / 4%);
+  container-type: inline-size;
+}
+
+@container (max-width: 360px){
+  .score-formula-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+    padding: 10px 10px;
+  }
+  .score-formula-panel .formula-operator {
+    display: none;
+  }
+  .score-formula-panel .formula-block {
+    padding: 8px 8px;
+    gap: 4px;
+  }
+  .score-formula-panel .formula-label {
+    font-size: 0;
+    letter-spacing: 0;
+    line-height: 1;
+    min-height: 0.78rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .score-formula-panel .formula-block-mainstream .formula-label::before {
+    content: 'Mainstream';
+    font-size: 0.52rem;
+    letter-spacing: 0.32px;
+  }
+  .score-formula-panel .formula-block-bmovie .formula-label::before {
+    content: 'B-Movie';
+    font-size: 0.52rem;
+    letter-spacing: 0.32px;
+  }
+  .score-formula-panel .formula-block-final .formula-label::before {
+    content: 'Final';
+    font-size: 0.52rem;
+    letter-spacing: 0.32px;
+  }
+  .score-formula-panel .formula-value {
+    font-size: 1.05rem;
+  }
+  .score-formula-panel .formula-block-final .formula-value {
+    font-size: 1.2rem;
+  }
 }
 
 .formula-block {
@@ -1449,6 +1495,9 @@ body {
 
 .card-actions {
   display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   justify-content: flex-end;
   margin-top: 14px;
   padding-top: 14px;
@@ -2196,10 +2245,23 @@ body.theme-bmovie {
   flex-direction: column;
   gap: 12px;
   margin-bottom: 18px;
-  padding: 12px;
+  padding: 10px 6px 12px;
   background: linear-gradient(160deg, rgba(28 34 42 / 0.55), rgba(20 25 31 / 0.55));
   border: 1px solid rgba(255 179 71 / 22%);
   border-radius: 18px;
+  container-type: inline-size;
+}
+@container (min-width: 520px){
+  .night-group { padding: 12px 14px 14px; }
+}
+.night-header {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.night-cards > .movie-card {
+  /* Cards inside a night should still feel full-width; no extra horizontal squeeze. */
+  margin-left: 0;
+  margin-right: 0;
 }
 .night-group--ungrouped {
   border-color: rgba(255 255 255 / 8%);
@@ -2360,18 +2422,24 @@ body.theme-bmovie {
   box-shadow: 0 4px 12px -6px rgba(255 157 29 / 60%);
   white-space: nowrap;
 }
-.move-night-select {
-  margin-right: auto;
+.edit-night-btn {
+  margin-right: 0;
+  flex: 0 0 auto;
+  min-width: auto;
+  justify-content: center;
   background: rgba(255 255 255 / 4%);
   border: 1px solid rgba(255 255 255 / 12%);
   color: var(--text);
-  padding: 6px 8px;
+  padding: 6px 12px;
   border-radius: 8px;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
+  line-height: 1.1;
   font-family: inherit;
-  max-width: 180px;
+  max-width: none;
+  min-height: 0;
   cursor: pointer;
 }
-.move-night-select:hover {
+.edit-night-btn:hover,
+.edit-night-btn:focus-visible {
   border-color: rgba(255 179 71 / 38%);
 }
