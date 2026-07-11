@@ -1,11 +1,5 @@
 /* B-Movie Ratings App Logic (with Firebase Firestore sync and Google sign-in) */
 (async function(){
-  const LS_KEY = 'bmovie:data:v6';
-  const LS_KEY_V5 = 'bmovie:data:v5';
-  const LS_KEY_V4 = 'bmovie:data:v4';
-  const LS_KEY_V3 = 'bmovie:data:v3';
-  const LS_KEY_V2 = 'bmovie:data:v2';
-  const PENDING_CHOICES_PREFIX = 'bmovie:pending:v1:';
 
   const CATEGORIES = [
     {
@@ -335,10 +329,6 @@
     return currentUser?.uid || '';
   }
 
-  function getProfileStorageKey(uid){
-    return `bmovie:user-profile:${uid}`;
-  }
-
   function getDefaultCurrentUserName(){
     return sanitize(currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Google User');
   }
@@ -350,10 +340,6 @@
   function createId(){
     if(globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
     return Math.random().toString(36).slice(2, 11);
-  }
-
-  function getPendingChoicesStorageKey(uid){
-    return `${PENDING_CHOICES_PREFIX}${uid}`;
   }
 
   function getPendingChoicesUpdatedAt(profile){
@@ -384,16 +370,7 @@
   }
 
   function writePendingChoicesRecord(uid, choices, updatedAt){
-    if(!uid) return;
-    try {
-      localStorage.setItem(
-        getPendingChoicesStorageKey(uid),
-        JSON.stringify({
-          choices: normalizePendingChoicesList(choices),
-          updatedAt: Number(updatedAt) || 0
-        })
-      );
-    } catch {}
+    // No local persistence: pending choices live only in Firebase.
   }
 
   function getPendingChoicesRemoteRecord(value){
@@ -451,26 +428,13 @@
   }
 
   function readPendingChoices(uid){
-    if(!uid) return [];
-    try {
-      const raw = localStorage.getItem(getPendingChoicesStorageKey(uid));
-      if(!raw) return [];
-      const parsed = JSON.parse(raw);
-      return normalizePendingChoicesRecord(parsed).choices;
-    } catch {
-      return [];
-    }
+    // No local persistence: pending choices come from Firebase.
+    return [];
   }
 
   function readPendingChoicesRecord(uid){
-    if(!uid) return { choices: [], updatedAt: 0 };
-    try {
-      const raw = localStorage.getItem(getPendingChoicesStorageKey(uid));
-      if(!raw) return { choices: [], updatedAt: 0 };
-      return normalizePendingChoicesRecord(JSON.parse(raw));
-    } catch {
-      return { choices: [], updatedAt: 0 };
-    }
+    // No local persistence: pending choices come from Firebase.
+    return { choices: [], updatedAt: 0 };
   }
 
   function savePendingChoices(){
@@ -1367,18 +1331,12 @@
   }
 
   function readStoredUserProfile(uid){
-    try {
-      const raw = localStorage.getItem(getProfileStorageKey(uid));
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+    // No local persistence: the user profile comes from Firebase.
+    return null;
   }
 
   function storeUserProfile(uid, profile){
-    try {
-      localStorage.setItem(getProfileStorageKey(uid), JSON.stringify(profile));
-    } catch {}
+    // No local persistence: the user profile lives only in Firebase.
   }
 
   function getProfileUpdatedAt(profile){
@@ -1635,7 +1593,6 @@
 
     if(moviesChanged) persist();
     if(winnerChanged){
-      localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
       if(remote.enabled && firestore) saveWinnerToFirebase(currentWinner);
     }
   }
@@ -2024,7 +1981,6 @@
     persist();
 
     if(winnerChanged){
-      localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
       if(remote.enabled && firestore) saveWinnerToFirebase(currentWinner);
     }
 
@@ -2084,94 +2040,8 @@
   }
 
   function loadState(){
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      if(raw){
-        const parsed = JSON.parse(raw);
-        if(parsed.movies) return normalizeState(parsed);
-      }
-    } catch {}
-
-    try {
-      const v5raw = localStorage.getItem(LS_KEY_V5);
-      if(v5raw){
-        const v5 = JSON.parse(v5raw);
-        if(v5.movies){
-          const migrated = normalizeState({ movies: v5.movies, nights: [] });
-          localStorage.setItem(LS_KEY, JSON.stringify(migrated));
-          return migrated;
-        }
-      }
-    } catch {}
-
-    try {
-      const v4raw = localStorage.getItem(LS_KEY_V4);
-      if(v4raw){
-        const v4 = JSON.parse(v4raw);
-        if(v4.movies){
-          v4.movies.forEach(m => {
-            m.ratings = {};
-            delete m.legacySets;
-            delete m.legacyRatings;
-          });
-          const migrated = normalizeState({ movies: v4.movies });
-          localStorage.setItem(LS_KEY, JSON.stringify(migrated));
-          return migrated;
-        }
-      }
-    } catch {}
-
-    try {
-      const v3raw = localStorage.getItem(LS_KEY_V3);
-      if(v3raw){
-        const v3 = JSON.parse(v3raw);
-        if(v3.movies){
-          v3.movies.forEach(m => {
-            m.ratings = {};
-            delete m.legacySets;
-            delete m.legacyRatings;
-          });
-          const migrated = normalizeState({ movies: v3.movies });
-          localStorage.setItem(LS_KEY, JSON.stringify(migrated));
-          return migrated;
-        }
-      }
-    } catch {}
-
-    try {
-      const v2raw = localStorage.getItem(LS_KEY_V2);
-      if(v2raw){
-        const v2 = JSON.parse(v2raw);
-        if(v2.movies){
-          v2.movies.forEach(m => {
-            m.ratings = {};
-            delete m.legacySets;
-            delete m.legacyRatings;
-          });
-          const migrated = normalizeState({ movies: v2.movies });
-          localStorage.setItem(LS_KEY, JSON.stringify(migrated));
-          return migrated;
-        }
-      }
-    } catch {}
-
-    try {
-      const v1raw = localStorage.getItem('bmovie:data:v1');
-      if(v1raw){
-        const v1 = JSON.parse(v1raw);
-        if(v1.movies){
-          v1.movies.forEach(m => {
-            m.ratings = {};
-            delete m.legacySets;
-            delete m.legacyRatings;
-          });
-          const migrated = normalizeState({ movies: v1.movies });
-          localStorage.setItem(LS_KEY, JSON.stringify(migrated));
-          return migrated;
-        }
-      }
-    } catch {}
-
+    // Firebase is the single source of truth. Start empty and let the
+    // Firestore listeners populate movies/nights in real time.
     return { movies: [], nights: [] };
   }
 
@@ -2342,7 +2212,6 @@
   }
 
   function persistNights(){
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
     if(!remote.enabled || !nightsCollection) return;
     state.nights.forEach(night => {
       remote
@@ -2397,7 +2266,6 @@
     });
     state.nights = Array.from(map.values());
     state = normalizeState(state); // re-reconciles movie.nightId <-> night.movieIds
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
     renderAll();
   }
 
@@ -2487,7 +2355,7 @@
       remote.enabled = false;
       authApi.status = 'disabled';
       authApi.disabledReason = humanizeAuthError(error);
-      updateSyncStatus('error', 'Local Only');
+      updateSyncStatus('error', 'Disconnected');
       updateAuthPanel();
     }
   }
@@ -2510,37 +2378,17 @@
   }
 
   function mergeRemoteState(remoteMovies){
-    const map = new Map(state.movies.map(movie => [movie.id, ensureMovieShape(movie)]));
-    remoteMovies.forEach(remoteMovie => {
-      const existing = map.get(remoteMovie.id);
-      if(existing){
-        map.set(remoteMovie.id, ensureMovieShape({ ...existing, ...remoteMovie }));
-      } else {
-        map.set(remoteMovie.id, ensureMovieShape(remoteMovie));
-      }
-    });
-
-    const remoteIds = new Set(remoteMovies.map(m => m.id));
-    // Drop movies that exist locally but the remote no longer reports (e.g. deleted on another device).
-    Array.from(map.keys()).forEach(id => {
-      if(!remoteIds.has(id) && remoteMovies.length > 0){
-        const local = map.get(id);
-        // Keep local-only movies that were just created (no remote echo yet).
-        if(local && (Date.now() - (local.addedAt || 0)) > 5000){
-          map.delete(id);
-        }
-      }
-    });
-
-    state.movies = Array.from(map.values()).sort((a, b) => b.addedAt - a.addedAt);
+    // Firebase is authoritative: the snapshot is the complete set of movies.
+    // Firestore latency compensation echoes local writes immediately, so
+    // optimistic adds/edits still appear without any local persistence.
+    state.movies = remoteMovies
+      .map(ensureMovieShape)
+      .sort((a, b) => b.addedAt - a.addedAt);
     state = normalizeState(state); // reconcile movie.nightId <-> night.movieIds
-
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
     renderAll();
   }
 
   function persist(){
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
     if(!remote.enabled || !moviesCollection) return;
     state.movies.forEach(movie => {
       remote
@@ -2610,7 +2458,6 @@
     };
 
     displayWinner();
-    localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
     if(remote.enabled && firestore) saveWinnerToFirebase(currentWinner);
   }
 
@@ -2624,7 +2471,6 @@
     if(dom.editRule1) dom.editRule1.value = '';
     if(dom.editRule2) dom.editRule2.value = '';
     if(dom.editRule3) dom.editRule3.value = '';
-    localStorage.removeItem('bmovie:winner');
     if(remote.enabled && firestore) clearWinnerFromFirebase();
   }
 
@@ -2683,17 +2529,8 @@
   }
 
   function loadWinner(){
-    try {
-      const stored = localStorage.getItem('bmovie:winner');
-      if(stored){
-        currentWinner = JSON.parse(stored);
-        currentWinner.nextRules = normalizeWinnerRules(currentWinner);
-        delete currentWinner.nextRuleId;
-        displayWinner();
-      }
-    } catch (error) {
-      console.warn('Failed to load winner:', error);
-    }
+    // No-op: the current winner is loaded from Firebase via loadRemoteWinner()
+    // and kept in sync in real time by attachWinnerListener().
   }
 
   async function saveWinnerToFirebase(winner){
@@ -2726,7 +2563,6 @@
         currentWinner = docSnap.data();
         currentWinner.nextRules = normalizeWinnerRules(currentWinner);
         delete currentWinner.nextRuleId;
-        localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
         displayWinner();
       }
     } catch (error) {
@@ -2747,7 +2583,6 @@
             currentWinner = docSnap.data();
             currentWinner.nextRules = normalizeWinnerRules(currentWinner);
             delete currentWinner.nextRuleId;
-            localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
             displayWinner();
             return;
           }
@@ -2762,7 +2597,6 @@
             if(dom.editRule1) dom.editRule1.value = '';
             if(dom.editRule2) dom.editRule2.value = '';
             if(dom.editRule3) dom.editRule3.value = '';
-            localStorage.removeItem('bmovie:winner');
           }
         },
         error => console.warn('[Firebase] Winner listener error:', error)
@@ -3630,7 +3464,6 @@
     displayWinner();
     if(dom.winnerEditorDropdown) dom.winnerEditorDropdown.open = false;
 
-    localStorage.setItem('bmovie:winner', JSON.stringify(currentWinner));
     if(remote.enabled && firestore) saveWinnerToFirebase(currentWinner);
   });
 
@@ -3759,13 +3592,12 @@
 
   generateCategoryGrid();
   initializeMergeDialog();
-  loadWinner();
   renderAll();
   updateAuthPanel();
   await initFirebase();
 
   if(!remote.enabled){
-    updateSyncStatus('local', 'Local Only');
+    updateSyncStatus('error', 'Disconnected');
     debugLocalReason();
   }
 })();
