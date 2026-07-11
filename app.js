@@ -2266,7 +2266,7 @@
     });
     state.nights = Array.from(map.values());
     state = normalizeState(state); // re-reconciles movie.nightId <-> night.movieIds
-    renderAll();
+    scheduleRender();
   }
 
   function updateSyncStatus(mode, label){
@@ -2385,7 +2385,7 @@
       .map(ensureMovieShape)
       .sort((a, b) => b.addedAt - a.addedAt);
     state = normalizeState(state); // reconcile movie.nightId <-> night.movieIds
-    renderAll();
+    scheduleRender();
   }
 
   function persist(){
@@ -2730,6 +2730,18 @@
     updateAuthPanel();
   }
 
+  // Coalesce bursts of snapshot-driven renders (e.g. multiple Firestore writes
+  // echoing back) into a single repaint so the list doesn't flicker.
+  let renderScheduled = false;
+  function scheduleRender(){
+    if(renderScheduled) return;
+    renderScheduled = true;
+    requestAnimationFrame(() => {
+      renderScheduled = false;
+      renderAll();
+    });
+  }
+
   function editNightFromMovie(movie){
     if(!requireSignedIn('Please sign in with Google before editing nights.')) return;
     ensureMovieShape(movie);
@@ -2809,7 +2821,9 @@
       if(!confirm('Delete this movie?')) return;
       removeMovieFromNight(movie.id);
       state.movies = state.movies.filter(item => item.id !== movie.id);
-      persist();
+      // Only the removed movie and its night changed. Deleting the doc and
+      // persisting the night is enough; rewriting every movie would cause a
+      // burst of snapshot echoes and make the list flicker.
       persistNights();
       if(remote.enabled && moviesCollection){
         remote.deleteDoc(remote.doc(moviesCollection, movie.id)).catch(error => {
