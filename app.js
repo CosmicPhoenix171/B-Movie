@@ -2520,6 +2520,18 @@
       }
     });
 
+    const remoteIds = new Set(remoteMovies.map(m => m.id));
+    // Drop movies that exist locally but the remote no longer reports (e.g. deleted on another device).
+    Array.from(map.keys()).forEach(id => {
+      if(!remoteIds.has(id) && remoteMovies.length > 0){
+        const local = map.get(id);
+        // Keep local-only movies that were just created (no remote echo yet).
+        if(local && (Date.now() - (local.addedAt || 0)) > 5000){
+          map.delete(id);
+        }
+      }
+    });
+
     state.movies = Array.from(map.values()).sort((a, b) => b.addedAt - a.addedAt);
     state = normalizeState(state); // reconcile movie.nightId <-> night.movieIds
 
