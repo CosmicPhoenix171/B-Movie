@@ -2867,63 +2867,41 @@
   }
 
   function updateCardScores(movie, card){
-    const actorKey = getCurrentUserKey();
-    const userHasRated = !!(actorKey && movie.ratings?.[actorKey]);
     const aggregates = getAggregates(movie);
     const raterCount = aggregates.raterCount;
-    const lockNeeded = raterCount > 0 && !userHasRated;
 
     for(const cat of CATEGORIES){
       const badge = card.querySelector(`.cat-badge[data-cat="${cat.key}"]`);
       if(!badge) continue;
       const valueEl = badge.querySelector('.score-chip-value');
-      if(lockNeeded){
-        if(valueEl) valueEl.textContent = '?';
-        badge.title = `${cat.label} (locked)`;
-        badge.dataset.empty = 'true';
-        badge.dataset.locked = 'true';
-        badge.dataset.group = cat.scoreGroup || 'neutral';
-        badge.className = 'cat-badge score-chip score-chip-neutral';
-        badge.setAttribute('aria-label', `${cat.label} score locked until you rate`);
-      } else {
-        const avg = aggregates.categoryAverages[cat.key];
-        const scoreGroup = getScoreChipGroup(avg, cat.scoreGroup);
-        if(valueEl) valueEl.textContent = Number.isFinite(avg) ? displayScore(avg) : '–';
-        badge.title = `${cat.label} • ${getScoreGroupLabel(scoreGroup)} group`;
-        badge.dataset.empty = Number.isFinite(avg) ? 'false' : 'true';
-        badge.dataset.locked = 'false';
-        badge.dataset.group = scoreGroup;
-        badge.className = `cat-badge score-chip score-chip-${scoreGroup}`;
-        badge.setAttribute(
-          'aria-label',
-          Number.isFinite(avg)
-            ? `${cat.label} ${displayScore(avg)} in the ${getScoreGroupLabel(scoreGroup)} group`
-            : `${cat.label} score not rated yet`
-        );
-      }
+      const avg = aggregates.categoryAverages[cat.key];
+      const scoreGroup = getScoreChipGroup(avg, cat.scoreGroup);
+      if(valueEl) valueEl.textContent = Number.isFinite(avg) ? displayScore(avg) : '–';
+      badge.title = `${cat.label} • ${getScoreGroupLabel(scoreGroup)} group`;
+      badge.dataset.empty = Number.isFinite(avg) ? 'false' : 'true';
+      badge.dataset.locked = 'false';
+      badge.dataset.group = scoreGroup;
+      badge.className = `cat-badge score-chip score-chip-${scoreGroup}`;
+      badge.setAttribute(
+        'aria-label',
+        Number.isFinite(avg)
+          ? `${cat.label} ${displayScore(avg)} in the ${getScoreGroupLabel(scoreGroup)} group`
+          : `${cat.label} score not rated yet`
+      );
     }
 
     for(const cat of BONUS_CATEGORIES){
       const badge = card.querySelector(`.cat-badge[data-cat="${cat.key}"]`);
       if(!badge) continue;
       const valueEl = badge.querySelector('.score-chip-value');
-      if(lockNeeded){
-        if(valueEl) valueEl.textContent = '?';
-        badge.title = `${cat.label} (bonus - locked)`;
-        badge.dataset.empty = 'true';
-        badge.dataset.locked = 'true';
-        badge.dataset.group = cat.scoreGroup || 'neutral';
-        badge.className = 'cat-badge score-chip score-chip-neutral bonus';
-      } else {
-        const avg = aggregates.bonusAverages[cat.key];
-        const scoreGroup = getScoreChipGroup(avg, cat.scoreGroup);
-        if(valueEl) valueEl.textContent = Number.isFinite(avg) ? displayScore(avg) : '–';
-        badge.title = `${cat.label} • ${getScoreGroupLabel(scoreGroup)} group (bonus - not counted in total)`;
-        badge.dataset.empty = Number.isFinite(avg) ? 'false' : 'true';
-        badge.dataset.locked = 'false';
-        badge.dataset.group = scoreGroup;
-        badge.className = `cat-badge score-chip score-chip-${scoreGroup} bonus`;
-      }
+      const avg = aggregates.bonusAverages[cat.key];
+      const scoreGroup = getScoreChipGroup(avg, cat.scoreGroup);
+      if(valueEl) valueEl.textContent = Number.isFinite(avg) ? displayScore(avg) : '–';
+      badge.title = `${cat.label} • ${getScoreGroupLabel(scoreGroup)} group (bonus - not counted in total)`;
+      badge.dataset.empty = Number.isFinite(avg) ? 'false' : 'true';
+      badge.dataset.locked = 'false';
+      badge.dataset.group = scoreGroup;
+      badge.className = `cat-badge score-chip score-chip-${scoreGroup} bonus`;
     }
 
     const bMovieEl = card.querySelector('.bmovie-val');
@@ -2939,14 +2917,7 @@
       finalBlock.classList.remove('is-mainstream', 'is-bmovie', 'is-neutral');
     }
 
-    if(lockNeeded){
-      if(bMovieEl) bMovieEl.textContent = '?';
-      if(mainstreamEl) mainstreamEl.textContent = '?';
-      if(finalEl) finalEl.textContent = '?';
-      if(finalBlock) finalBlock.classList.add('is-neutral');
-      raterEl.textContent = '(hidden)';
-      if(cardTier) cardTier.style.display = 'none';
-    } else {
+    {
       const bMovieTotal = raterCount ? Number(displayScore(aggregates.avgBMovieScore)) : 0;
       const mainstreamTotal = raterCount ? Number(displayScore(aggregates.avgMainstreamScore)) : 0;
       const finalScore = aggregates.avgFinalScore;
@@ -2974,16 +2945,7 @@
 
     const scoresWrap = card.querySelector('.scores-wrap');
     let lockMsg = scoresWrap.querySelector('.locked-msg');
-    if(lockNeeded){
-      if(!lockMsg){
-        lockMsg = document.createElement('div');
-        lockMsg.className = 'locked-msg';
-        scoresWrap.appendChild(lockMsg);
-      }
-      lockMsg.innerHTML = 'Ratings hidden until <strong>you rate</strong> this movie.';
-    } else if(lockMsg){
-      lockMsg.remove();
-    }
+    if(lockMsg) lockMsg.remove();
   }
 
   function updateIndividualReviews(movie, card){
@@ -3010,18 +2972,10 @@
     const ratings = movie.ratings || {};
     const usernames = Object.keys(ratings);
     const actorKey = getCurrentUserKey();
-    const userHasRated = !!(actorKey && ratings[actorKey]);
 
     if(usernames.length === 0){
       reviewsList.innerHTML = '<p class="no-reviews">No reviews yet</p>';
       reviewsToggle.textContent = 'Individual Reviews';
-      return;
-    }
-
-    if(!userHasRated){
-      reviewsToggle.textContent = 'Individual Reviews (locked)';
-      reviewsList.innerHTML = '<p class="no-reviews">Rate this movie to reveal other reviewers.</p>';
-      details.removeAttribute('open');
       return;
     }
 
