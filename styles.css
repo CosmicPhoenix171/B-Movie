@@ -1074,14 +1074,31 @@ body {
 .movie-date::before { content: 'Date '; color: #ffce4f; }
 .movie-chooser { color: #b9d6f5; }
 .movie-quote {
-  margin: 8px 0 0;
-  font-size: 0.78rem;
-  color: var(--text-dim);
-  line-height: 1.35;
+  position: relative;
+  margin: 10px 0 0;
+  padding: 8px 10px 8px 28px;
+  border-left: 3px solid #ffce4f;
+  border-radius: 0 8px 8px 0;
+  background: linear-gradient(90deg, rgba(255 206 79 / 11%), rgba(255 206 79 / 2%));
+  color: #ffe4a3;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.8rem;
+  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.movie-quote::before {
+  content: '“';
+  position: absolute;
+  left: 9px;
+  top: 3px;
+  color: #ffce4f;
+  font-family: Georgia, serif;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.movie-quote:empty { display: none; }
 .movie-summary-score {
   display: flex;
   flex: 0 0 86px;
