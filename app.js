@@ -1169,7 +1169,7 @@
             : 'neutral';
 
     return {
-      finalScore: category === 'mainstream' ? -combinedScore : combinedScore,
+      finalScore: combinedScore,
       category
     };
   }
@@ -1183,6 +1183,11 @@
   // Movie cards display clean magnitudes while the saved signed values still drive totals.
   function displayScore(value){
     return Math.abs(Number(value) || 0).toFixed(1);
+  }
+
+  function displayCategoryScore(value){
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue.toFixed(1) : '–';
   }
 
   function getScoreChipGroup(value, fallbackGroup = 'neutral'){
@@ -2910,7 +2915,7 @@
       const valueEl = badge.querySelector('.score-chip-value');
       const avg = aggregates.categoryAverages[cat.key];
       const scoreGroup = getScoreChipGroup(avg, cat.scoreGroup);
-      if(valueEl) valueEl.textContent = Number.isFinite(avg) ? displayScore(avg) : '–';
+      if(valueEl) valueEl.textContent = displayCategoryScore(avg);
       badge.title = `${cat.label} • ${getScoreGroupLabel(scoreGroup)} group`;
       badge.dataset.empty = Number.isFinite(avg) ? 'false' : 'true';
       badge.dataset.locked = 'false';
@@ -2919,7 +2924,7 @@
       badge.setAttribute(
         'aria-label',
         Number.isFinite(avg)
-          ? `${cat.label} ${displayScore(avg)} in the ${getScoreGroupLabel(scoreGroup)} group`
+          ? `${cat.label} ${displayCategoryScore(avg)} in the ${getScoreGroupLabel(scoreGroup)} group`
           : `${cat.label} score not rated yet`
       );
     }
@@ -2930,7 +2935,7 @@
       const valueEl = badge.querySelector('.score-chip-value');
       const avg = aggregates.bonusAverages[cat.key];
       const scoreGroup = getScoreChipGroup(avg, cat.scoreGroup);
-      if(valueEl) valueEl.textContent = Number.isFinite(avg) ? displayScore(avg) : '–';
+      if(valueEl) valueEl.textContent = displayCategoryScore(avg);
       badge.title = `${cat.label} • ${getScoreGroupLabel(scoreGroup)} group (bonus - not counted in total)`;
       badge.dataset.empty = Number.isFinite(avg) ? 'false' : 'true';
       badge.dataset.locked = 'false';
@@ -2960,14 +2965,17 @@
       if(mainstreamEl) mainstreamEl.textContent = mainstreamTotal.toFixed(1);
       if(finalEl) finalEl.textContent = finalScore.toFixed(1);
       if(finalBlock){
-        if(finalScore < 0) finalBlock.classList.add('is-mainstream');
-        else if(finalScore > 0) finalBlock.classList.add('is-bmovie');
+        if(aggregates.representativeCategory === 'mainstream') finalBlock.classList.add('is-mainstream');
+        else if(aggregates.representativeCategory === 'bmovie') finalBlock.classList.add('is-bmovie');
         else finalBlock.classList.add('is-neutral');
       }
       raterEl.textContent = raterCount ? `(${raterCount} rater${raterCount === 1 ? '' : 's'})` : '';
 
       if(cardTier && tierEmoji && tierText && raterCount > 0){
-        const tier = getTrashTier(Math.round(aggregates.avgFinalScore));
+        const tierScore = aggregates.representativeCategory === 'mainstream'
+          ? -Math.abs(aggregates.avgFinalScore)
+          : aggregates.avgFinalScore;
+        const tier = getTrashTier(Math.round(tierScore));
         tierEmoji.textContent = tier.emoji;
         tierText.textContent = tier.label;
         tierText.style.color = tier.color;
@@ -3042,7 +3050,7 @@
         if(score !== undefined && score !== null){
           const level = cat.levels[score + 5] || '';
           const scoreGroup = getScoreChipGroup(score, cat.scoreGroup);
-          reviewHTML += `<span class="score-item score-item-${scoreGroup}" title="${level}" aria-label="${cat.label} ${displayScore(score)} in the ${getScoreGroupLabel(scoreGroup)} group"><span class="score-item-icon" aria-hidden="true">${cat.icon}</span><span class="score-item-value">${displayScore(score)}</span></span>`;
+          reviewHTML += `<span class="score-item score-item-${scoreGroup}" title="${level}" aria-label="${cat.label} ${displayCategoryScore(score)} in the ${getScoreGroupLabel(scoreGroup)} group"><span class="score-item-icon" aria-hidden="true">${cat.icon}</span><span class="score-item-value">${displayCategoryScore(score)}</span></span>`;
         }
       });
 
@@ -3051,7 +3059,7 @@
         if(score !== undefined && score !== null){
           const level = cat.levels[score + 5] || '';
           const scoreGroup = getScoreChipGroup(score, cat.scoreGroup);
-          reviewHTML += `<span class="score-item score-item-${scoreGroup} bonus" title="${level}" aria-label="${cat.label} ${displayScore(score)} in the ${getScoreGroupLabel(scoreGroup)} group"><span class="score-item-icon" aria-hidden="true">${cat.icon}</span><span class="score-item-value">${displayScore(score)}</span></span>`;
+          reviewHTML += `<span class="score-item score-item-${scoreGroup} bonus" title="${level}" aria-label="${cat.label} ${displayCategoryScore(score)} in the ${getScoreGroupLabel(scoreGroup)} group"><span class="score-item-icon" aria-hidden="true">${cat.icon}</span><span class="score-item-value">${displayCategoryScore(score)}</span></span>`;
         }
       });
 
@@ -3081,17 +3089,22 @@
     let mainstreamVoteCount = 0;
     const sums = {};
     const categoryVoteCounts = {};
+    const categorySideVotes = {};
     CATEGORIES.forEach(cat => {
       sums[cat.key] = 0;
       categoryVoteCounts[cat.key] = 0;
+      categorySideVotes[cat.key] = { mainstream: 0, bmovie: 0 };
     });
 
     userEntries.forEach(entry => {
       CATEGORIES.forEach(cat => {
         const value = Number(entry[cat.key]);
         if(!isNaN(value)){
-          sums[cat.key] += value;
-          if(value !== 0) categoryVoteCounts[cat.key] += 1;
+          if(value !== 0){
+            sums[cat.key] += Math.abs(value);
+            categoryVoteCounts[cat.key] += 1;
+            categorySideVotes[cat.key][value < 0 ? 'mainstream' : 'bmovie'] += 1;
+          }
         }
       });
       const totals = getRatingTotals(entry);
@@ -3102,10 +3115,17 @@
     });
 
     const categoryAverages = {};
+    const categoryGroups = {};
     CATEGORIES.forEach(cat => {
       categoryAverages[cat.key] = categoryVoteCounts[cat.key]
         ? sums[cat.key] / categoryVoteCounts[cat.key]
         : NaN;
+      const sideVotes = categorySideVotes[cat.key];
+      categoryGroups[cat.key] = sideVotes.mainstream > sideVotes.bmovie
+        ? 'mainstream'
+        : sideVotes.bmovie > sideVotes.mainstream
+          ? 'bmovie'
+          : 'neutral';
     });
 
     const bonusSums = {};
@@ -3145,6 +3165,7 @@
     return {
       raterCount,
       categoryAverages,
+      categoryGroups,
       bonusAverages,
       avgBMovieScore,
       avgMainstreamScore,
