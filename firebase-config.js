@@ -20,4 +20,4 @@ window.FIREBASE_ENABLED = true;
 window.TMDB_API_KEY = "69b11e9a2f17411f1f62ea39049c1346";
 
 // Optional: TMDB v4 Read Access Token (Bearer). If present, app will use this first.
-window.TMDB_READ_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2OWIxMWU5YTJmMTc0MTFmMWY2MmVhMzkwNDljMTM0NiIsIm5iZiI6MTc3NjYyMTg0Mi45NjIsInN1YiI6IjY5ZTUxOTEyYmE4MDQ3MzlhOTg0ZjIwZiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.CQArC2dArPQWyFytm5pALVTJm9ButMhbyNe9jiv-S9Q";
+window.TMDB_READ_ACCESS_TOKEN = "";
