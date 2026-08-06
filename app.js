@@ -2832,11 +2832,23 @@
     ensureMovieShape(movie);
     const clone = dom.template.content.firstElementChild.cloneNode(true);
     clone.dataset.id = movie.id;
+    const aggregates = getAggregates(movie);
     clone.querySelector('.movie-title').textContent = movie.title;
     clone.querySelector('.year').textContent = movie.year || '';
 
     const notesEl = clone.querySelector('.notes');
     notesEl.textContent = buildCardNotesText(movie);
+    clone.querySelector('.movie-date').textContent = formatDateKeyShort(getMovieNightDate(movie)) || 'Date pending';
+    clone.querySelector('.movie-chooser').textContent = getChooserLabel(movie) ? `Chosen by ${getChooserLabel(movie)}` : 'Chooser unknown';
+    clone.querySelector('.movie-quote').textContent = movie.notes || 'No quote added';
+    clone.querySelector('.movie-summary-score .summary-score-value').textContent = aggregates.raterCount
+      ? aggregates.avgFinalScore.toFixed(1)
+      : '–';
+    clone.querySelector('.movie-summary-score .summary-score-category').textContent = aggregates.representativeCategory === 'mainstream'
+      ? 'AAA'
+      : aggregates.representativeCategory === 'bmovie'
+        ? 'B-Movie'
+        : 'Waiting';
 
     const catRow = clone.querySelector('.score-row.categories');
     for(const cat of CATEGORIES){
@@ -2956,10 +2968,20 @@
       finalBlock.classList.remove('is-mainstream', 'is-bmovie', 'is-neutral');
     }
 
+    const summaryScoreValue = card.querySelector('.summary-score-value');
+    const summaryScoreCategory = card.querySelector('.summary-score-category');
+
     {
       const bMovieTotal = raterCount ? Number(displayScore(aggregates.avgBMovieScore)) : 0;
       const mainstreamTotal = raterCount ? Number(displayScore(aggregates.avgMainstreamScore)) : 0;
       const finalScore = aggregates.avgFinalScore;
+
+      if(summaryScoreValue) summaryScoreValue.textContent = raterCount ? finalScore.toFixed(1) : '–';
+      if(summaryScoreCategory) summaryScoreCategory.textContent = aggregates.representativeCategory === 'mainstream'
+        ? 'AAA'
+        : aggregates.representativeCategory === 'bmovie'
+          ? 'B-Movie'
+          : 'Waiting';
 
       if(bMovieEl) bMovieEl.textContent = bMovieTotal.toFixed(1);
       if(mainstreamEl) mainstreamEl.textContent = mainstreamTotal.toFixed(1);

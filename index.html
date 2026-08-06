@@ -90,47 +90,64 @@
       <div id="moviesList" class="cards"></div>
       <template id="movieCardTemplate">
         <article class="movie-card" data-id="">
-          <header class="movie-head">
-            <h3 class="movie-title"></h3>
-            <span class="year"></span>
-          </header>
-          <p class="notes"></p>
-          <div class="scores-wrap">
-            <div class="score-row categories"></div>
-            <!-- Cleaner formula panel: chips stay signless while the summary shows the relationship. -->
-            <div class="score-formula-panel" aria-label="Representative Score is the higher average of AAA Mainstream and B-Movie scores">
-              <div class="formula-block formula-block-mainstream">
-                <span class="formula-label">AAA Average</span>
-                <strong class="formula-value mainstream-val">0.0</strong>
+          <details class="movie-disclosure">
+            <summary class="movie-summary">
+              <header class="movie-head">
+                <div class="movie-summary-copy">
+                  <h3 class="movie-title"></h3>
+                  <p class="movie-summary-meta">
+                    <span class="movie-date"></span>
+                    <span class="movie-chooser"></span>
+                  </p>
+                  <p class="movie-quote"></p>
+                </div>
+                <div class="movie-summary-score">
+                  <span class="summary-score-label">Score</span>
+                  <strong class="summary-score-value">–</strong>
+                  <span class="summary-score-category">Waiting</span>
+                </div>
+              </header>
+            </summary>
+            <div class="movie-details">
+              <span class="year" hidden></span>
+              <p class="notes" hidden></p>
+              <div class="scores-wrap">
+                <div class="score-row categories"></div>
+                <div class="score-formula-panel" aria-label="Representative Score is the higher average of AAA Mainstream and B-Movie scores">
+                  <div class="formula-block formula-block-mainstream">
+                    <span class="formula-label">AAA Average</span>
+                    <strong class="formula-value mainstream-val">0.0</strong>
+                  </div>
+                  <span class="formula-operator" aria-hidden="true">or</span>
+                  <div class="formula-block formula-block-bmovie">
+                    <span class="formula-label">B-Movie Average</span>
+                    <strong class="formula-value bmovie-val">0.0</strong>
+                  </div>
+                  <span class="formula-operator" aria-hidden="true">wins</span>
+                  <div class="formula-block formula-block-final">
+                    <span class="formula-label">Representative Score</span>
+                    <strong class="formula-value final-val">0.0</strong>
+                  </div>
+                </div>
+                <div class="formula-meta">
+                  <span class="formula-caption">Representative Score = combined category average total</span>
+                  <span class="rater-count"></span>
+                </div>
+                <div class="card-tier">
+                  <span class="tier-emoji"></span>
+                  <span class="tier-text"></span>
+                </div>
+                <button class="btn primary rate-btn open-rate" type="button">Rate</button>
               </div>
-              <span class="formula-operator" aria-hidden="true">or</span>
-              <div class="formula-block formula-block-bmovie">
-                <span class="formula-label">B-Movie Average</span>
-                <strong class="formula-value bmovie-val">0.0</strong>
-              </div>
-              <span class="formula-operator" aria-hidden="true">wins</span>
-              <div class="formula-block formula-block-final">
-                <span class="formula-label">Representative Score</span>
-                <strong class="formula-value final-val">0.0</strong>
-              </div>
+              <details class="individual-reviews">
+                <summary class="reviews-toggle">Individual Reviews</summary>
+                <div class="reviews-list"></div>
+              </details>
+              <footer class="card-actions">
+                <button class="btn ghost small delete-btn" title="Delete movie">Delete</button>
+              </footer>
             </div>
-            <div class="formula-meta">
-              <span class="formula-caption">Representative Score = higher of the AAA and B-Movie averages</span>
-              <span class="rater-count"></span>
-            </div>
-            <div class="card-tier">
-              <span class="tier-emoji"></span>
-              <span class="tier-text"></span>
-            </div>
-            <button class="btn primary rate-btn open-rate" type="button">Rate</button>
-          </div>
-          <details class="individual-reviews">
-            <summary class="reviews-toggle">Individual Reviews</summary>
-            <div class="reviews-list"></div>
           </details>
-          <footer class="card-actions">
-            <button class="btn ghost small delete-btn" title="Delete movie">Delete</button>
-          </footer>
         </article>
       </template>
     </section>
@@ -388,6 +405,6 @@
 
   <script src="firebase-config.js" defer></script>
   <script type="module" defer></script>
-  <script src="app.js?v=20260806-10" type="module"></script>
+  <script src="app.js?v=20260806-11" type="module"></script>
 </body>
 </html>
