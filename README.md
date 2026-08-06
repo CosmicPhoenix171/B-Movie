@@ -42,7 +42,9 @@ The app stores data locally for resilience and can also live sync through Fireba
 Scoring formula:
 - B-Movie Score: positive ratings add points.
 - Mainstream Movies Score: negative ratings subtract points.
-- Final Score = (B-Movie Score) + (Mainstream Movies Score).
+- Add the absolute Mainstream and B-Movie points together, then divide by the total number of raters.
+- The result is labeled Mainstream or B-Movie according to which side received more votes.
+- Existing ratings are recalculated with this formula whenever they are loaded or displayed.
 
 ### Final Score Tiers
 - Negative final score = Good Movie tier

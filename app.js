@@ -1114,29 +1114,64 @@
   function getRatingTotals(entry){
     let bMovieScore = 0;
     let mainstreamScore = 0;
+    let bMovieVoteCount = 0;
+    let mainstreamVoteCount = 0;
 
     CATEGORIES.forEach(cat => {
       const score = Number(entry?.[cat.key]) || 0;
-      if(score > 0) bMovieScore += score;
-      if(score < 0) mainstreamScore += score;
+      if(score > 0){
+        bMovieScore += score;
+        bMovieVoteCount += 1;
+      }
+      if(score < 0){
+        mainstreamScore += score;
+        mainstreamVoteCount += 1;
+      }
     });
 
-    const representative = getRepresentativeScore(mainstreamScore, bMovieScore);
+    const representative = getRepresentativeScore(
+      mainstreamScore,
+      bMovieScore,
+      mainstreamVoteCount,
+      bMovieVoteCount,
+      1
+    );
     const finalScore = representative.finalScore;
     const pointsTotal = bMovieScore + Math.abs(mainstreamScore);
     const cheeseTotal = finalScore;
 
-    return { bMovieScore, mainstreamScore, finalScore, representativeCategory: representative.category, pointsTotal, cheeseTotal };
+    return {
+      bMovieScore,
+      mainstreamScore,
+      finalScore,
+      representativeCategory: representative.category,
+      mainstreamVoteCount,
+      bMovieVoteCount,
+      pointsTotal,
+      cheeseTotal
+    };
   }
 
-  function getRepresentativeScore(mainstreamScore, bMovieScore){
+  function getRepresentativeScore(mainstreamScore, bMovieScore, mainstreamVoteCount = 0, bMovieVoteCount = 0, raterCount = 0){
     const mainstreamMagnitude = Math.abs(Number(mainstreamScore) || 0);
     const bMovieMagnitude = Math.abs(Number(bMovieScore) || 0);
+    const combinedScore = raterCount > 0
+      ? (mainstreamMagnitude + bMovieMagnitude) / raterCount
+      : Math.max(mainstreamMagnitude, bMovieMagnitude);
+    const category = mainstreamVoteCount > bMovieVoteCount
+      ? 'mainstream'
+      : bMovieVoteCount > mainstreamVoteCount
+        ? 'bmovie'
+        : mainstreamMagnitude > bMovieMagnitude
+          ? 'mainstream'
+          : bMovieMagnitude > 0
+            ? 'bmovie'
+            : 'neutral';
 
-    if(bMovieMagnitude >= mainstreamMagnitude){
-      return { finalScore: bMovieMagnitude, category: bMovieMagnitude ? 'bmovie' : 'neutral' };
-    }
-    return { finalScore: -mainstreamMagnitude, category: 'mainstream' };
+    return {
+      finalScore: category === 'mainstream' ? -combinedScore : combinedScore,
+      category
+    };
   }
 
   function formatSignedScore(value){
@@ -1169,12 +1204,11 @@
   function getDisplayedFormulaTotals(totals){
     const bMovieTotal = Number(displayScore(totals?.bMovieScore));
     const mainstreamTotal = Number(displayScore(totals?.mainstreamScore));
-    const representative = getRepresentativeScore(totals?.mainstreamScore, totals?.bMovieScore);
     return {
       bMovieTotal,
       mainstreamTotal,
-      finalScore: representative.finalScore,
-      representativeCategory: representative.category
+      finalScore: Number(totals?.finalScore) || 0,
+      representativeCategory: totals?.representativeCategory || 'neutral'
     };
   }
 
@@ -3043,49 +3077,77 @@
 
     let totalBMovieSum = 0;
     let totalMainstreamSum = 0;
+    let bMovieVoteCount = 0;
+    let mainstreamVoteCount = 0;
     const sums = {};
-    CATEGORIES.forEach(cat => { sums[cat.key] = 0; });
+    const categoryVoteCounts = {};
+    CATEGORIES.forEach(cat => {
+      sums[cat.key] = 0;
+      categoryVoteCounts[cat.key] = 0;
+    });
 
     userEntries.forEach(entry => {
       CATEGORIES.forEach(cat => {
         const value = Number(entry[cat.key]);
-        if(!isNaN(value)) sums[cat.key] += value;
+        if(!isNaN(value)){
+          sums[cat.key] += value;
+          if(value !== 0) categoryVoteCounts[cat.key] += 1;
+        }
       });
       const totals = getRatingTotals(entry);
       totalBMovieSum += totals.bMovieScore;
       totalMainstreamSum += totals.mainstreamScore;
+      if(totals.bMovieScore > 0) bMovieVoteCount += 1;
+      if(totals.mainstreamScore < 0) mainstreamVoteCount += 1;
     });
 
     const categoryAverages = {};
     CATEGORIES.forEach(cat => {
-      categoryAverages[cat.key] = raterCount ? sums[cat.key] / raterCount : NaN;
+      categoryAverages[cat.key] = categoryVoteCounts[cat.key]
+        ? sums[cat.key] / categoryVoteCounts[cat.key]
+        : NaN;
     });
 
     const bonusSums = {};
-    BONUS_CATEGORIES.forEach(cat => { bonusSums[cat.key] = 0; });
+    const bonusVoteCounts = {};
+    BONUS_CATEGORIES.forEach(cat => {
+      bonusSums[cat.key] = 0;
+      bonusVoteCounts[cat.key] = 0;
+    });
     userEntries.forEach(entry => {
       BONUS_CATEGORIES.forEach(cat => {
         const value = Number(entry[cat.key]);
-        if(!isNaN(value)) bonusSums[cat.key] += value;
+        if(!isNaN(value)){
+          bonusSums[cat.key] += value;
+          if(value !== 0) bonusVoteCounts[cat.key] += 1;
+        }
       });
     });
 
     const bonusAverages = {};
     BONUS_CATEGORIES.forEach(cat => {
-      bonusAverages[cat.key] = raterCount ? bonusSums[cat.key] / raterCount : NaN;
+      bonusAverages[cat.key] = bonusVoteCounts[cat.key]
+        ? bonusSums[cat.key] / bonusVoteCounts[cat.key]
+        : NaN;
     });
 
     const representative = getRepresentativeScore(
-      raterCount ? totalMainstreamSum / raterCount : 0,
-      raterCount ? totalBMovieSum / raterCount : 0
+      totalMainstreamSum,
+      totalBMovieSum,
+      mainstreamVoteCount,
+      bMovieVoteCount,
+      raterCount
     );
+
+    const avgBMovieScore = raterCount ? totalBMovieSum / raterCount : 0;
+    const avgMainstreamScore = raterCount ? totalMainstreamSum / raterCount : 0;
 
     return {
       raterCount,
       categoryAverages,
       bonusAverages,
-      avgBMovieScore: raterCount ? totalBMovieSum / raterCount : 0,
-      avgMainstreamScore: raterCount ? totalMainstreamSum / raterCount : 0,
+      avgBMovieScore,
+      avgMainstreamScore,
       avgFinalScore: representative.finalScore,
       representativeCategory: representative.category,
       avgPoints: raterCount ? (totalBMovieSum + Math.abs(totalMainstreamSum)) / raterCount : 0,
