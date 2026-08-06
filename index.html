@@ -98,24 +98,24 @@
           <div class="scores-wrap">
             <div class="score-row categories"></div>
             <!-- Cleaner formula panel: chips stay signless while the summary shows the relationship. -->
-            <div class="score-formula-panel" aria-label="Final Score equals Mainstream Score minus B-Movie Score">
+            <div class="score-formula-panel" aria-label="Representative Score is the higher average of AAA Mainstream and B-Movie scores">
               <div class="formula-block formula-block-mainstream">
-                <span class="formula-label">Mainstream Score</span>
+                <span class="formula-label">AAA Average</span>
                 <strong class="formula-value mainstream-val">0.0</strong>
               </div>
-              <span class="formula-operator" aria-hidden="true">minus</span>
+              <span class="formula-operator" aria-hidden="true">or</span>
               <div class="formula-block formula-block-bmovie">
-                <span class="formula-label">B-Movie Score</span>
+                <span class="formula-label">B-Movie Average</span>
                 <strong class="formula-value bmovie-val">0.0</strong>
               </div>
-              <span class="formula-operator" aria-hidden="true">equals</span>
+              <span class="formula-operator" aria-hidden="true">wins</span>
               <div class="formula-block formula-block-final">
-                <span class="formula-label">Final Score</span>
+                <span class="formula-label">Representative Score</span>
                 <strong class="formula-value final-val">0.0</strong>
               </div>
             </div>
             <div class="formula-meta">
-              <span class="formula-caption">Final Score = Mainstream Score minus B-Movie Score</span>
+              <span class="formula-caption">Representative Score = higher of the AAA and B-Movie averages</span>
               <span class="rater-count"></span>
             </div>
             <div class="card-tier">
@@ -267,7 +267,7 @@
           <li><strong>🗣 Dialogue</strong> - How quotable was the writing?</li>
           <li><strong>❤️ Enjoyment</strong> - How much fun did you have?</li>
         </ol>
-        <p class="mini-note">Final Score = (B-Movie Score) + (Mainstream Movies Score). Negative final scores land on the Good Movie side, positive final scores land on the Cheesy Movie side.</p>
+        <p class="mini-note">The Representative Score is the higher average between the B-Movie and AAA/Mainstream scores. Negative scores land on the Good Movie side, positive scores land on the Cheesy Movie side.</p>
       </details>
       <details>
         <summary>🏆 Good-Bad Movie Tiers</summary>

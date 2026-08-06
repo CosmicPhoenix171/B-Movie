@@ -1121,11 +1121,22 @@
       if(score < 0) mainstreamScore += score;
     });
 
-    const finalScore = bMovieScore + mainstreamScore;
+    const representative = getRepresentativeScore(mainstreamScore, bMovieScore);
+    const finalScore = representative.finalScore;
     const pointsTotal = bMovieScore + Math.abs(mainstreamScore);
     const cheeseTotal = finalScore;
 
-    return { bMovieScore, mainstreamScore, finalScore, pointsTotal, cheeseTotal };
+    return { bMovieScore, mainstreamScore, finalScore, representativeCategory: representative.category, pointsTotal, cheeseTotal };
+  }
+
+  function getRepresentativeScore(mainstreamScore, bMovieScore){
+    const mainstreamMagnitude = Math.abs(Number(mainstreamScore) || 0);
+    const bMovieMagnitude = Math.abs(Number(bMovieScore) || 0);
+
+    if(bMovieMagnitude >= mainstreamMagnitude){
+      return { finalScore: bMovieMagnitude, category: bMovieMagnitude ? 'bmovie' : 'neutral' };
+    }
+    return { finalScore: -mainstreamMagnitude, category: 'mainstream' };
   }
 
   function formatSignedScore(value){
@@ -1158,10 +1169,12 @@
   function getDisplayedFormulaTotals(totals){
     const bMovieTotal = Number(displayScore(totals?.bMovieScore));
     const mainstreamTotal = Number(displayScore(totals?.mainstreamScore));
+    const representative = getRepresentativeScore(totals?.mainstreamScore, totals?.bMovieScore);
     return {
       bMovieTotal,
       mainstreamTotal,
-      finalScore: mainstreamTotal - bMovieTotal
+      finalScore: representative.finalScore,
+      representativeCategory: representative.category
     };
   }
 
@@ -2936,14 +2949,14 @@
     } else {
       const bMovieTotal = raterCount ? Number(displayScore(aggregates.avgBMovieScore)) : 0;
       const mainstreamTotal = raterCount ? Number(displayScore(aggregates.avgMainstreamScore)) : 0;
-      const finalScore = mainstreamTotal - bMovieTotal;
+      const finalScore = aggregates.avgFinalScore;
 
       if(bMovieEl) bMovieEl.textContent = bMovieTotal.toFixed(1);
       if(mainstreamEl) mainstreamEl.textContent = mainstreamTotal.toFixed(1);
       if(finalEl) finalEl.textContent = finalScore.toFixed(1);
       if(finalBlock){
-        if(finalScore > 0) finalBlock.classList.add('is-mainstream');
-        else if(finalScore < 0) finalBlock.classList.add('is-bmovie');
+        if(finalScore < 0) finalBlock.classList.add('is-mainstream');
+        else if(finalScore > 0) finalBlock.classList.add('is-bmovie');
         else finalBlock.classList.add('is-neutral');
       }
       raterEl.textContent = raterCount ? `(${raterCount} rater${raterCount === 1 ? '' : 's'})` : '';
@@ -3028,6 +3041,10 @@
       if(isOwner){
         headerHTML += ` <button type="button" class="del-rating-btn" data-user="${sanitize(username)}" title="Delete your rating">✖</button>`;
       }
+      headerHTML = headerHTML
+        .replace('Final Score equals Mainstream Score minus B-Movie Score', 'Representative Score is the higher average of AAA Mainstream and B-Movie scores')
+        .replace('>minus</span>', '>or</span>')
+        .replace('>equals</span>', '>wins</span>');
       headerHTML += '\n      </div>';
 
       let reviewHTML = `${headerHTML}\n      <div class="reviewer-scores">`;
@@ -3072,7 +3089,6 @@
 
     let totalBMovieSum = 0;
     let totalMainstreamSum = 0;
-    let totalFinalSum = 0;
     const sums = {};
     CATEGORIES.forEach(cat => { sums[cat.key] = 0; });
 
@@ -3084,7 +3100,6 @@
       const totals = getRatingTotals(entry);
       totalBMovieSum += totals.bMovieScore;
       totalMainstreamSum += totals.mainstreamScore;
-      totalFinalSum += totals.finalScore;
     });
 
     const categoryAverages = {};
@@ -3106,15 +3121,21 @@
       bonusAverages[cat.key] = raterCount ? bonusSums[cat.key] / raterCount : NaN;
     });
 
+    const representative = getRepresentativeScore(
+      raterCount ? totalMainstreamSum / raterCount : 0,
+      raterCount ? totalBMovieSum / raterCount : 0
+    );
+
     return {
       raterCount,
       categoryAverages,
       bonusAverages,
       avgBMovieScore: raterCount ? totalBMovieSum / raterCount : 0,
       avgMainstreamScore: raterCount ? totalMainstreamSum / raterCount : 0,
-      avgFinalScore: raterCount ? totalFinalSum / raterCount : 0,
+      avgFinalScore: representative.finalScore,
+      representativeCategory: representative.category,
       avgPoints: raterCount ? (totalBMovieSum + Math.abs(totalMainstreamSum)) / raterCount : 0,
-      avgCheese: raterCount ? totalFinalSum / raterCount : 0
+      avgCheese: representative.finalScore
     };
   }
 
@@ -3216,7 +3237,7 @@
     winnerBadge.className = 'night-winner-badge';
     if(winner){
       const agg = getAggregates(winner);
-      const finalDisp = Number(displayScore(agg.avgMainstreamScore)) - Number(displayScore(agg.avgBMovieScore));
+      const finalDisp = agg.avgFinalScore;
       const labelText = night.winnerOverride ? 'Winner (you crowned)' : 'Winner — biggest |Final|';
       winnerBadge.innerHTML = `
         <span class="night-winner-icon" aria-hidden="true">👑</span>
