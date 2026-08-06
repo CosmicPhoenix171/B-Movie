@@ -2914,7 +2914,7 @@
       if(!badge) continue;
       const valueEl = badge.querySelector('.score-chip-value');
       const avg = aggregates.categoryAverages[cat.key];
-      const scoreGroup = getScoreChipGroup(avg, cat.scoreGroup);
+      const scoreGroup = aggregates.categoryGroups[cat.key] || getScoreChipGroup(avg, cat.scoreGroup);
       if(valueEl) valueEl.textContent = displayCategoryScore(avg);
       badge.title = `${cat.label} • ${getScoreGroupLabel(scoreGroup)} group`;
       badge.dataset.empty = Number.isFinite(avg) ? 'false' : 'true';
@@ -3128,39 +3128,43 @@
           : 'neutral';
     });
 
+    let representativeTotal = 0;
+    CATEGORIES.forEach(cat => {
+      const categoryAverage = categoryAverages[cat.key];
+      if(!Number.isFinite(categoryAverage)) return;
+      representativeTotal += Number(categoryAverage.toFixed(1));
+    });
+
     const bonusSums = {};
-    const bonusVoteCounts = {};
     BONUS_CATEGORIES.forEach(cat => {
       bonusSums[cat.key] = 0;
-      bonusVoteCounts[cat.key] = 0;
     });
     userEntries.forEach(entry => {
       BONUS_CATEGORIES.forEach(cat => {
         const value = Number(entry[cat.key]);
         if(!isNaN(value)){
           bonusSums[cat.key] += value;
-          if(value !== 0) bonusVoteCounts[cat.key] += 1;
         }
       });
     });
 
     const bonusAverages = {};
     BONUS_CATEGORIES.forEach(cat => {
-      bonusAverages[cat.key] = bonusVoteCounts[cat.key]
-        ? bonusSums[cat.key] / bonusVoteCounts[cat.key]
+      bonusAverages[cat.key] = raterCount
+        ? bonusSums[cat.key] / raterCount
         : NaN;
     });
 
     const representative = getRepresentativeScore(
-      totalMainstreamSum,
-      totalBMovieSum,
+      0,
+      representativeTotal,
       mainstreamVoteCount,
       bMovieVoteCount,
-      raterCount
+      1
     );
 
-    const avgBMovieScore = raterCount ? totalBMovieSum / raterCount : 0;
-    const avgMainstreamScore = raterCount ? totalMainstreamSum / raterCount : 0;
+    const avgBMovieScore = representative.category === 'bmovie' ? representativeTotal : 0;
+    const avgMainstreamScore = representative.category === 'mainstream' ? representativeTotal : 0;
 
     return {
       raterCount,
