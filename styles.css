@@ -2255,6 +2255,14 @@ body.theme-bmovie {
 ::-webkit-scrollbar-thumb:hover { background: #3a424c; }
 
 @media (max-width: 520px) {
+  .layout.app-layout {
+    padding: 6px;
+    padding-bottom: calc(var(--bottom-nav-height) + 14px + var(--safe-area-bottom));
+  }
+  #movies-section {
+    padding-left: 0;
+    padding-right: 0;
+  }
   .movie-summary { padding: 12px; }
   .movie-head { gap: 8px; }
   .movie-summary-score { flex-basis: 74px; padding: 7px 8px; }
