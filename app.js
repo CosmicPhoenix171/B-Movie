@@ -3289,9 +3289,13 @@
 
     const titleRow = document.createElement('div');
     titleRow.className = 'night-title-row';
+    const shortNightDate = formatDateKeyShort(night.date);
+    const titleIncludesDate = Boolean(
+      shortNightDate && (night.name || '').includes(shortNightDate)
+    );
     titleRow.innerHTML = `
       <h3 class="night-title">${sanitize(night.name)}</h3>
-      <span class="night-date">${formatDateKeyShort(night.date) || '—'}</span>
+      ${shortNightDate && !titleIncludesDate ? `<span class="night-date">${shortNightDate}</span>` : ''}
     `;
     header.appendChild(titleRow);
 
