@@ -2573,27 +2573,6 @@ body.theme-bmovie {
   border-color: rgba(255 215 96 / 65%);
   box-shadow: 0 0 0 1px rgba(255 215 96 / 35%), 0 12px 30px -16px rgba(255 157 29 / 50%);
   position: relative;
-  margin-top: 14px;
-}
-.movie-card--night-winner .movie-summary {
-  padding-top: 30px;
-}
-.movie-card--night-winner::before {
-  content: "\1F451 Night Winner";
-  position: absolute;
-  top: 6px;
-  left: 12px;
-  background: linear-gradient(135deg, #ffd884, #ff9d1d);
-  color: #2a1900;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  padding: 4px 8px;
-  border-radius: 999px;
-  box-shadow: 0 4px 12px -6px rgba(255 157 29 / 60%);
-  white-space: nowrap;
-  z-index: 2;
 }
 .edit-night-btn {
   margin-right: 0;
