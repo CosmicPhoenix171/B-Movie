@@ -3261,22 +3261,8 @@
         .filter(n => byNight.has(n.id))
         .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt - a.createdAt));
 
-      const rankedNights = [...orderedNights]
-        .map(night => ({ night, score: getNightRankingScore(night, byNight.get(night.id)) }))
-        .filter(entry => entry.score !== null)
-        .sort((a, b) => b.score - a.score || (b.night.date || '').localeCompare(a.night.date || ''));
-      const nightRanks = new Map(
-        rankedNights.slice(0, 3).map((entry, index) => [entry.night.id, index + 1])
-      );
-
-      const displayNights = [...orderedNights].sort((a, b) => (
-        (nightRanks.get(a.id) || 4) - (nightRanks.get(b.id) || 4) ||
-        (b.date || '').localeCompare(a.date || '') ||
-        (b.createdAt - a.createdAt)
-      ));
-
-      displayNights.forEach(night => {
-        dom.moviesList.appendChild(renderNightGroup(night, byNight.get(night.id), nightRanks.get(night.id) || null));
+      orderedNights.forEach(night => {
+        dom.moviesList.appendChild(renderNightGroup(night, byNight.get(night.id)));
       });
 
       if(ungrouped.length){
@@ -3291,14 +3277,7 @@
     dom.moviesList.classList.toggle('no-results', movies.length === 0);
   }
 
-  function getNightRankingScore(night, movies = []){
-    const ratedMovies = movies.filter(movie => getAggregates(movie).raterCount > 0);
-    if(!ratedMovies.length) return null;
-    const score = Math.max(...ratedMovies.map(movie => Math.abs(getAggregates(movie).avgFinalScore)));
-    return Number.isFinite(score) ? score : null;
-  }
-
-  function renderNightGroup(night, movies, rank = null){
+  function renderNightGroup(night, movies){
     const wrapper = document.createElement('section');
     wrapper.className = 'night-group';
     wrapper.dataset.nightId = night.id;
@@ -3313,7 +3292,6 @@
     titleRow.className = 'night-title-row';
     titleRow.innerHTML = `
       <h3 class="night-title">${sanitize(night.name)}</h3>
-      ${rank ? `<span class="night-rank night-rank-${rank}">${rank === 1 ? '1st' : rank === 2 ? '2nd' : '3rd'} Place</span>` : ''}
       <span class="night-date">${formatDateKeyShort(night.date) || '—'}</span>
     `;
     header.appendChild(titleRow);
@@ -3402,10 +3380,28 @@
 
     const cards = document.createElement('div');
     cards.className = 'night-cards';
-    movies.forEach(movie => {
+    const rankedMovies = movies
+      .map(movie => {
+        const aggregates = getAggregates(movie);
+        return {
+          movie,
+          score: aggregates.raterCount ? Math.abs(aggregates.avgFinalScore) : null
+        };
+      })
+      .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
+
+    rankedMovies.forEach(({ movie }, index) => {
       const card = renderMovie(movie);
       if(winner && movie.id === winner.id){
         card.classList.add('movie-card--night-winner');
+      }
+      const score = rankedMovies[index].score;
+      if(index < 3 && score !== null){
+        const rankBadge = document.createElement('span');
+        rankBadge.className = `entry-rank entry-rank-${index + 1}`;
+        rankBadge.textContent = `${index === 0 ? '1st' : index === 1 ? '2nd' : '3rd'} Place`;
+        rankBadge.setAttribute('aria-label', `${index + 1}${index === 0 ? 'st' : index === 1 ? 'nd' : 'rd'} place in this movie night`);
+        card.querySelector('.movie-summary')?.prepend(rankBadge);
       }
       cards.appendChild(card);
     });
