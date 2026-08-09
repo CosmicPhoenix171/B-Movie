@@ -641,6 +641,32 @@ body {
   display: block;
   padding: 16px;
   padding-bottom: calc(var(--bottom-nav-height) + 24px + var(--safe-area-bottom));
+  position: relative;
+  isolation: isolate;
+}
+.layout.app-layout::before {
+  content: '';
+  position: fixed;
+  inset: 6px;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  background: conic-gradient(
+    from 0deg,
+    #ff3b30,
+    #ffcc00,
+    #34c759,
+    #00c7ff,
+    #5856d6,
+    #ff2d55,
+    #ff3b30
+  ) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0.58;
+  pointer-events: none;
+  z-index: 200;
 }
 
 /* Panels as tabs */
@@ -2241,11 +2267,18 @@ body.theme-bmovie {
   ANIMATIONS
   ==================================== */
 @media (prefers-reduced-motion: no-preference) {
+  .layout.app-layout::before {
+    animation: rgbRingSpin 12s linear infinite;
+  }
   .movie-card { animation: slideUp 0.4s ease; }
   @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } }
   
   .app-panel.active { animation: fadeIn 0.3s ease; }
   @keyframes fadeIn { from { opacity: 0; } }
+}
+
+@keyframes rgbRingSpin {
+  to { transform: rotate(360deg); }
 }
 
 /* Error animation */
