@@ -2446,6 +2446,27 @@ body.theme-bmovie {
   border: 1px solid rgba(255 255 255 / 6%);
   white-space: nowrap;
 }
+.night-rank {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.night-rank-1 {
+  background: linear-gradient(135deg, #ffe68a, #ffb347);
+  color: #342100;
+}
+.night-rank-2 {
+  background: linear-gradient(135deg, #e8eef7, #aebdd1);
+  color: #203040;
+}
+.night-rank-3 {
+  background: linear-gradient(135deg, #e8a56d, #9d6236);
+  color: #291204;
+}
 .night-winner-badge {
   display: flex;
   align-items: center;
