@@ -2838,7 +2838,6 @@
 
     const notesEl = clone.querySelector('.notes');
     notesEl.textContent = buildCardNotesText(movie);
-    clone.querySelector('.movie-date').textContent = formatDateKeyShort(getMovieNightDate(movie)) || 'Date pending';
     clone.querySelector('.movie-chooser').textContent = getChooserLabel(movie) ? `Chosen by ${getChooserLabel(movie)}` : 'Chooser unknown';
     clone.querySelector('.movie-quote').textContent = movie.notes || '';
     clone.querySelector('.movie-summary-score .summary-score-value').textContent = aggregates.raterCount
