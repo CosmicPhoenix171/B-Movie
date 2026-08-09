@@ -2575,10 +2575,13 @@ body.theme-bmovie {
   position: relative;
   margin-top: 14px;
 }
+.movie-card--night-winner .movie-summary {
+  padding-top: 30px;
+}
 .movie-card--night-winner::before {
   content: "\1F451 Night Winner";
   position: absolute;
-  top: -12px;
+  top: 6px;
   left: 12px;
   background: linear-gradient(135deg, #ffd884, #ff9d1d);
   color: #2a1900;
@@ -2590,6 +2593,7 @@ body.theme-bmovie {
   border-radius: 999px;
   box-shadow: 0 4px 12px -6px rgba(255 157 29 / 60%);
   white-space: nowrap;
+  z-index: 2;
 }
 .edit-night-btn {
   margin-right: 0;
